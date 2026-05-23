@@ -1,0 +1,909 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>PrecisionCut Tools | Carbide End Mills & Drill Bits</title>
+    <meta
+      name="description"
+      content="Export-grade carbide end mills, drill bits, reamers and custom tooling for CNC machining distributors and OEM buyers."
+    />
+    <style>
+      @import url("https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap");
+
+      :root {
+        --ink: #082f49;
+        --muted: #496273;
+        --line: #c8d9e4;
+        --sky: #0ea5e9;
+        --deep: #0c4a6e;
+        --orange: #f97316;
+        --paper: #f6fbff;
+        --white: #ffffff;
+        --steel: #dce8ef;
+        --dark: #071823;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        font-family: "Plus Jakarta Sans", sans-serif;
+        color: var(--ink);
+        background:
+          linear-gradient(135deg, rgba(14, 165, 233, 0.1), transparent 28%),
+          linear-gradient(180deg, #eff8ff 0%, #ffffff 42%, #eef6fb 100%);
+      }
+
+      a {
+        color: inherit;
+        text-decoration: none;
+      }
+
+      img {
+        display: block;
+        max-width: 100%;
+      }
+
+      .page {
+        overflow: hidden;
+      }
+
+      .container {
+        width: min(1180px, calc(100% - 40px));
+        margin: 0 auto;
+      }
+
+      .nav {
+        position: fixed;
+        z-index: 20;
+        top: 16px;
+        left: 20px;
+        right: 20px;
+        border: 1px solid rgba(200, 217, 228, 0.9);
+        border-radius: 8px;
+        background: rgba(255, 255, 255, 0.92);
+        box-shadow: 0 20px 50px rgba(8, 47, 73, 0.12);
+        backdrop-filter: blur(18px);
+      }
+
+      .nav-inner {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 24px;
+        min-height: 72px;
+        padding: 0 22px;
+      }
+
+      .brand {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        font-weight: 800;
+        letter-spacing: 0;
+      }
+
+      .brand-mark {
+        display: grid;
+        width: 42px;
+        height: 42px;
+        place-items: center;
+        border-radius: 8px;
+        color: var(--white);
+        background: linear-gradient(135deg, var(--deep), var(--sky));
+      }
+
+      .brand-mark svg,
+      .icon svg {
+        width: 22px;
+        height: 22px;
+        stroke: currentColor;
+        stroke-width: 2;
+        fill: none;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+      }
+
+      .nav-links {
+        display: flex;
+        gap: 28px;
+        color: #31556c;
+        font-size: 14px;
+        font-weight: 700;
+      }
+
+      .nav-cta,
+      .btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+        min-height: 44px;
+        border-radius: 8px;
+        border: 1px solid transparent;
+        padding: 0 18px;
+        font-weight: 800;
+        cursor: pointer;
+        transition: transform 180ms ease, box-shadow 180ms ease, background 180ms ease;
+      }
+
+      .nav-cta,
+      .btn-primary {
+        color: var(--white);
+        background: var(--orange);
+        box-shadow: 0 16px 36px rgba(249, 115, 22, 0.25);
+      }
+
+      .btn-secondary {
+        color: var(--deep);
+        background: var(--white);
+        border-color: var(--line);
+      }
+
+      .nav-cta:hover,
+      .btn:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 18px 42px rgba(8, 47, 73, 0.16);
+      }
+
+      .hero {
+        position: relative;
+        min-height: 760px;
+        padding: 132px 0 72px;
+      }
+
+      .hero-grid {
+        display: grid;
+        grid-template-columns: 0.95fr 1.05fr;
+        gap: 48px;
+        align-items: center;
+      }
+
+      .eyebrow {
+        display: inline-flex;
+        align-items: center;
+        gap: 9px;
+        margin-bottom: 22px;
+        color: var(--deep);
+        font-size: 13px;
+        font-weight: 800;
+        text-transform: uppercase;
+      }
+
+      .eyebrow::before {
+        content: "";
+        width: 34px;
+        height: 2px;
+        background: var(--orange);
+      }
+
+      h1 {
+        margin: 0;
+        max-width: 690px;
+        font-size: clamp(44px, 5.7vw, 78px);
+        line-height: 0.96;
+        letter-spacing: 0;
+        color: #062638;
+      }
+
+      .hero p {
+        max-width: 630px;
+        margin: 24px 0 0;
+        color: var(--muted);
+        font-size: 18px;
+        line-height: 1.75;
+      }
+
+      .hero-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 14px;
+        margin-top: 34px;
+      }
+
+      .hero-proof {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 12px;
+        margin-top: 44px;
+      }
+
+      .proof-tile {
+        min-height: 92px;
+        border: 1px solid rgba(200, 217, 228, 0.9);
+        border-radius: 8px;
+        padding: 16px;
+        background: rgba(255, 255, 255, 0.78);
+      }
+
+      .proof-tile strong {
+        display: block;
+        font-size: 22px;
+        color: var(--deep);
+      }
+
+      .proof-tile span {
+        display: block;
+        margin-top: 6px;
+        color: var(--muted);
+        font-size: 12px;
+        font-weight: 700;
+        line-height: 1.45;
+      }
+
+      .hero-visual {
+        position: relative;
+        min-height: 560px;
+      }
+
+      .photo-panel {
+        position: absolute;
+        inset: 0 0 62px 86px;
+        border-radius: 8px;
+        overflow: hidden;
+        border: 1px solid rgba(255, 255, 255, 0.85);
+        background: var(--dark);
+        box-shadow: 0 35px 90px rgba(8, 47, 73, 0.24);
+      }
+
+      .photo-panel img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        opacity: 0.82;
+        filter: saturate(0.92) contrast(1.05);
+      }
+
+      .photo-panel::after {
+        position: absolute;
+        inset: 0;
+        content: "";
+        background:
+          linear-gradient(90deg, rgba(7, 24, 35, 0.72), transparent 62%),
+          linear-gradient(0deg, rgba(7, 24, 35, 0.6), transparent 42%);
+      }
+
+      .tool-card {
+        position: absolute;
+        right: 26px;
+        bottom: 0;
+        width: min(360px, 72%);
+        border-radius: 8px;
+        border: 1px solid rgba(200, 217, 228, 0.95);
+        background: rgba(255, 255, 255, 0.94);
+        box-shadow: 0 30px 80px rgba(8, 47, 73, 0.22);
+      }
+
+      .tool-card img {
+        width: 100%;
+        height: 250px;
+        object-fit: cover;
+        object-position: center 42%;
+        border-radius: 8px 8px 0 0;
+      }
+
+      .tool-card-body {
+        padding: 18px;
+      }
+
+      .tool-card h2 {
+        margin: 0 0 8px;
+        font-size: 20px;
+      }
+
+      .tool-card p {
+        margin: 0;
+        font-size: 13px;
+        line-height: 1.55;
+      }
+
+      .floating-spec {
+        position: absolute;
+        top: 46px;
+        left: 0;
+        width: 250px;
+        border: 1px solid rgba(200, 217, 228, 0.95);
+        border-radius: 8px;
+        padding: 16px;
+        color: var(--white);
+        background: rgba(8, 47, 73, 0.9);
+        box-shadow: 0 30px 80px rgba(8, 47, 73, 0.2);
+      }
+
+      .floating-spec span {
+        display: block;
+        color: #bae6fd;
+        font-size: 12px;
+        font-weight: 800;
+        text-transform: uppercase;
+      }
+
+      .floating-spec strong {
+        display: block;
+        margin-top: 8px;
+        font-size: 25px;
+      }
+
+      .section {
+        padding: 78px 0;
+      }
+
+      .section-dark {
+        color: var(--white);
+        background: #062638;
+      }
+
+      .section-head {
+        display: flex;
+        justify-content: space-between;
+        gap: 28px;
+        align-items: end;
+        margin-bottom: 34px;
+      }
+
+      .section-head h2 {
+        max-width: 630px;
+        margin: 0;
+        font-size: clamp(30px, 4vw, 48px);
+        line-height: 1.05;
+      }
+
+      .section-head p {
+        max-width: 430px;
+        margin: 0;
+        color: var(--muted);
+        line-height: 1.7;
+      }
+
+      .section-dark .section-head p {
+        color: #b7d1de;
+      }
+
+      .catalog {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 16px;
+      }
+
+      .catalog-card {
+        min-height: 285px;
+        border: 1px solid rgba(200, 217, 228, 0.92);
+        border-radius: 8px;
+        padding: 22px;
+        background: var(--white);
+        transition: transform 180ms ease, box-shadow 180ms ease;
+      }
+
+      .catalog-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 22px 60px rgba(8, 47, 73, 0.12);
+      }
+
+      .icon {
+        display: grid;
+        width: 46px;
+        height: 46px;
+        place-items: center;
+        border-radius: 8px;
+        color: var(--deep);
+        background: #e0f2fe;
+      }
+
+      .catalog-card h3 {
+        margin: 22px 0 10px;
+        font-size: 19px;
+      }
+
+      .catalog-card p {
+        margin: 0;
+        color: var(--muted);
+        font-size: 14px;
+        line-height: 1.65;
+      }
+
+      .chips {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 7px;
+        margin-top: 18px;
+      }
+
+      .chip {
+        border-radius: 999px;
+        padding: 7px 9px;
+        color: var(--deep);
+        background: #f0f9ff;
+        font-size: 11px;
+        font-weight: 800;
+      }
+
+      .capability {
+        display: grid;
+        grid-template-columns: 0.88fr 1.12fr;
+        gap: 36px;
+        align-items: stretch;
+      }
+
+      .machine-photo {
+        position: relative;
+        min-height: 460px;
+        border-radius: 8px;
+        overflow: hidden;
+        background: var(--dark);
+      }
+
+      .machine-photo img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        opacity: 0.72;
+      }
+
+      .machine-photo::after {
+        position: absolute;
+        inset: 0;
+        content: "";
+        background: linear-gradient(0deg, rgba(6, 38, 56, 0.76), rgba(6, 38, 56, 0.06));
+      }
+
+      .machine-label {
+        position: absolute;
+        z-index: 1;
+        left: 24px;
+        right: 24px;
+        bottom: 24px;
+        display: grid;
+        gap: 10px;
+      }
+
+      .machine-label strong {
+        font-size: 28px;
+      }
+
+      .machine-label span {
+        color: #c4e5f5;
+        line-height: 1.6;
+      }
+
+      .table-wrap {
+        border: 1px solid rgba(200, 217, 228, 0.24);
+        border-radius: 8px;
+        overflow: hidden;
+        background: rgba(255, 255, 255, 0.04);
+      }
+
+      table {
+        width: 100%;
+        border-collapse: collapse;
+      }
+
+      th,
+      td {
+        padding: 18px 20px;
+        border-bottom: 1px solid rgba(200, 217, 228, 0.18);
+        text-align: left;
+      }
+
+      th {
+        color: #bae6fd;
+        font-size: 12px;
+        text-transform: uppercase;
+      }
+
+      td {
+        color: #e7f6fb;
+        font-size: 14px;
+      }
+
+      tr:last-child td {
+        border-bottom: 0;
+      }
+
+      .process {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 16px;
+      }
+
+      .step {
+        position: relative;
+        min-height: 188px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        padding: 22px;
+        background: rgba(255, 255, 255, 0.72);
+      }
+
+      .step-number {
+        color: var(--sky);
+        font-size: 13px;
+        font-weight: 800;
+      }
+
+      .step h3 {
+        margin: 18px 0 8px;
+      }
+
+      .step p {
+        margin: 0;
+        color: var(--muted);
+        font-size: 14px;
+        line-height: 1.65;
+      }
+
+      .rfq {
+        display: grid;
+        grid-template-columns: 0.85fr 1.15fr;
+        gap: 36px;
+        align-items: start;
+        border: 1px solid #18475f;
+        border-radius: 8px;
+        padding: 34px;
+        background: linear-gradient(135deg, #062638, #0b4b69);
+      }
+
+      .rfq h2 {
+        margin: 0;
+        color: var(--white);
+        font-size: clamp(30px, 4vw, 50px);
+        line-height: 1.06;
+      }
+
+      .rfq p {
+        color: #c4e5f5;
+        line-height: 1.7;
+      }
+
+      .form-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 14px;
+      }
+
+      label {
+        display: grid;
+        gap: 8px;
+        color: #dff5ff;
+        font-size: 12px;
+        font-weight: 800;
+        text-transform: uppercase;
+      }
+
+      input,
+      select,
+      textarea {
+        width: 100%;
+        min-height: 48px;
+        border: 1px solid rgba(200, 217, 228, 0.28);
+        border-radius: 8px;
+        padding: 0 14px;
+        color: var(--white);
+        background: rgba(255, 255, 255, 0.08);
+        font: inherit;
+      }
+
+      textarea {
+        grid-column: 1 / -1;
+        min-height: 110px;
+        padding: 14px;
+        resize: vertical;
+      }
+
+      input::placeholder,
+      textarea::placeholder {
+        color: #9fc6d8;
+      }
+
+      .footer {
+        padding: 28px 0 36px;
+        color: #6c8798;
+        font-size: 13px;
+        text-align: center;
+      }
+
+      @media (max-width: 920px) {
+        .nav-links {
+          display: none;
+        }
+
+        .hero-grid,
+        .capability,
+        .rfq {
+          grid-template-columns: 1fr;
+        }
+
+        .hero {
+          min-height: auto;
+        }
+
+        .hero-visual {
+          min-height: 530px;
+        }
+
+        .catalog,
+        .process {
+          grid-template-columns: repeat(2, 1fr);
+        }
+
+        .section-head {
+          display: block;
+        }
+
+        .section-head p {
+          margin-top: 16px;
+        }
+      }
+
+      @media (max-width: 620px) {
+        .container {
+          width: min(100% - 28px, 1180px);
+        }
+
+        .nav {
+          left: 12px;
+          right: 12px;
+        }
+
+        .nav-inner {
+          min-height: 64px;
+          padding: 0 12px;
+        }
+
+        .brand-name {
+          display: none;
+        }
+
+        .hero {
+          padding-top: 112px;
+        }
+
+        .hero-proof,
+        .catalog,
+        .process,
+        .form-grid {
+          grid-template-columns: 1fr;
+        }
+
+        .photo-panel {
+          inset: 0 0 82px 28px;
+        }
+
+        .floating-spec {
+          width: 210px;
+        }
+
+        .tool-card {
+          width: 78%;
+          right: 0;
+        }
+
+        .rfq {
+          padding: 22px;
+        }
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        *,
+        *::before,
+        *::after {
+          scroll-behavior: auto !important;
+          transition: none !important;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="page">
+      <header class="nav" aria-label="Primary navigation">
+        <div class="nav-inner">
+          <a class="brand" href="#">
+            <span class="brand-mark" aria-hidden="true">
+              <svg viewBox="0 0 24 24"><path d="M14 4 5 13l6 6 9-9z" /><path d="M4 20h7" /><path d="m13 6 5 5" /></svg>
+            </span>
+            <span class="brand-name">PrecisionCut Tools</span>
+          </a>
+          <nav class="nav-links" aria-label="Site sections">
+            <a href="#products">Products</a>
+            <a href="#capability">Capability</a>
+            <a href="#quality">Quality</a>
+            <a href="#rfq">RFQ</a>
+          </nav>
+          <a class="nav-cta" href="#rfq">Get Quote</a>
+        </div>
+      </header>
+
+      <main>
+        <section class="hero">
+          <div class="container hero-grid">
+            <div>
+              <span class="eyebrow">Export-grade cutting tools</span>
+              <h1>Carbide end mills and drill bits built for repeat orders.</h1>
+              <p>
+                PrecisionCut supplies CNC distributors, machining shops, and OEM buyers with solid carbide
+                tools, coated drills, micro cutters, and custom geometries for steel, stainless, aluminum,
+                cast iron, and aerospace alloys.
+              </p>
+              <div class="hero-actions">
+                <a class="btn btn-primary" href="#rfq">Request OEM Quote</a>
+                <a class="btn btn-secondary" href="#products">View Tool Range</a>
+              </div>
+              <div class="hero-proof" aria-label="Manufacturing statistics">
+                <div class="proof-tile"><strong>0.002mm</strong><span>Runout inspection available</span></div>
+                <div class="proof-tile"><strong>48h</strong><span>Fast sampling for standard sizes</span></div>
+                <div class="proof-tile"><strong>60+</strong><span>Markets served by export partners</span></div>
+              </div>
+            </div>
+
+            <div class="hero-visual" aria-label="Cutting tools product display">
+              <div class="photo-panel">
+                <img src="assets/insert-face-mill.jpg" alt="Indexable metal milling cutter close-up" />
+              </div>
+              <div class="floating-spec">
+                <span>QC report package</span>
+                <strong>Coating, diameter, flute, hardness, runout</strong>
+              </div>
+              <article class="tool-card">
+                <img src="assets/end-mills-drill-bit.jpg" alt="Carbide end mills and a drill bit arranged on a table" />
+                <div class="tool-card-body">
+                  <h2>Solid Carbide Series</h2>
+                  <p>2F, 3F, 4F, ball nose, corner radius, long neck, and micro diameters from 0.2mm.</p>
+                </div>
+              </article>
+            </div>
+          </div>
+        </section>
+
+        <section class="section" id="products">
+          <div class="container">
+            <div class="section-head">
+              <h2>Catalog structure made for industrial buyers.</h2>
+              <p>
+                Clear categories, material matching, size ranges, and coating options help overseas buyers
+                decide faster before starting a quotation thread.
+              </p>
+            </div>
+            <div class="catalog">
+              <article class="catalog-card">
+                <span class="icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 20 20 4" /><path d="m14 4 6 6" /><path d="M7 17l3 3" /></svg></span>
+                <h3>Carbide End Mills</h3>
+                <p>Square, ball nose, corner radius, roughing, high-feed, long-neck, and micro milling cutters.</p>
+                <div class="chips"><span class="chip">2F-6F</span><span class="chip">AlTiN</span><span class="chip">DLC</span></div>
+              </article>
+              <article class="catalog-card">
+                <span class="icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 3v18" /><path d="M8 7c4 0 4 3 8 3" /><path d="M8 13c4 0 4 3 8 3" /></svg></span>
+                <h3>Drill Bits</h3>
+                <p>Stub, jobber, long series, center drills, step drills, and carbide coolant-through drills.</p>
+                <div class="chips"><span class="chip">HSS</span><span class="chip">Carbide</span><span class="chip">DIN</span></div>
+              </article>
+              <article class="catalog-card">
+                <span class="icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M6 4h12" /><path d="M8 4v16" /><path d="M16 4v16" /><path d="M7 20h10" /></svg></span>
+                <h3>Reamers & Taps</h3>
+                <p>Precision hole finishing and thread tools for automotive, mold, fixture, and batch machining.</p>
+                <div class="chips"><span class="chip">H7</span><span class="chip">Spiral</span><span class="chip">Metric</span></div>
+              </article>
+              <article class="catalog-card">
+                <span class="icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="m4 16 8-12 8 12" /><path d="M8 16h8" /><path d="M6 20h12" /></svg></span>
+                <h3>Custom Tooling</h3>
+                <p>Drawing-based dimensions, private-label packaging, laser marking, and application tuning.</p>
+                <div class="chips"><span class="chip">OEM</span><span class="chip">ODM</span><span class="chip">Logo</span></div>
+              </article>
+            </div>
+          </div>
+        </section>
+
+        <section class="section section-dark" id="capability">
+          <div class="container capability">
+            <div class="machine-photo">
+              <img src="assets/insert-face-mill.jpg" alt="Industrial face milling cutter with carbide inserts" />
+              <div class="machine-label">
+                <strong>Application-first selection</strong>
+                <span>Tool geometry, substrate, and coating recommendations are matched to workpiece material and machining strategy.</span>
+              </div>
+            </div>
+            <div>
+              <div class="section-head">
+                <h2>From general-purpose stock to material-specific tooling.</h2>
+              </div>
+              <div class="table-wrap">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Workpiece</th>
+                      <th>Recommended series</th>
+                      <th>Buyer value</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td>Steel & mold steel</td>
+                      <td>4F AlTiN carbide end mills</td>
+                      <td>Stable wear resistance and predictable inventory planning</td>
+                    </tr>
+                    <tr>
+                      <td>Stainless steel</td>
+                      <td>Variable helix cutters and coated drills</td>
+                      <td>Reduced chatter, better chip evacuation, longer tool life</td>
+                    </tr>
+                    <tr>
+                      <td>Aluminum</td>
+                      <td>2F polished flute DLC tools</td>
+                      <td>Clean finish, high chip removal, lower built-up edge risk</td>
+                    </tr>
+                    <tr>
+                      <td>Graphite & composites</td>
+                      <td>Diamond-coated micro cutters</td>
+                      <td>High edge retention for precision mold and electrode work</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="section" id="quality">
+          <div class="container">
+            <div class="section-head">
+              <h2>Procurement confidence before the shipment leaves.</h2>
+              <p>Show certificates, inspection equipment, packaging standards, and replacement policy early to reduce RFQ friction.</p>
+            </div>
+            <div class="process">
+              <article class="step">
+                <span class="step-number">01 / Material</span>
+                <h3>Carbide rod selection</h3>
+                <p>YG, K-series, ultrafine grain and imported blanks available based on target application.</p>
+              </article>
+              <article class="step">
+                <span class="step-number">02 / Grinding</span>
+                <h3>Geometry control</h3>
+                <p>CNC grinding for flute angle, edge prep, shank tolerance, and repeatable batch dimensions.</p>
+              </article>
+              <article class="step">
+                <span class="step-number">03 / Coating</span>
+                <h3>Application coating</h3>
+                <p>AlTiN, TiSiN, DLC, TiCN and uncoated options with traceable batch documentation.</p>
+              </article>
+              <article class="step">
+                <span class="step-number">04 / Export</span>
+                <h3>Private label ready</h3>
+                <p>Laser marking, tube labels, carton marks, catalogs, and distributor-friendly SKU mapping.</p>
+              </article>
+            </div>
+          </div>
+        </section>
+
+        <section class="section" id="rfq">
+          <div class="container">
+            <div class="rfq">
+              <div>
+                <span class="eyebrow">Send your drawing or size list</span>
+                <h2>Get a tooling quote within one business day.</h2>
+                <p>
+                  Include diameter, flute length, shank, coating, workpiece material, order quantity, and packaging
+                  requirements. The response can include FOB, EXW, or DDP terms.
+                </p>
+              </div>
+              <form aria-label="Request a quotation form">
+                <div class="form-grid">
+                  <label>Product type<input type="text" placeholder="End mill, drill bit, tap..." /></label>
+                  <label>Quantity<select><option>500-1,000 pcs</option><option>1,000-5,000 pcs</option><option>5,000+ pcs</option></select></label>
+                  <label>Email<input type="email" placeholder="buyer@company.com" /></label>
+                  <label>Destination<input type="text" placeholder="Germany, Mexico, USA..." /></label>
+                  <textarea placeholder="Tell us material, size range, coating, tolerance, packaging, or attach drawing by email."></textarea>
+                </div>
+                <button class="btn btn-primary" style="margin-top: 16px" type="button">Submit RFQ</button>
+              </form>
+            </div>
+          </div>
+        </section>
+      </main>
+
+      <footer class="footer">
+        <div class="container">Preview concept for an export-focused cutting tools independent website.</div>
+      </footer>
+    </div>
+  </body>
+</html>
