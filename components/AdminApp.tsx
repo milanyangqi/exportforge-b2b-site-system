@@ -37,7 +37,7 @@ const tabs: { key: Tab; label: string }[] = [
   { key: "themes", label: "主题" },
   { key: "ai", label: "AI内容" }
 ];
-const tabKeys = new Set<Tab>(tabs.map((item) => item.key));
+const tabKeys = new Set<Tab>([...tabs.map((item) => item.key), "account"]);
 
 const themeOptions: ThemeKey[] = ["industrial", "clean-export", "premium-brand", "equipment", "consumer-goods"];
 const roleOptions: RoleKey[] = ["super-admin", "admin", "editor", "sales", "viewer"];
@@ -75,6 +75,15 @@ const contactTypePresets: Record<ContactChannelType, { en: string; zh: string; v
   rfq: { en: "RFQ", zh: "询盘", value: "Request quote", href: "#rfq", color: "#243b78" },
   custom: { en: "Custom", zh: "自定义", value: "", href: "", color: "#0b5f7d" }
 };
+const frontendManagerRoles = new Set<RoleKey>(["super-admin", "admin"]);
+const systemNavigationOptions = [
+  { label: "首页", href: "/" },
+  { label: "产品列表", href: "/products" },
+  { label: "文章列表", href: "/articles" },
+  { label: "资料下载", href: "/files" },
+  { label: "联系询盘", href: "/contact" },
+  { label: "首页询盘区", href: "#rfq" }
+];
 const articleImportHeaders = [
   "slug",
   "category",
@@ -336,10 +345,9 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
     return [
       ["产品品类", state.products.length],
       ["已发布文章", state.articles.filter((article) => article.status === "published").length],
-      ["上传文件", state.uploadedFiles.length],
+      ["文件数量", state.uploadedFiles.length],
       ["询盘", state.leads.length],
-      ["联系渠道", state.contactChannels.filter((item) => item.enabled).length],
-      ["后台用户", state.users.length]
+      ["联系渠道", state.contactChannels.filter((item) => item.enabled).length]
     ];
   }, [state]);
 
@@ -352,7 +360,7 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
       body: JSON.stringify(nextState)
     });
     if (!response.ok) {
-      setStatus("保存失败：请检查登录状态");
+      setStatus(response.status === 403 ? "保存失败：当前账号没有权限修改这些设置" : "保存失败：请检查登录状态");
       return;
     }
     const payload = (await response.json()) as AdminState;
@@ -363,6 +371,24 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
   async function logout() {
     await fetch("/api/auth/logout", { method: "POST" });
     window.location.href = "/zh/admin/login";
+  }
+
+  function getCurrentUser(sourceState: AdminState | null = state) {
+    if (!sourceState) return undefined;
+    return sourceState.users.find((user) => user.id === currentUserId)
+      ?? sourceState.users.find((user) => user.email.toLowerCase() === email.toLowerCase())
+      ?? sourceState.users[0];
+  }
+
+  function canManageFrontendState(sourceState: AdminState | null = state) {
+    const user = getCurrentUser(sourceState);
+    return Boolean(user && frontendManagerRoles.has(user.role));
+  }
+
+  function guardFrontendSettingsAccess() {
+    if (canManageFrontendState()) return true;
+    setStatus("只有管理员可以修改前台设置");
+    return false;
   }
 
   function resetProductForm() {
@@ -476,7 +502,7 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
   }
 
   function updateNavigationItem(itemId: string, patch: Partial<SiteNavigationItem>) {
-    if (!state) return;
+    if (!state || !guardFrontendSettingsAccess()) return;
     setState({
       ...state,
       navigation: state.navigation.map((item) => (item.id === itemId ? { ...item, ...patch } : item))
@@ -484,7 +510,7 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
   }
 
   function addNavigationItem() {
-    if (!state) return;
+    if (!state || !guardFrontendSettingsAccess()) return;
     const nextOrder = Math.max(0, ...state.navigation.map((item) => item.order)) + 10;
     setState({
       ...state,
@@ -493,7 +519,7 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
   }
 
   function removeNavigationItem(itemId: string) {
-    if (!state) return;
+    if (!state || !guardFrontendSettingsAccess()) return;
     setState({
       ...state,
       navigation: state.navigation.filter((item) => item.id !== itemId)
@@ -501,7 +527,7 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
   }
 
   function toggleEnabledLocale(localeCode: LocaleCode, checked: boolean) {
-    if (!state) return;
+    if (!state || !guardFrontendSettingsAccess()) return;
     const nextLocales = checked
       ? Array.from(new Set([...state.enabledLocales, localeCode]))
       : state.enabledLocales.filter((item) => item !== localeCode);
@@ -919,6 +945,21 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
     updateActiveArticle({ body: createSingleLanguageTranslation(value) });
   }
 
+  function insertTextIntoArticleBody(insertText: string, cursorStartOffset = insertText.length, cursorEndOffset = cursorStartOffset) {
+    if (!activeArticle) return;
+    const editor = document.getElementById("article-body-editor") as HTMLTextAreaElement | null;
+    const currentBody = activeArticle.body?.zh ?? activeArticle.body?.en ?? "";
+    const start = editor?.selectionStart ?? currentBody.length;
+    const end = editor?.selectionEnd ?? currentBody.length;
+    const nextBody = `${currentBody.slice(0, start)}${insertText}${currentBody.slice(end)}`;
+
+    updateArticleBody(nextBody);
+    window.requestAnimationFrame(() => {
+      editor?.focus();
+      editor?.setSelectionRange(start + cursorStartOffset, start + cursorEndOffset);
+    });
+  }
+
   function insertArticleMarkup(before: string, after = "", fallback = "文字") {
     if (!activeArticle) return;
     const editor = document.getElementById("article-body-editor") as HTMLTextAreaElement | null;
@@ -954,9 +995,17 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
       };
 
       if (insertIntoBody) {
+        const editor = document.getElementById("article-body-editor") as HTMLTextAreaElement | null;
         const currentBody = activeArticle.body?.zh ?? activeArticle.body?.en ?? "";
-        const imageMarkdown = `\n\n![${activeArticle.title.zh || activeArticle.title.en || "文章图片"}](${reader.result})\n\n`;
-        patch.body = createSingleLanguageTranslation(`${currentBody}${imageMarkdown}`);
+        const start = editor?.selectionStart ?? currentBody.length;
+        const end = editor?.selectionEnd ?? currentBody.length;
+        const imageMarkdown = `\n\n![${sanitizeMarkdownLabel(file.name || activeArticle.title.zh || activeArticle.title.en || "文章图片")}](${reader.result})\n\n`;
+        patch.body = createSingleLanguageTranslation(`${currentBody.slice(0, start)}${imageMarkdown}${currentBody.slice(end)}`);
+        window.requestAnimationFrame(() => {
+          const cursor = start + imageMarkdown.length;
+          editor?.focus();
+          editor?.setSelectionRange(cursor, cursor);
+        });
       }
 
       updateActiveArticle(patch);
@@ -969,14 +1018,24 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
   function appendFileToActiveArticle(file: UploadedFile) {
     if (!activeArticle || !state) return state;
     const targetId = activeArticle.id ?? activeArticle.slug;
+    const editor = document.getElementById("article-body-editor") as HTMLTextAreaElement | null;
     const currentBody = activeArticle.body?.zh ?? activeArticle.body?.en ?? "";
     const fileLink = `\n\n[下载文件：${sanitizeMarkdownLabel(file.name)}](${file.url})\n\n`;
+    const start = editor?.selectionStart ?? currentBody.length;
+    const end = editor?.selectionEnd ?? currentBody.length;
+    const nextBody = `${currentBody.slice(0, start)}${fileLink}${currentBody.slice(end)}`;
+
+    window.requestAnimationFrame(() => {
+      const cursor = start + fileLink.length;
+      editor?.focus();
+      editor?.setSelectionRange(cursor, cursor);
+    });
 
     return {
       ...state,
       articles: state.articles.map((article) => (
         (article.id ?? article.slug) === targetId
-          ? { ...article, body: createSingleLanguageTranslation(`${currentBody}${fileLink}`) }
+          ? { ...article, body: createSingleLanguageTranslation(nextBody) }
           : article
       ))
     };
@@ -1075,6 +1134,11 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
   const currentUserName = currentUser?.name || "Admin";
   const currentEmail = currentUser?.email || email;
   const accountInitial = (currentUserName || email).slice(0, 1).toUpperCase();
+  const canManageFrontendSettings = canManageFrontendState();
+  const navigationProductOptions = [...state.products].sort((a, b) => (a.name.zh || a.name.en).localeCompare(b.name.zh || b.name.en));
+  const navigationArticleOptions = state.articles
+    .filter((article) => article.status !== "trash")
+    .sort((a, b) => (a.title.zh || a.title.en).localeCompare(b.title.zh || b.title.en));
 
   return (
     <main className="real-admin">
@@ -1086,7 +1150,7 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
             </button>
           ))}
           <div className="admin-sidebar-footer">
-            <Link className={tab === "account" ? "admin-account-trigger active" : "admin-account-trigger"} href={`/${locale}/admin?tab=account`}>
+            <Link className={tab === "account" ? "admin-account-trigger active" : "admin-account-trigger"} href={`/${locale}/admin?tab=account`} onClick={() => setTab("account")}>
               <span className="admin-avatar">
                 {currentUser?.avatarUrl ? <Image src={currentUser.avatarUrl} alt={currentUserName} width={36} height={36} unoptimized /> : accountInitial}
               </span>
@@ -1375,10 +1439,14 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
                       <div className="article-editor-shell">
                         <div className="article-editor-toolbar" aria-label="文章编辑器工具栏">
                           <button type="button" onClick={() => insertArticleMarkup("## ", "", "小标题")}>H2</button>
+                          <button type="button" onClick={() => insertArticleMarkup("### ", "", "小标题")}>H3</button>
                           <button type="button" onClick={() => insertArticleMarkup("**", "**", "加粗文字")}>B</button>
                           <button type="button" onClick={() => insertArticleMarkup("*", "*", "斜体文字")}>I</button>
+                          <button type="button" onClick={() => insertArticleMarkup("[", "](https://example.com)", "链接文字")}>链接</button>
                           <button type="button" onClick={() => insertArticleMarkup("> ", "", "引用内容")}>引用</button>
                           <button type="button" onClick={() => insertArticleMarkup("- ", "", "列表项")}>列表</button>
+                          <button type="button" onClick={() => insertArticleMarkup("1. ", "", "编号项")}>编号</button>
+                          <button type="button" onClick={() => insertTextIntoArticleBody("\n\n---\n\n")}>分隔线</button>
                           <label className="article-image-inline-upload">
                             插入图片
                             <input
@@ -1678,10 +1746,78 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
             <>
               <div className="admin-section-title">
                 <h1>前台设置</h1>
-                <button type="button" onClick={() => save()}>
+                <button type="button" disabled={!canManageFrontendSettings} onClick={() => {
+                  if (guardFrontendSettingsAccess()) void save();
+                }}>
                   保存前台设置
                 </button>
               </div>
+
+              <section className="settings-panel">
+                <div className="settings-panel-head with-action">
+                  <div>
+                    <h2>首页导航栏</h2>
+                    <span>可设置前台 Header 显示的导航名称、链接、排序和是否启用。</span>
+                  </div>
+                  <button type="button" disabled={!canManageFrontendSettings} onClick={addNavigationItem}>新增导航</button>
+                </div>
+                {!canManageFrontendSettings ? <p className="settings-lock-note">当前账号没有前台设置权限。请使用 Super Admin 或 Admin 账号修改导航和语言。</p> : null}
+                <div className="navigation-settings-list">
+                  {sortedNavigation.map((item) => (
+                    <article className="admin-edit-card compact nav-settings-card" key={item.id}>
+                      <label>中文名称
+                        <input disabled={!canManageFrontendSettings} value={item.label.zh ?? item.label.en} onChange={(event) => updateNavigationItem(item.id, { label: { ...item.label, zh: event.target.value } })} />
+                      </label>
+                      <label>英文名称
+                        <input disabled={!canManageFrontendSettings} value={item.label.en} onChange={(event) => updateNavigationItem(item.id, { label: { ...item.label, en: event.target.value } })} />
+                      </label>
+                      <label>选择链接
+                        <select
+                          disabled={!canManageFrontendSettings}
+                          value=""
+                          onChange={(event) => {
+                            if (event.target.value) updateNavigationItem(item.id, { href: event.target.value });
+                          }}
+                        >
+                          <option value="">手动输入或选择</option>
+                          <optgroup label="系统页面">
+                            {systemNavigationOptions.map((option) => (
+                              <option key={option.href} value={option.href}>{option.label} · {option.href}</option>
+                            ))}
+                          </optgroup>
+                          {navigationProductOptions.length > 0 ? (
+                            <optgroup label="产品分类">
+                              {navigationProductOptions.map((product) => (
+                                <option key={product.id ?? product.slug} value={`/products/${product.slug}`}>
+                                  {(product.name.zh || product.name.en)} · /products/{product.slug}
+                                </option>
+                              ))}
+                            </optgroup>
+                          ) : null}
+                          {navigationArticleOptions.length > 0 ? (
+                            <optgroup label="文章">
+                              {navigationArticleOptions.map((article) => (
+                                <option key={article.id ?? article.slug} value={`/articles/${article.slug}`}>
+                                  {(article.title.zh || article.title.en)} · /articles/{article.slug}
+                                </option>
+                              ))}
+                            </optgroup>
+                          ) : null}
+                        </select>
+                      </label>
+                      <label>链接
+                        <input disabled={!canManageFrontendSettings} value={item.href} onChange={(event) => updateNavigationItem(item.id, { href: event.target.value })} />
+                      </label>
+                      <label>排序
+                        <input disabled={!canManageFrontendSettings} type="number" value={item.order} onChange={(event) => updateNavigationItem(item.id, { order: Number(event.target.value) || 0 })} />
+                      </label>
+                      <label className="checkline"><input disabled={!canManageFrontendSettings} type="checkbox" checked={item.enabled} onChange={(event) => updateNavigationItem(item.id, { enabled: event.target.checked })} />显示</label>
+                      <label className="checkline"><input disabled={!canManageFrontendSettings} type="checkbox" checked={Boolean(item.openInNewTab)} onChange={(event) => updateNavigationItem(item.id, { openInNewTab: event.target.checked })} />新窗口</label>
+                      <button className="contact-delete-button" disabled={!canManageFrontendSettings} type="button" onClick={() => removeNavigationItem(item.id)}>删除</button>
+                    </article>
+                  ))}
+                </div>
+              </section>
 
               <section className="settings-panel">
                 <div className="settings-panel-head">
@@ -1695,6 +1831,7 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
                     return (
                       <label className="language-toggle" key={item.code}>
                         <input
+                          disabled={!canManageFrontendSettings}
                           type="checkbox"
                           checked={state.enabledLocales.includes(localeCode)}
                           onChange={(event) => toggleEnabledLocale(localeCode, event.target.checked)}
@@ -1706,37 +1843,6 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
                       </label>
                     );
                   })}
-                </div>
-              </section>
-
-              <section className="settings-panel">
-                <div className="settings-panel-head with-action">
-                  <div>
-                    <h2>首页导航栏</h2>
-                    <span>可设置前台 Header 显示的导航名称、链接、排序和是否启用。</span>
-                  </div>
-                  <button type="button" onClick={addNavigationItem}>新增导航</button>
-                </div>
-                <div className="navigation-settings-list">
-                  {sortedNavigation.map((item) => (
-                    <article className="admin-edit-card compact nav-settings-card" key={item.id}>
-                      <label>中文名称
-                        <input value={item.label.zh ?? item.label.en} onChange={(event) => updateNavigationItem(item.id, { label: { ...item.label, zh: event.target.value } })} />
-                      </label>
-                      <label>英文名称
-                        <input value={item.label.en} onChange={(event) => updateNavigationItem(item.id, { label: { ...item.label, en: event.target.value } })} />
-                      </label>
-                      <label>链接
-                        <input value={item.href} onChange={(event) => updateNavigationItem(item.id, { href: event.target.value })} />
-                      </label>
-                      <label>排序
-                        <input type="number" value={item.order} onChange={(event) => updateNavigationItem(item.id, { order: Number(event.target.value) || 0 })} />
-                      </label>
-                      <label className="checkline"><input type="checkbox" checked={item.enabled} onChange={(event) => updateNavigationItem(item.id, { enabled: event.target.checked })} />显示</label>
-                      <label className="checkline"><input type="checkbox" checked={Boolean(item.openInNewTab)} onChange={(event) => updateNavigationItem(item.id, { openInNewTab: event.target.checked })} />新窗口</label>
-                      <button className="contact-delete-button" type="button" onClick={() => removeNavigationItem(item.id)}>删除</button>
-                    </article>
-                  ))}
                 </div>
               </section>
             </>
