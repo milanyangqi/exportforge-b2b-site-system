@@ -1,4 +1,4 @@
-import type { Article, ContactChannel, LocaleCode, ProductCategory, SiteNavigationItem } from "@/types/site";
+import type { Article, ContactChannel, LocaleCode, ProductCategory, SiteNavigationItem, UploadedFile } from "@/types/site";
 
 export const defaultEnabledLocales: LocaleCode[] = [
   "en",
@@ -74,6 +74,30 @@ export const defaultNavigation: SiteNavigationItem[] = [
     order: 20
   },
   {
+    id: "nav-files",
+    label: {
+      en: "Files",
+      zh: "资料下载",
+      vi: "Tệp",
+      th: "ไฟล์",
+      id: "File",
+      ar: "الملفات",
+      es: "Archivos",
+      fr: "Fichiers",
+      de: "Dateien",
+      it: "File",
+      pt: "Arquivos",
+      hi: "फाइलें",
+      ru: "Файлы",
+      ja: "資料",
+      ko: "자료",
+      ur: "فائلیں"
+    },
+    href: "/files",
+    enabled: true,
+    order: 25
+  },
+  {
     id: "nav-contact",
     label: {
       en: "Contact",
@@ -98,6 +122,8 @@ export const defaultNavigation: SiteNavigationItem[] = [
     order: 30
   }
 ];
+
+export const uploadedFiles: UploadedFile[] = [];
 
 export const productCategories: ProductCategory[] = [
   {

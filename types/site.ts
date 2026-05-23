@@ -105,6 +105,7 @@ export type Article = {
   featuredOnHome?: boolean;
   publishedAt?: string;
   deletedAt?: string;
+  coverImageUrl?: string;
 };
 
 export type SiteNavigationItem = {
@@ -114,6 +115,17 @@ export type SiteNavigationItem = {
   enabled: boolean;
   order: number;
   openInNewTab?: boolean;
+};
+
+export type UploadedFile = {
+  id: string;
+  name: string;
+  mimeType: string;
+  size: number;
+  url: string;
+  createdAt: string;
+  description?: Translation;
+  enabled?: boolean;
 };
 
 export type LeadStatus = "new" | "contacted" | "quoted" | "closed" | "spam";
@@ -164,6 +176,7 @@ export type AdminState = {
   articles: Article[];
   leads: AdminLead[];
   contactChannels: ContactChannel[];
+  uploadedFiles: UploadedFile[];
   users: AdminUser[];
   activeTheme: ThemeKey;
   enabledLocales: LocaleCode[];

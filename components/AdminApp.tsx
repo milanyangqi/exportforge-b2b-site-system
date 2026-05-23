@@ -5,9 +5,9 @@ import Image from "next/image";
 import Link from "next/link";
 import { locales } from "@/config/locales";
 import { themes } from "@/config/themes";
-import type { AdminState, AdminUser, Article, ContactChannel, ContactChannelType, LeadStatus, LocaleCode, ProductCategory, RoleKey, SiteNavigationItem, ThemeKey } from "@/types/site";
+import type { AdminState, AdminUser, Article, ContactChannel, ContactChannelType, LeadStatus, LocaleCode, ProductCategory, RoleKey, SiteNavigationItem, ThemeKey, UploadedFile } from "@/types/site";
 
-type Tab = "overview" | "products" | "articles" | "leads" | "contacts" | "users" | "settings" | "themes" | "account" | "ai";
+type Tab = "overview" | "products" | "articles" | "files" | "leads" | "contacts" | "users" | "settings" | "themes" | "account" | "ai";
 type ProductFormState = {
   zh: string;
   en: string;
@@ -29,6 +29,7 @@ const tabs: { key: Tab; label: string }[] = [
   { key: "overview", label: "总览" },
   { key: "products", label: "产品分类" },
   { key: "articles", label: "文章发布" },
+  { key: "files", label: "文件上传" },
   { key: "leads", label: "询盘" },
   { key: "contacts", label: "联系方式" },
   { key: "users", label: "用户权限" },
@@ -271,6 +272,20 @@ function articleStatusLabel(article: Article) {
   return "草稿";
 }
 
+function createSingleLanguageTranslation(value: string) {
+  return { en: value, zh: value };
+}
+
+function formatFileSize(size: number) {
+  if (size < 1024) return `${size} B`;
+  if (size < 1024 * 1024) return `${Math.round(size / 1024)} KB`;
+  return `${(size / 1024 / 1024).toFixed(1)} MB`;
+}
+
+function sanitizeMarkdownLabel(value: string) {
+  return value.replace(/[[\]\n\r]/g, " ").trim() || "文件";
+}
+
 function normalizeInitialTab(value?: string): Tab {
   return value && tabKeys.has(value as Tab) ? value as Tab : "overview";
 }
@@ -321,6 +336,7 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
     return [
       ["产品品类", state.products.length],
       ["已发布文章", state.articles.filter((article) => article.status === "published").length],
+      ["上传文件", state.uploadedFiles.length],
       ["询盘", state.leads.length],
       ["联系渠道", state.contactChannels.filter((item) => item.enabled).length],
       ["后台用户", state.users.length]
@@ -891,6 +907,138 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
   const allVisibleArticlesSelected = visibleArticleIds.length > 0 && visibleArticleIds.every((id) => selectedArticleIds.includes(id));
   const sortedNavigation = [...state.navigation].sort((a, b) => a.order - b.order);
 
+  function updateArticleTitle(value: string) {
+    updateActiveArticle({ title: createSingleLanguageTranslation(value) });
+  }
+
+  function updateArticleExcerpt(value: string) {
+    updateActiveArticle({ excerpt: createSingleLanguageTranslation(value) });
+  }
+
+  function updateArticleBody(value: string) {
+    updateActiveArticle({ body: createSingleLanguageTranslation(value) });
+  }
+
+  function insertArticleMarkup(before: string, after = "", fallback = "文字") {
+    if (!activeArticle) return;
+    const editor = document.getElementById("article-body-editor") as HTMLTextAreaElement | null;
+    const currentBody = activeArticle.body?.zh ?? activeArticle.body?.en ?? "";
+    const start = editor?.selectionStart ?? currentBody.length;
+    const end = editor?.selectionEnd ?? currentBody.length;
+    const selected = currentBody.slice(start, end) || fallback;
+    const nextBody = `${currentBody.slice(0, start)}${before}${selected}${after}${currentBody.slice(end)}`;
+
+    updateArticleBody(nextBody);
+    window.requestAnimationFrame(() => {
+      editor?.focus();
+      editor?.setSelectionRange(start + before.length, start + before.length + selected.length);
+    });
+  }
+
+  function uploadArticleImage(file: File | null, insertIntoBody = false) {
+    if (!file || !activeArticle) return;
+    if (!file.type.startsWith("image/")) {
+      setStatus("请选择文章图片文件");
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      if (typeof reader.result !== "string") {
+        setStatus("文章图片读取失败");
+        return;
+      }
+
+      const patch: Partial<Article> = {
+        coverImageUrl: activeArticle.coverImageUrl || reader.result
+      };
+
+      if (insertIntoBody) {
+        const currentBody = activeArticle.body?.zh ?? activeArticle.body?.en ?? "";
+        const imageMarkdown = `\n\n![${activeArticle.title.zh || activeArticle.title.en || "文章图片"}](${reader.result})\n\n`;
+        patch.body = createSingleLanguageTranslation(`${currentBody}${imageMarkdown}`);
+      }
+
+      updateActiveArticle(patch);
+      setStatus(insertIntoBody ? "图片已插入正文，点击保存或发布后生效" : "特色图片已上传，点击保存或发布后生效");
+    };
+    reader.onerror = () => setStatus("文章图片读取失败");
+    reader.readAsDataURL(file);
+  }
+
+  function appendFileToActiveArticle(file: UploadedFile) {
+    if (!activeArticle || !state) return state;
+    const targetId = activeArticle.id ?? activeArticle.slug;
+    const currentBody = activeArticle.body?.zh ?? activeArticle.body?.en ?? "";
+    const fileLink = `\n\n[下载文件：${sanitizeMarkdownLabel(file.name)}](${file.url})\n\n`;
+
+    return {
+      ...state,
+      articles: state.articles.map((article) => (
+        (article.id ?? article.slug) === targetId
+          ? { ...article, body: createSingleLanguageTranslation(`${currentBody}${fileLink}`) }
+          : article
+      ))
+    };
+  }
+
+  function uploadSiteFile(file: File | null, insertIntoArticle = false) {
+    if (!state || !file) return;
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      if (typeof reader.result !== "string") {
+        setStatus("文件读取失败");
+        return;
+      }
+
+      const uploadedFile: UploadedFile = {
+        id: `file-${Date.now()}`,
+        name: file.name,
+        mimeType: file.type || "application/octet-stream",
+        size: file.size,
+        url: reader.result,
+        createdAt: new Date().toISOString(),
+        enabled: true
+      };
+      const nextWithFile = {
+        ...state,
+        uploadedFiles: [uploadedFile, ...state.uploadedFiles]
+      };
+      const nextState = insertIntoArticle && activeArticle
+        ? {
+          ...appendFileToActiveArticle(uploadedFile),
+          uploadedFiles: nextWithFile.uploadedFiles
+        } as AdminState
+        : nextWithFile;
+
+      setState(nextState);
+      setStatus(insertIntoArticle ? "文件已上传并插入正文，正在保存..." : "文件已上传，正在保存...");
+      void save(nextState);
+    };
+    reader.onerror = () => setStatus("文件读取失败");
+    reader.readAsDataURL(file);
+  }
+
+  function insertExistingFileIntoArticle(file: UploadedFile) {
+    const nextState = appendFileToActiveArticle(file);
+    if (!nextState) return;
+
+    setState(nextState);
+    setStatus("文件链接已插入正文，点击保存或发布后生效");
+  }
+
+  function removeUploadedFile(fileId: string) {
+    if (!state) return;
+    const nextState = {
+      ...state,
+      uploadedFiles: state.uploadedFiles.filter((file) => file.id !== fileId)
+    };
+
+    setState(nextState);
+    void save(nextState);
+  }
+
   function toggleVisibleArticles(checked: boolean) {
     setSelectedArticleIds((current) => {
       if (checked) return Array.from(new Set([...current, ...visibleArticleIds]));
@@ -1220,17 +1368,48 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
                       <input
                         className="wp-title-input"
                         placeholder="添加标题"
-                        value={activeArticle.title.zh ?? ""}
-                        onChange={(event) => updateActiveArticle({ title: { ...activeArticle.title, zh: event.target.value } })}
+                        value={activeArticle.title.zh ?? activeArticle.title.en ?? ""}
+                        onChange={(event) => updateArticleTitle(event.target.value)}
                       />
-                      <label>正文<textarea className="wp-body" value={activeArticle.body?.zh ?? ""} onChange={(event) => updateActiveArticle({ body: { ...(activeArticle.body ?? { en: "" }), zh: event.target.value } })} /></label>
-                      <label>摘要<textarea className="wp-excerpt" value={activeArticle.excerpt.zh ?? ""} onChange={(event) => updateActiveArticle({ excerpt: { ...activeArticle.excerpt, zh: event.target.value } })} /></label>
-                      <details className="wp-language-panel">
-                        <summary>英文内容</summary>
-                        <label>英文标题<input value={activeArticle.title.en} onChange={(event) => updateActiveArticle({ title: { ...activeArticle.title, en: event.target.value } })} /></label>
-                        <label>英文摘要<textarea value={activeArticle.excerpt.en} onChange={(event) => updateActiveArticle({ excerpt: { ...activeArticle.excerpt, en: event.target.value } })} /></label>
-                        <label>英文正文<textarea value={activeArticle.body?.en ?? ""} onChange={(event) => updateActiveArticle({ body: { ...(activeArticle.body ?? { en: "" }), en: event.target.value } })} /></label>
-                      </details>
+                      <label>摘要<textarea className="wp-excerpt" value={activeArticle.excerpt.zh ?? activeArticle.excerpt.en ?? ""} onChange={(event) => updateArticleExcerpt(event.target.value)} /></label>
+                      <div className="article-editor-shell">
+                        <div className="article-editor-toolbar" aria-label="文章编辑器工具栏">
+                          <button type="button" onClick={() => insertArticleMarkup("## ", "", "小标题")}>H2</button>
+                          <button type="button" onClick={() => insertArticleMarkup("**", "**", "加粗文字")}>B</button>
+                          <button type="button" onClick={() => insertArticleMarkup("*", "*", "斜体文字")}>I</button>
+                          <button type="button" onClick={() => insertArticleMarkup("> ", "", "引用内容")}>引用</button>
+                          <button type="button" onClick={() => insertArticleMarkup("- ", "", "列表项")}>列表</button>
+                          <label className="article-image-inline-upload">
+                            插入图片
+                            <input
+                              type="file"
+                              accept="image/*"
+                              onChange={(event) => {
+                                uploadArticleImage(event.currentTarget.files?.[0] ?? null, true);
+                                event.currentTarget.value = "";
+                              }}
+                            />
+                          </label>
+                          <label className="article-image-inline-upload">
+                            插入文件
+                            <input
+                              type="file"
+                              onChange={(event) => {
+                                uploadSiteFile(event.currentTarget.files?.[0] ?? null, true);
+                                event.currentTarget.value = "";
+                              }}
+                            />
+                          </label>
+                        </div>
+                        <label>正文
+                          <textarea
+                            id="article-body-editor"
+                            className="wp-body"
+                            value={activeArticle.body?.zh ?? activeArticle.body?.en ?? ""}
+                            onChange={(event) => updateArticleBody(event.target.value)}
+                          />
+                        </label>
+                      </div>
                     </article>
 
                     <aside className="wp-editor-side">
@@ -1258,6 +1437,45 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
                       </section>
 
                       <section className="wp-side-box">
+                        <h2>文章图片</h2>
+                        <label className="article-cover-upload">
+                          上传特色图片
+                          <input
+                            type="file"
+                            accept="image/*"
+                            onChange={(event) => {
+                              uploadArticleImage(event.currentTarget.files?.[0] ?? null);
+                              event.currentTarget.value = "";
+                            }}
+                          />
+                        </label>
+                        {activeArticle.coverImageUrl ? (
+                          <div className="article-cover-preview">
+                            <Image src={activeArticle.coverImageUrl} alt={activeArticle.title.zh || activeArticle.title.en} width={240} height={140} unoptimized />
+                            <button type="button" onClick={() => updateActiveArticle({ coverImageUrl: undefined })}>移除图片</button>
+                          </div>
+                        ) : (
+                          <span>未上传图片。可作为文章封面，也可在正文工具栏插入图片。</span>
+                        )}
+                      </section>
+
+                      <section className="wp-side-box">
+                        <h2>文件库</h2>
+                        {state.uploadedFiles.length > 0 ? (
+                          <div className="article-file-picker">
+                            {state.uploadedFiles.slice(0, 6).map((file) => (
+                              <button type="button" key={file.id} onClick={() => insertExistingFileIntoArticle(file)}>
+                                {file.name}
+                                <small>{formatFileSize(file.size)}</small>
+                              </button>
+                            ))}
+                          </div>
+                        ) : (
+                          <span>暂无文件。可在正文工具栏上传并插入文件。</span>
+                        )}
+                      </section>
+
+                      <section className="wp-side-box">
                         <h2>分类目录</h2>
                         <label>分类
                           <select value={activeArticle.category} onChange={(event) => updateActiveArticle({ category: event.target.value as Article["category"] })}>
@@ -1276,6 +1494,44 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
                   <div className="wp-editor empty">还没有文章，点击“写文章”开始。</div>
                 )
               ) : null}
+            </>
+          ) : null}
+
+          {tab === "files" ? (
+            <>
+              <div className="admin-section-title">
+                <h1>文件上传</h1>
+                <label className="admin-upload-button">
+                  上传文件
+                  <input
+                    type="file"
+                    onChange={(event) => {
+                      uploadSiteFile(event.currentTarget.files?.[0] ?? null);
+                      event.currentTarget.value = "";
+                    }}
+                  />
+                </label>
+              </div>
+              <section className="file-upload-panel">
+                <strong>资料下载文件库</strong>
+                <span>支持 PDF、Word、Excel、图片、压缩包等文件。上传后会进入前台“资料下载”页面，也可以在文章编辑器中插入文件链接。</span>
+              </section>
+              <div className="file-library-grid">
+                {state.uploadedFiles.map((file) => (
+                  <article className="file-library-card" key={file.id}>
+                    <div>
+                      <strong>{file.name}</strong>
+                      <span>{file.mimeType || "application/octet-stream"} · {formatFileSize(file.size)}</span>
+                      <small>{new Date(file.createdAt).toLocaleString()}</small>
+                    </div>
+                    <div className="file-card-actions">
+                      <a href={file.url} download={file.name}>下载</a>
+                      <button type="button" onClick={() => removeUploadedFile(file.id)}>删除</button>
+                    </div>
+                  </article>
+                ))}
+                {state.uploadedFiles.length === 0 ? <div className="wp-empty-row">还没有上传文件。</div> : null}
+              </div>
             </>
           ) : null}
 

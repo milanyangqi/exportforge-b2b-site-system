@@ -1,4 +1,4 @@
-import { articles, contactChannels, defaultEnabledLocales, defaultNavigation, productCategories, siteSettings } from "@/data/site";
+import { articles, contactChannels, defaultEnabledLocales, defaultNavigation, productCategories, siteSettings, uploadedFiles } from "@/data/site";
 import { isLocale } from "@/config/locales";
 import type { AdminState, LocaleCode, SiteNavigationItem } from "@/types/site";
 
@@ -21,6 +21,7 @@ export function createDefaultAdminState(): AdminState {
     articles,
     leads: [],
     contactChannels,
+    uploadedFiles,
     activeTheme: "industrial",
     enabledLocales: defaultEnabledLocales,
     navigation: defaultNavigation,
@@ -134,6 +135,7 @@ function normalizeAdminState(parsed: AdminState): AdminState {
     })),
     leads: parsed.leads ?? [],
     contactChannels: mergeContactChannels(parsed.contactChannels),
+    uploadedFiles: parsed.uploadedFiles ?? uploadedFiles,
     users: parsed.users ?? createDefaultAdminState().users,
     activeTheme: parsed.activeTheme ?? "industrial",
     enabledLocales: normalizeEnabledLocales(parsed.enabledLocales),
