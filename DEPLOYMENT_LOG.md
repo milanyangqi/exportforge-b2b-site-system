@@ -8,7 +8,7 @@
 
 ## 2026-05-23 Frontend Admin Refinement
 
-Status: pending deployment
+Status: deployed
 
 Changes:
 - 前台设置页调整为先显示首页导航栏，再显示前台可显示语言。
@@ -20,3 +20,13 @@ Changes:
 
 Target:
 - https://exportforge-b2b-site-system.437991663.workers.dev
+
+Verification:
+- `npm run typecheck`
+- `npm run lint`
+- `PATH=/usr/local/bin:$PATH npm run cf:build`
+- `PATH=/usr/local/bin:$PATH npm run cf:deploy`
+- Live checks: `/zh` 200, `/zh/admin/login` 200, admin login API OK, admin state API OK.
+
+Cloudflare:
+- Version ID: `ac4e8041-ad34-49bb-8169-f032e5a946d7`
