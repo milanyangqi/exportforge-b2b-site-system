@@ -1,5 +1,6 @@
-import { articles, contactChannels, productCategories, siteSettings } from "@/data/site";
-import type { AdminState } from "@/types/site";
+import { articles, contactChannels, defaultEnabledLocales, defaultNavigation, productCategories, siteSettings } from "@/data/site";
+import { isLocale } from "@/config/locales";
+import type { AdminState, LocaleCode, SiteNavigationItem } from "@/types/site";
 
 type KvNamespace = {
   get(key: string): Promise<string | null>;
@@ -21,6 +22,8 @@ export function createDefaultAdminState(): AdminState {
     leads: [],
     contactChannels,
     activeTheme: "industrial",
+    enabledLocales: defaultEnabledLocales,
+    navigation: defaultNavigation,
     users: [
       {
         id: "u-super-admin",
@@ -59,6 +62,29 @@ function mergeContactChannels(existingChannels = contactChannels) {
   const missingDefaultChannels = contactChannels.filter((channel) => !existingIds.has(channel.id));
 
   return [...existingChannels, ...missingDefaultChannels];
+}
+
+function normalizeEnabledLocales(locales?: LocaleCode[]) {
+  const nextLocales = (locales ?? defaultEnabledLocales).filter((locale) => isLocale(locale));
+  const uniqueLocales = Array.from(new Set(nextLocales));
+
+  return uniqueLocales.length > 0 ? uniqueLocales : defaultEnabledLocales;
+}
+
+function normalizeNavigation(existingNavigation?: SiteNavigationItem[]) {
+  const incomingNavigation = Array.isArray(existingNavigation) ? existingNavigation : defaultNavigation;
+  const normalizedNavigation = incomingNavigation.map((item, index) => ({
+    id: item.id || `nav-custom-${index}`,
+    label: item.label?.en ? item.label : { en: item.href || "Navigation", zh: item.href || "导航" },
+    href: item.href || "/",
+    enabled: item.enabled ?? true,
+    order: Number.isFinite(item.order) ? item.order : (index + 1) * 10,
+    openInNewTab: item.openInNewTab ?? false
+  }));
+  const existingIds = new Set(normalizedNavigation.map((item) => item.id));
+  const missingDefaults = defaultNavigation.filter((item) => !existingIds.has(item.id));
+
+  return [...normalizedNavigation, ...missingDefaults].sort((a, b) => a.order - b.order);
 }
 
 async function getCloudflareKv() {
@@ -110,6 +136,8 @@ function normalizeAdminState(parsed: AdminState): AdminState {
     contactChannels: mergeContactChannels(parsed.contactChannels),
     users: parsed.users ?? createDefaultAdminState().users,
     activeTheme: parsed.activeTheme ?? "industrial",
+    enabledLocales: normalizeEnabledLocales(parsed.enabledLocales),
+    navigation: normalizeNavigation(parsed.navigation),
     aiSettings: parsed.aiSettings ?? createDefaultAdminState().aiSettings,
     updatedAt: parsed.updatedAt ?? new Date().toISOString()
   };

@@ -29,13 +29,14 @@ npm run dev
 - `INITIAL_ADMIN_PASSWORD`
 - `AUTH_SECRET`
 
-后台当前已具备真实登录、HTTP-only session、受保护 API、产品分类管理、文章发布、询盘管理、联系渠道配置、用户角色、主题切换、AI 内容设置。数据在本地开发时保存到 `.data/admin-state.json`，部署到 Cloudflare Workers/OpenNext 后自动使用 `EXPORTFORGE_KV` 持久化。
+后台当前已具备真实登录、HTTP-only session、受保护 API、产品分类管理、文章发布、回收站、询盘管理、联系渠道配置、用户角色、前台导航与可显示语言设置、主题切换、AI 内容设置。数据在本地开发时保存到 `.data/admin-state.json`，部署到 Cloudflare Workers/OpenNext 后自动使用 `EXPORTFORGE_KV` 持久化。
 
 运营联动：
 
 - 后台产品分类保存后，同步到首页、产品列表和产品详情页。
-- 后台文章设置为 `已发布` 后进入文章列表。
+- 后台文章设置为 `已发布` 后进入文章列表，移至回收站后不再显示到前台。
 - 后台文章同时勾选 `同步首页` 后进入首页文章区。
+- 后台前台设置可控制 Header 导航项和语言选择器显示哪些语言。
 - 后台主题切换保存后，前台会读取当前主题颜色。
 - 后台 AI 内容中心可生成文章草稿，人工审核后再发布。
 
@@ -57,6 +58,7 @@ npm run cf:deploy
 
 线上后台数据使用 `wrangler.jsonc` 中的 `EXPORTFORGE_KV` 绑定。生产环境请通过 Wrangler Secret 设置：
 
+- `INITIAL_ADMIN_EMAIL`
 - `AUTH_SECRET`
 - `INITIAL_ADMIN_PASSWORD`
 
@@ -64,8 +66,8 @@ npm run cf:deploy
 
 ## Included
 
-- 多语言路由：`en`、`zh`、`th`、`vi`、`id`、`ms`、`fil`、`my`、`km`、`lo`、`ar`
-- 阿拉伯语 RTL 布局支持
+- 多语言路由：`en`、`zh`、`th`、`vi`、`id`、`ms`、`fil`、`my`、`km`、`lo`、`ar`、`es`、`fr`、`de`、`it`、`pt`、`hi`、`ru`、`ja`、`ko`、`ur`
+- 阿拉伯语、乌尔都语 RTL 布局支持
 - 后台演示页：`/en/admin`
 - 询盘 API：`POST /api/leads`
 - 主题配置、RBAC 权限配置、AI 生成草稿配置均已类型化

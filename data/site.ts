@@ -1,4 +1,103 @@
-import type { Article, ContactChannel, ProductCategory } from "@/types/site";
+import type { Article, ContactChannel, LocaleCode, ProductCategory, SiteNavigationItem } from "@/types/site";
+
+export const defaultEnabledLocales: LocaleCode[] = [
+  "en",
+  "zh",
+  "th",
+  "vi",
+  "id",
+  "ms",
+  "fil",
+  "my",
+  "km",
+  "lo",
+  "ar",
+  "es",
+  "fr",
+  "de",
+  "it",
+  "pt",
+  "hi",
+  "ru",
+  "ja",
+  "ko",
+  "ur"
+];
+
+export const defaultNavigation: SiteNavigationItem[] = [
+  {
+    id: "nav-products",
+    label: {
+      en: "Products",
+      zh: "产品",
+      vi: "Sản phẩm",
+      th: "สินค้า",
+      id: "Produk",
+      ar: "المنتجات",
+      es: "Productos",
+      fr: "Produits",
+      de: "Produkte",
+      it: "Prodotti",
+      pt: "Produtos",
+      hi: "उत्पाद",
+      ru: "Продукты",
+      ja: "製品",
+      ko: "제품",
+      ur: "مصنوعات"
+    },
+    href: "/products",
+    enabled: true,
+    order: 10
+  },
+  {
+    id: "nav-articles",
+    label: {
+      en: "Articles",
+      zh: "文章",
+      vi: "Bài viết",
+      th: "บทความ",
+      id: "Artikel",
+      ar: "المقالات",
+      es: "Artículos",
+      fr: "Articles",
+      de: "Artikel",
+      it: "Articoli",
+      pt: "Artigos",
+      hi: "लेख",
+      ru: "Статьи",
+      ja: "記事",
+      ko: "글",
+      ur: "مضامین"
+    },
+    href: "/articles",
+    enabled: true,
+    order: 20
+  },
+  {
+    id: "nav-contact",
+    label: {
+      en: "Contact",
+      zh: "联系",
+      vi: "Liên hệ",
+      th: "ติดต่อ",
+      id: "Kontak",
+      ar: "تواصل",
+      es: "Contacto",
+      fr: "Contact",
+      de: "Kontakt",
+      it: "Contatto",
+      pt: "Contato",
+      hi: "संपर्क",
+      ru: "Контакты",
+      ja: "お問い合わせ",
+      ko: "문의",
+      ur: "رابطہ"
+    },
+    href: "/contact",
+    enabled: true,
+    order: 30
+  }
+];
 
 export const productCategories: ProductCategory[] = [
   {

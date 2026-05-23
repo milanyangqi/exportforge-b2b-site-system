@@ -11,7 +11,17 @@ export type LocaleCode =
   | "my"
   | "km"
   | "lo"
-  | "ar";
+  | "ar"
+  | "es"
+  | "fr"
+  | "de"
+  | "it"
+  | "pt"
+  | "hi"
+  | "ru"
+  | "ja"
+  | "ko"
+  | "ur";
 
 export type Translation<T = string> = Partial<Record<LocaleCode, T>> & { en: T };
 
@@ -91,9 +101,19 @@ export type Article = {
   excerpt: Translation;
   body?: Translation;
   category: "buying-guide" | "application" | "quality" | "seo";
-  status?: "draft" | "published";
+  status?: "draft" | "published" | "trash";
   featuredOnHome?: boolean;
   publishedAt?: string;
+  deletedAt?: string;
+};
+
+export type SiteNavigationItem = {
+  id: string;
+  label: Translation;
+  href: string;
+  enabled: boolean;
+  order: number;
+  openInNewTab?: boolean;
 };
 
 export type LeadStatus = "new" | "contacted" | "quoted" | "closed" | "spam";
@@ -146,6 +166,8 @@ export type AdminState = {
   contactChannels: ContactChannel[];
   users: AdminUser[];
   activeTheme: ThemeKey;
+  enabledLocales: LocaleCode[];
+  navigation: SiteNavigationItem[];
   aiSettings: AiSettings;
   updatedAt: string;
 };

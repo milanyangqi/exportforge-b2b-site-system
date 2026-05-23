@@ -1587,14 +1587,38 @@ html[data-theme="consumer-goods"] .dark-band {
   gap: 10px;
 }
 
+.article-bulk-toolbar {
+  grid-template-columns: 180px 88px 1fr;
+  align-items: center;
+}
+
 .wp-list-toolbar input,
-.wp-list-toolbar select {
+.wp-list-toolbar select,
+.wp-list-toolbar button {
   min-height: 42px;
   border: 1px solid var(--line);
   border-radius: 6px;
   padding: 0 12px;
   color: var(--ink);
   background: #fff;
+}
+
+.wp-list-toolbar button {
+  color: var(--primary);
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.wp-list-toolbar button:disabled {
+  color: var(--muted);
+  cursor: not-allowed;
+  opacity: 0.58;
+}
+
+.article-bulk-toolbar span {
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 800;
 }
 
 .wp-article-table {
@@ -1914,6 +1938,94 @@ html[data-theme="consumer-goods"] .dark-band {
   grid-column: span 2;
 }
 
+.settings-panel {
+  display: grid;
+  gap: 16px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  margin-bottom: 16px;
+  padding: 16px;
+  background: #fbfdfe;
+}
+
+.settings-panel-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.settings-panel-head h2 {
+  margin: 0;
+  font-size: 22px;
+}
+
+.settings-panel-head span {
+  display: block;
+  margin-top: 4px;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 800;
+  line-height: 1.5;
+}
+
+.settings-panel-head.with-action button {
+  min-height: 42px;
+  border: 1px solid var(--primary);
+  border-radius: 6px;
+  padding: 0 14px;
+  color: #fff;
+  background: var(--primary);
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.language-toggle-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.language-toggle {
+  display: flex;
+  min-height: 70px;
+  align-items: center;
+  gap: 10px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 10px;
+  background: #fff;
+  cursor: pointer;
+}
+
+.language-toggle span,
+.language-toggle strong,
+.language-toggle small {
+  display: block;
+}
+
+.language-toggle strong {
+  color: var(--ink);
+  font-size: 14px;
+}
+
+.language-toggle small {
+  margin-top: 2px;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1.4;
+}
+
+.navigation-settings-list {
+  display: grid;
+  gap: 12px;
+}
+
+.nav-settings-card {
+  grid-template-columns: 1fr 1fr 1.4fr 90px 96px 104px 84px;
+}
+
 .contact-card .checkline,
 .contact-delete-button {
   min-height: 44px;
@@ -2156,6 +2268,7 @@ html[data-theme="consumer-goods"] .dark-band {
   .admin-edit-card,
   .admin-edit-card.compact,
   .admin-edit-card.contact-card,
+  .nav-settings-card,
   .admin-category-row,
   .contact-qr-manager,
   .theme-picker-detailed,
@@ -2184,6 +2297,14 @@ html[data-theme="consumer-goods"] .dark-band {
   .article-import-actions button,
   .article-import-upload {
     flex: 1 1 160px;
+  }
+
+  .settings-panel-head {
+    display: grid;
+  }
+
+  .language-toggle-grid {
+    grid-template-columns: 1fr;
   }
 
   .contact-create-form,

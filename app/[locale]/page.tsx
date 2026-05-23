@@ -15,6 +15,7 @@ export default async function LocaleHome({ params }: { params: Promise<{ locale:
   const state = await readAdminState();
   const activeTheme = themes[state.activeTheme] ?? themes.industrial;
   const homeArticles = state.articles.filter((article) => article.status === "published" && article.featuredOnHome);
+  const visibleLocales = locales.filter((item) => state.enabledLocales.includes(item.code));
 
   return (
     <main>
@@ -25,7 +26,7 @@ export default async function LocaleHome({ params }: { params: Promise<{ locale:
           <p>{t(ui.heroBody, locale)}</p>
           <div className="hero-actions">
             <a className="button primary" href="#rfq">{t(ui.quote, locale)}</a>
-            <a className="button secondary" href={`/${locale}/admin`}>View Admin Foundation</a>
+            <a className="button secondary" href={`/${locale}/products`}>{t(ui.navProducts, locale)}</a>
           </div>
           <div className="metrics">
             <div><strong>11</strong><span>Languages incl. SEA + Arabic</span></div>
@@ -69,7 +70,7 @@ export default async function LocaleHome({ params }: { params: Promise<{ locale:
             URLs use language prefixes, content fields support localized values, and Arabic switches the page direction to RTL.
           </p>
           <div className="language-strip">
-            {locales.map((item) => (
+            {visibleLocales.map((item) => (
               <span key={item.code}>{item.nativeName}</span>
             ))}
           </div>

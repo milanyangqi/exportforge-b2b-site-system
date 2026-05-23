@@ -38,7 +38,7 @@ export default async function LocaleLayout({
       "--radius": activeTheme.radius
     } as React.CSSProperties}>
       <body>
-        <Header locale={locale} />
+        <Header locale={locale} navigation={state.navigation} enabledLocales={state.enabledLocales} />
         {children}
         <ContactDock locale={locale} channels={state.contactChannels} />
       </body>

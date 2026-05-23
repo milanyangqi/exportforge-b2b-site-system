@@ -3,10 +3,11 @@
 import { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import { locales } from "@/config/locales";
 import { themes } from "@/config/themes";
-import type { AdminState, AdminUser, Article, ContactChannel, ContactChannelType, LeadStatus, LocaleCode, ProductCategory, RoleKey, ThemeKey } from "@/types/site";
+import type { AdminState, AdminUser, Article, ContactChannel, ContactChannelType, LeadStatus, LocaleCode, ProductCategory, RoleKey, SiteNavigationItem, ThemeKey } from "@/types/site";
 
-type Tab = "overview" | "products" | "articles" | "leads" | "contacts" | "users" | "themes" | "account" | "ai";
+type Tab = "overview" | "products" | "articles" | "leads" | "contacts" | "users" | "settings" | "themes" | "account" | "ai";
 type ProductFormState = {
   zh: string;
   en: string;
@@ -31,6 +32,7 @@ const tabs: { key: Tab; label: string }[] = [
   { key: "leads", label: "询盘" },
   { key: "contacts", label: "联系方式" },
   { key: "users", label: "用户权限" },
+  { key: "settings", label: "前台设置" },
   { key: "themes", label: "主题" },
   { key: "account", label: "账号设置" },
   { key: "ai", label: "AI内容" }
@@ -252,6 +254,24 @@ function emptyArticle(): Article {
   };
 }
 
+function emptyNavigationItem(order: number): SiteNavigationItem {
+  const id = `nav-custom-${Date.now()}`;
+
+  return {
+    id,
+    label: { en: "New Link", zh: "新导航" },
+    href: "/",
+    enabled: true,
+    order
+  };
+}
+
+function articleStatusLabel(article: Article) {
+  if (article.status === "trash") return "回收站";
+  if (article.status === "published") return "已发布";
+  return "草稿";
+}
+
 function normalizeInitialTab(value?: string): Tab {
   return value && tabKeys.has(value as Tab) ? value as Tab : "overview";
 }
@@ -263,8 +283,10 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
   const [activeArticleId, setActiveArticleId] = useState<string | null>(null);
   const [articleMode, setArticleMode] = useState<"list" | "editor">("list");
   const [articleQuery, setArticleQuery] = useState("");
-  const [articleStatusFilter, setArticleStatusFilter] = useState<"all" | "published" | "draft">("all");
+  const [articleStatusFilter, setArticleStatusFilter] = useState<"all" | "published" | "draft" | "trash">("all");
   const [articleCategoryFilter, setArticleCategoryFilter] = useState<Article["category"] | "all">("all");
+  const [selectedArticleIds, setSelectedArticleIds] = useState<string[]>([]);
+  const [articleBulkAction, setArticleBulkAction] = useState("");
   const [productQuery, setProductQuery] = useState("");
   const [editingProductId, setEditingProductId] = useState<string | null>(null);
   const [productForm, setProductForm] = useState<ProductFormState>(emptyProductForm);
@@ -438,6 +460,45 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
     void save(nextState);
   }
 
+  function updateNavigationItem(itemId: string, patch: Partial<SiteNavigationItem>) {
+    if (!state) return;
+    setState({
+      ...state,
+      navigation: state.navigation.map((item) => (item.id === itemId ? { ...item, ...patch } : item))
+    });
+  }
+
+  function addNavigationItem() {
+    if (!state) return;
+    const nextOrder = Math.max(0, ...state.navigation.map((item) => item.order)) + 10;
+    setState({
+      ...state,
+      navigation: [...state.navigation, emptyNavigationItem(nextOrder)]
+    });
+  }
+
+  function removeNavigationItem(itemId: string) {
+    if (!state) return;
+    setState({
+      ...state,
+      navigation: state.navigation.filter((item) => item.id !== itemId)
+    });
+  }
+
+  function toggleEnabledLocale(localeCode: LocaleCode, checked: boolean) {
+    if (!state) return;
+    const nextLocales = checked
+      ? Array.from(new Set([...state.enabledLocales, localeCode]))
+      : state.enabledLocales.filter((item) => item !== localeCode);
+
+    if (nextLocales.length === 0) {
+      setStatus("至少保留一个前台语言");
+      return;
+    }
+
+    setState({ ...state, enabledLocales: nextLocales });
+  }
+
   function uploadContactQr(index: number, file: File | null) {
     if (!file) return;
     if (!file.type.startsWith("image/")) {
@@ -552,6 +613,57 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
       articles: state.articles.map((article, current) => (current === index ? { ...article, ...patch } : article))
     };
     setState(nextState);
+    void save(nextState);
+  }
+
+  function moveActiveArticleToTrash() {
+    if (!state || !activeArticle) return;
+    const targetId = activeArticle.id ?? activeArticle.slug;
+    const nextState = {
+      ...state,
+      articles: state.articles.map((article) => (
+        (article.id ?? article.slug) === targetId
+          ? { ...article, status: "trash" as const, featuredOnHome: false, deletedAt: new Date().toISOString() }
+          : article
+      ))
+    };
+
+    setState(nextState);
+    setActiveArticleId(null);
+    setArticleMode("list");
+    setArticleStatusFilter("trash");
+    void save(nextState);
+  }
+
+  function restoreActiveArticle() {
+    if (!state || !activeArticle) return;
+    const targetId = activeArticle.id ?? activeArticle.slug;
+    const nextState = {
+      ...state,
+      articles: state.articles.map((article) => (
+        (article.id ?? article.slug) === targetId
+          ? { ...article, status: "draft" as const, deletedAt: undefined }
+          : article
+      ))
+    };
+
+    setState(nextState);
+    setArticleStatusFilter("draft");
+    void save(nextState);
+  }
+
+  function deleteActiveArticlePermanently() {
+    if (!state || !activeArticle) return;
+    const targetId = activeArticle.id ?? activeArticle.slug;
+    const nextState = {
+      ...state,
+      articles: state.articles.filter((article) => (article.id ?? article.slug) !== targetId)
+    };
+
+    setState(nextState);
+    setActiveArticleId(null);
+    setArticleMode("list");
+    setArticleStatusFilter("trash");
     void save(nextState);
   }
 
@@ -708,8 +820,10 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
     );
   }
 
-  const activeArticle = state.articles.find((article) => article.id === activeArticleId) ?? state.articles[0];
-  const activeArticleIndex = activeArticle ? state.articles.findIndex((article) => article.id === activeArticle.id) : -1;
+  const activeArticle = state.articles.find((article) => (article.id ?? article.slug) === activeArticleId)
+    ?? state.articles.find((article) => article.status !== "trash")
+    ?? state.articles[0];
+  const activeArticleIndex = activeArticle ? state.articles.findIndex((article) => (article.id ?? article.slug) === (activeArticle.id ?? activeArticle.slug)) : -1;
   const filteredProducts = state.products.filter((product) => {
     const query = productQuery.trim().toLowerCase();
     if (!query) return true;
@@ -752,12 +866,16 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
     void save(nextState);
   }
   const articleCounts = {
-    all: state.articles.length,
+    all: state.articles.filter((article) => article.status !== "trash").length,
     published: state.articles.filter((article) => article.status === "published").length,
-    draft: state.articles.filter((article) => article.status !== "published").length
+    draft: state.articles.filter((article) => article.status !== "published" && article.status !== "trash").length,
+    trash: state.articles.filter((article) => article.status === "trash").length
   };
   const filteredArticles = state.articles.filter((article) => {
-    const statusMatches = articleStatusFilter === "all" || (article.status ?? "published") === articleStatusFilter;
+    const articleStatus = article.status ?? "published";
+    const statusMatches = articleStatusFilter === "all"
+      ? articleStatus !== "trash"
+      : articleStatus === articleStatusFilter;
     const categoryMatches = articleCategoryFilter === "all" || article.category === articleCategoryFilter;
     const query = articleQuery.trim().toLowerCase();
     const queryMatches = !query || [
@@ -770,6 +888,42 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
 
     return statusMatches && categoryMatches && queryMatches;
   });
+  const visibleArticleIds = filteredArticles.map((article) => article.id ?? article.slug);
+  const allVisibleArticlesSelected = visibleArticleIds.length > 0 && visibleArticleIds.every((id) => selectedArticleIds.includes(id));
+  const sortedNavigation = [...state.navigation].sort((a, b) => a.order - b.order);
+
+  function toggleVisibleArticles(checked: boolean) {
+    setSelectedArticleIds((current) => {
+      if (checked) return Array.from(new Set([...current, ...visibleArticleIds]));
+      return current.filter((id) => !visibleArticleIds.includes(id));
+    });
+  }
+
+  function toggleArticleSelection(articleId: string, checked: boolean) {
+    setSelectedArticleIds((current) => {
+      if (checked) return Array.from(new Set([...current, articleId]));
+      return current.filter((id) => id !== articleId);
+    });
+  }
+
+  function applyArticleBulkAction() {
+    if (!state || !articleBulkAction || selectedArticleIds.length === 0) return;
+    const selected = new Set(selectedArticleIds);
+    const now = new Date().toISOString();
+    const nextArticles = articleBulkAction === "delete"
+      ? state.articles.filter((article) => !selected.has(article.id ?? article.slug))
+      : state.articles.map((article) => {
+        if (!selected.has(article.id ?? article.slug)) return article;
+        if (articleBulkAction === "restore") return { ...article, status: "draft" as const, deletedAt: undefined };
+        return { ...article, status: "trash" as const, featuredOnHome: false, deletedAt: now };
+      });
+    const nextState = { ...state, articles: nextArticles };
+
+    setState(nextState);
+    setSelectedArticleIds([]);
+    setArticleBulkAction("");
+    void save(nextState);
+  }
   const currentUser = state.users.find((user) => user.id === currentUserId) ?? state.users.find((user) => user.email.toLowerCase() === email.toLowerCase()) ?? state.users[0];
   const currentUserName = currentUser?.name || "Admin";
   const currentEmail = currentUser?.email || email;
@@ -832,9 +986,6 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
                     />
                     <small>名称是它在网站上的显示方式。</small>
                   </label>
-                  <label>英文名称
-                    <input value={productForm.en} onChange={(event) => setProductForm({ ...productForm, en: event.target.value })} />
-                  </label>
                   <label>别名
                     <input value={productForm.slug} onChange={(event) => setProductForm({ ...productForm, slug: slugify(event.target.value) })} />
                     <small>用于 URL，例如 carbide-end-mills。</small>
@@ -853,9 +1004,6 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
                   <label>描述
                     <textarea value={productForm.summaryZh} onChange={(event) => setProductForm({ ...productForm, summaryZh: event.target.value })} />
                     <small>部分主题会在分类卡片或产品页显示描述。</small>
-                  </label>
-                  <label>英文描述
-                    <textarea value={productForm.summaryEn} onChange={(event) => setProductForm({ ...productForm, summaryEn: event.target.value })} />
                   </label>
                   <div className="wp-taxonomy-actions">
                     <button type="button" onClick={submitProductForm}>{editingProductId ? "更新分类" : "添加新分类"}</button>
@@ -984,13 +1132,28 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
                     <button type="button" onClick={() => setArticleStatusFilter("all")}>全部 ({articleCounts.all})</button>
                     <button type="button" onClick={() => setArticleStatusFilter("published")}>已发布 ({articleCounts.published})</button>
                     <button type="button" onClick={() => setArticleStatusFilter("draft")}>草稿 ({articleCounts.draft})</button>
+                    <button type="button" onClick={() => setArticleStatusFilter("trash")}>回收站 ({articleCounts.trash})</button>
+                  </div>
+
+                  <div className="wp-list-toolbar article-bulk-toolbar">
+                    <select value={articleBulkAction} onChange={(event) => setArticleBulkAction(event.target.value)}>
+                      <option value="">批量操作</option>
+                      <option value="trash">移至回收站</option>
+                      <option value="restore">恢复</option>
+                      <option value="delete">永久删除</option>
+                    </select>
+                    <button type="button" disabled={!articleBulkAction || selectedArticleIds.length === 0} onClick={applyArticleBulkAction}>
+                      应用
+                    </button>
+                    <span>{selectedArticleIds.length > 0 ? `已选择 ${selectedArticleIds.length} 篇文章` : "选择文章后可批量处理"}</span>
                   </div>
 
                   <div className="wp-list-toolbar">
-                    <select value={articleStatusFilter} onChange={(event) => setArticleStatusFilter(event.target.value as "all" | "published" | "draft")}>
+                    <select value={articleStatusFilter} onChange={(event) => setArticleStatusFilter(event.target.value as "all" | "published" | "draft" | "trash")}>
                       <option value="all">全部状态</option>
                       <option value="published">已发布</option>
                       <option value="draft">草稿</option>
+                      <option value="trash">回收站</option>
                     </select>
                     <select value={articleCategoryFilter} onChange={(event) => setArticleCategoryFilter(event.target.value as Article["category"] | "all")}>
                       <option value="all">所有分类</option>
@@ -1001,32 +1164,51 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
 
                   <div className="wp-article-table" role="table" aria-label="文章列表">
                     <div className="wp-article-row header" role="row">
-                      <span><input type="checkbox" aria-label="选择全部文章" /></span>
+                      <span>
+                        <input
+                          aria-label="选择全部文章"
+                          checked={allVisibleArticlesSelected}
+                          disabled={visibleArticleIds.length === 0}
+                          onChange={(event) => toggleVisibleArticles(event.target.checked)}
+                          type="checkbox"
+                        />
+                      </span>
                       <strong>标题</strong>
                       <strong>作者</strong>
                       <strong>分类目录</strong>
                       <strong>状态</strong>
                       <strong>日期</strong>
                     </div>
-                    {filteredArticles.map((article) => (
-                      <div className="wp-article-row" role="row" key={article.id ?? article.slug}>
-                        <span><input type="checkbox" aria-label={`选择 ${article.title.zh || article.title.en}`} /></span>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setActiveArticleId(article.id ?? article.slug);
-                            setArticleMode("editor");
-                          }}
-                        >
-                          {article.title.zh || article.title.en || "未命名文章"}
-                          <small>编辑 · {article.slug}</small>
-                        </button>
-                        <span>{currentEmail}</span>
-                        <span>{article.category}</span>
-                        <span>{article.status === "published" ? "已发布" : "草稿"}{article.featuredOnHome ? " · 首页" : ""}</span>
-                        <span>{article.publishedAt ? new Date(article.publishedAt).toLocaleString() : "尚未发布"}</span>
-                      </div>
-                    ))}
+                    {filteredArticles.map((article) => {
+                      const articleId = article.id ?? article.slug;
+
+                      return (
+                        <div className="wp-article-row" role="row" key={articleId}>
+                          <span>
+                            <input
+                              aria-label={`选择 ${article.title.zh || article.title.en}`}
+                              checked={selectedArticleIds.includes(articleId)}
+                              onChange={(event) => toggleArticleSelection(articleId, event.target.checked)}
+                              type="checkbox"
+                            />
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setActiveArticleId(articleId);
+                              setArticleMode("editor");
+                            }}
+                          >
+                            {article.title.zh || article.title.en || "未命名文章"}
+                            <small>编辑 · {article.slug}</small>
+                          </button>
+                          <span>{currentEmail}</span>
+                          <span>{article.category}</span>
+                          <span>{articleStatusLabel(article)}{article.featuredOnHome && article.status !== "trash" ? " · 首页" : ""}</span>
+                          <span>{article.status === "trash" ? (article.deletedAt ? new Date(article.deletedAt).toLocaleString() : "已移至回收站") : (article.publishedAt ? new Date(article.publishedAt).toLocaleString() : "尚未发布")}</span>
+                        </div>
+                      );
+                    })}
                     {filteredArticles.length === 0 ? <div className="wp-empty-row">没有找到文章。</div> : null}
                   </div>
                 </div>
@@ -1055,16 +1237,24 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
                     <aside className="wp-editor-side">
                       <section className="wp-side-box">
                         <h2>发布</h2>
-                        <label className="checkline"><input type="checkbox" checked={Boolean(activeArticle.featuredOnHome)} onChange={(event) => updateActiveArticle({ featuredOnHome: event.target.checked })} />同步到首页</label>
-                        <span>状态：{activeArticle.status === "published" ? "已发布" : "草稿"}</span>
-                        <span>日期：{activeArticle.publishedAt ? new Date(activeArticle.publishedAt).toLocaleString() : "立即发布"}</span>
+                        {activeArticle.status !== "trash" ? (
+                          <label className="checkline"><input type="checkbox" checked={Boolean(activeArticle.featuredOnHome)} onChange={(event) => updateActiveArticle({ featuredOnHome: event.target.checked })} />同步到首页</label>
+                        ) : null}
+                        <span>状态：{articleStatusLabel(activeArticle)}</span>
+                        <span>日期：{activeArticle.status === "trash" ? (activeArticle.deletedAt ? new Date(activeArticle.deletedAt).toLocaleString() : "已移至回收站") : (activeArticle.publishedAt ? new Date(activeArticle.publishedAt).toLocaleString() : "立即发布")}</span>
                         <div className="wp-publish-box">
-                          <button type="button" onClick={() => save()}>保存草稿</button>
-                          <button type="button" onClick={() => commitArticle(activeArticleIndex, { status: "published", featuredOnHome: true, publishedAt: new Date().toISOString() })}>发布</button>
-                          <button type="button" onClick={() => {
-                            setState({ ...state, articles: state.articles.filter((article) => article.id !== activeArticle.id) });
-                            setArticleMode("list");
-                          }}>移至回收站</button>
+                          {activeArticle.status === "trash" ? (
+                            <>
+                              <button type="button" onClick={restoreActiveArticle}>恢复文章</button>
+                              <button type="button" onClick={deleteActiveArticlePermanently}>永久删除</button>
+                            </>
+                          ) : (
+                            <>
+                              <button type="button" onClick={() => save()}>保存草稿</button>
+                              <button type="button" onClick={() => commitArticle(activeArticleIndex, { status: "published", featuredOnHome: true, publishedAt: new Date().toISOString(), deletedAt: undefined })}>发布</button>
+                              <button type="button" onClick={moveActiveArticleToTrash}>移至回收站</button>
+                            </>
+                          )}
                         </div>
                       </section>
 
@@ -1125,37 +1315,6 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
                   保存联系方式
                 </button>
               </div>
-              <section className="contact-create-panel">
-                <div>
-                  <strong>新增联系方式</strong>
-                  <span>可新增 Zalo、Line、Facebook、Instagram、TikTok，或选择自定义渠道。</span>
-                </div>
-                <div className="contact-create-form">
-                  <label>类型
-                    <select value={contactForm.type} onChange={(event) => selectContactFormType(event.target.value as ContactChannelType)}>
-                      {contactTypeOptions.map((type) => (
-                        <option key={type} value={type}>{contactTypePresets[type].zh}</option>
-                      ))}
-                    </select>
-                  </label>
-                  <label>中文名称
-                    <input value={contactForm.zh} onChange={(event) => setContactForm({ ...contactForm, zh: event.target.value })} />
-                  </label>
-                  <label>英文名称
-                    <input value={contactForm.en} onChange={(event) => setContactForm({ ...contactForm, en: event.target.value })} />
-                  </label>
-                  <label>账号/号码
-                    <input value={contactForm.value} onChange={(event) => setContactForm({ ...contactForm, value: event.target.value })} />
-                  </label>
-                  <label>链接
-                    <input value={contactForm.href} onChange={(event) => setContactForm({ ...contactForm, href: event.target.value })} />
-                  </label>
-                  <label>颜色
-                    <input type="color" value={contactForm.color} onChange={(event) => setContactForm({ ...contactForm, color: event.target.value })} />
-                  </label>
-                  <button type="button" onClick={addContactChannel}>新增联系方式</button>
-                </div>
-              </section>
               <div className="admin-form-list">
                 {state.contactChannels.map((channel, index) => (
                   <article className="admin-edit-card compact contact-card" key={channel.id}>
@@ -1200,6 +1359,37 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
                   </article>
                 ))}
               </div>
+              <section className="contact-create-panel">
+                <div>
+                  <strong>新增联系方式</strong>
+                  <span>可新增 Zalo、Line、Facebook、Instagram、TikTok，或选择自定义渠道。</span>
+                </div>
+                <div className="contact-create-form">
+                  <label>类型
+                    <select value={contactForm.type} onChange={(event) => selectContactFormType(event.target.value as ContactChannelType)}>
+                      {contactTypeOptions.map((type) => (
+                        <option key={type} value={type}>{contactTypePresets[type].zh}</option>
+                      ))}
+                    </select>
+                  </label>
+                  <label>中文名称
+                    <input value={contactForm.zh} onChange={(event) => setContactForm({ ...contactForm, zh: event.target.value })} />
+                  </label>
+                  <label>英文名称
+                    <input value={contactForm.en} onChange={(event) => setContactForm({ ...contactForm, en: event.target.value })} />
+                  </label>
+                  <label>账号/号码
+                    <input value={contactForm.value} onChange={(event) => setContactForm({ ...contactForm, value: event.target.value })} />
+                  </label>
+                  <label>链接
+                    <input value={contactForm.href} onChange={(event) => setContactForm({ ...contactForm, href: event.target.value })} />
+                  </label>
+                  <label>颜色
+                    <input type="color" value={contactForm.color} onChange={(event) => setContactForm({ ...contactForm, color: event.target.value })} />
+                  </label>
+                  <button type="button" onClick={addContactChannel}>新增联系方式</button>
+                </div>
+              </section>
             </>
           ) : null}
 
@@ -1226,6 +1416,74 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
                   </div>
                 ))}
               </div>
+            </>
+          ) : null}
+
+          {tab === "settings" ? (
+            <>
+              <div className="admin-section-title">
+                <h1>前台设置</h1>
+                <button type="button" onClick={() => save()}>
+                  保存前台设置
+                </button>
+              </div>
+
+              <section className="settings-panel">
+                <div className="settings-panel-head">
+                  <h2>前台可显示语言</h2>
+                  <span>勾选后会出现在前台语言选择器中，URL 路由和 RTL 方向仍自动兼容。</span>
+                </div>
+                <div className="language-toggle-grid">
+                  {locales.map((item) => {
+                    const localeCode = item.code as LocaleCode;
+
+                    return (
+                      <label className="language-toggle" key={item.code}>
+                        <input
+                          type="checkbox"
+                          checked={state.enabledLocales.includes(localeCode)}
+                          onChange={(event) => toggleEnabledLocale(localeCode, event.target.checked)}
+                        />
+                        <span>
+                          <strong>{item.nativeName}</strong>
+                          <small>{item.label} · {item.region}</small>
+                        </span>
+                      </label>
+                    );
+                  })}
+                </div>
+              </section>
+
+              <section className="settings-panel">
+                <div className="settings-panel-head with-action">
+                  <div>
+                    <h2>首页导航栏</h2>
+                    <span>可设置前台 Header 显示的导航名称、链接、排序和是否启用。</span>
+                  </div>
+                  <button type="button" onClick={addNavigationItem}>新增导航</button>
+                </div>
+                <div className="navigation-settings-list">
+                  {sortedNavigation.map((item) => (
+                    <article className="admin-edit-card compact nav-settings-card" key={item.id}>
+                      <label>中文名称
+                        <input value={item.label.zh ?? item.label.en} onChange={(event) => updateNavigationItem(item.id, { label: { ...item.label, zh: event.target.value } })} />
+                      </label>
+                      <label>英文名称
+                        <input value={item.label.en} onChange={(event) => updateNavigationItem(item.id, { label: { ...item.label, en: event.target.value } })} />
+                      </label>
+                      <label>链接
+                        <input value={item.href} onChange={(event) => updateNavigationItem(item.id, { href: event.target.value })} />
+                      </label>
+                      <label>排序
+                        <input type="number" value={item.order} onChange={(event) => updateNavigationItem(item.id, { order: Number(event.target.value) || 0 })} />
+                      </label>
+                      <label className="checkline"><input type="checkbox" checked={item.enabled} onChange={(event) => updateNavigationItem(item.id, { enabled: event.target.checked })} />显示</label>
+                      <label className="checkline"><input type="checkbox" checked={Boolean(item.openInNewTab)} onChange={(event) => updateNavigationItem(item.id, { openInNewTab: event.target.checked })} />新窗口</label>
+                      <button className="contact-delete-button" type="button" onClick={() => removeNavigationItem(item.id)}>删除</button>
+                    </article>
+                  ))}
+                </div>
+              </section>
             </>
           ) : null}
 
