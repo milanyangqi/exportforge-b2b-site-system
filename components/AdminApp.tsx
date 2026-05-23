@@ -34,7 +34,6 @@ const tabs: { key: Tab; label: string }[] = [
   { key: "users", label: "用户权限" },
   { key: "settings", label: "前台设置" },
   { key: "themes", label: "主题" },
-  { key: "account", label: "账号设置" },
   { key: "ai", label: "AI内容" }
 ];
 const tabKeys = new Set<Tab>(tabs.map((item) => item.key));
