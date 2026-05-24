@@ -183,5 +183,13 @@ PATH="/Users/zhang/.cache/codex-runtimes/codex-primary-runtime/dependencies/node
 - `npm install` 完成；默认 Node.js `v20.18.3` 下 Wrangler/Miniflare 仍提示需要 Node.js `>=22.0.0`，属于部署阶段已知提示。
 - `npm run typecheck` 通过。
 - 使用 bundled Node 22 执行 `npm run cf:build` 通过，并生成 `.open-next/worker.js`。
-- 执行 `npm run cf:deploy` 时，OpenNext build 通过，但 Wrangler 发布阶段失败：当前环境 `wrangler whoami` 返回 `Not logged in`，并提示非交互环境需要设置 `CLOUDFLARE_API_TOKEN`。
-- 用户补充要求：部署前必须先同步到 GitHub，并已写入本文件。GitHub 同步完成前不要继续 Cloudflare 发布。
+- 部署前按用户要求先同步到 GitHub：commit `8421814` 已 push 到 `origin/main`。
+- Chrome 已登录 Cloudflare 后，执行 `wrangler login` 完成 OAuth 授权；`wrangler whoami` 显示账号 `437991663@qq.com`。
+- 使用 bundled Node 22 执行 `npx opennextjs-cloudflare deploy` 直接发布已有 `.open-next/worker.js`，未重复本地构建。
+
+发布信息：
+
+- 发布时间：2026-05-24
+- 线上地址：`https://exportforge-b2b-site-system.437991663.workers.dev`
+- Worker Version ID：`1367d4f8-3ae2-4887-92ce-e40a1259c594`
+- 线上验证：`/zh` 包含 `KeyproTools`、`硬质合金铣刀`、`钻头`；`/zh/products/carbide-end-mills` 和 `/zh/products/drill-bits` 返回 `HTTP/2 200`；`/zh/articles` 返回 `HTTP/2 200` 并显示五金工具文章；`/assets/tools/carbide-end-mills.png` 返回 `HTTP/2 200`；`/zh/admin?tab=products` 返回 `HTTP/2 307` 并重定向到 `/zh/admin/login`。

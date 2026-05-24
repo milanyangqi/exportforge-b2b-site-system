@@ -87,7 +87,7 @@ Cloudflare:
 
 ## 2026-05-23 Admin Layout And Editor Controls
 
-Status: pending deployment
+Status: deployed with KeyproTools release
 
 Changes:
 - 文章编辑器工具栏新增 H1/H4、删除线、下划线、上下标、代码、代码块、表格、待办、提示块、清空正文等编辑功能。
@@ -102,4 +102,36 @@ Target:
 - https://exportforge-b2b-site-system.437991663.workers.dev
 
 Verification:
-- Pending
+- Included in deployment `1367d4f8-3ae2-4887-92ce-e40a1259c594`.
+
+Cloudflare:
+- Version ID: `1367d4f8-3ae2-4887-92ce-e40a1259c594`
+
+## 2026-05-24 KeyproTools Cutting Tools Rebrand
+
+Status: deployed
+
+Changes:
+- 站点品牌改为 `KeyproTools`。
+- 默认内容替换为五金工具方向，主要产品为硬质合金铣刀、钻头、定制刀具和涂层/私标包装。
+- 前台导航改为“铣刀 / 钻头 / 定制刀具 / 技术文章 / 资料下载 / 联系我们”，产品导航直达分类页。
+- 新增 `data/keypro-content.json` 作为 KeyproTools 内容 seed，并通过 `contentVersion=keyprotools-tools-v1` 迁移旧后台状态。
+- 生成并发布 4 张刀具图片到 `public/assets/tools/`，用于产品卡片、产品详情、文章封面和媒体库。
+
+Target:
+- https://exportforge-b2b-site-system.437991663.workers.dev
+
+GitHub:
+- Commit: `8421814`
+- Branch: `main`
+
+Verification:
+- `npm install`
+- `npm run typecheck`
+- `PATH="/Users/zhang/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/bin:$PATH" npm run cf:build`
+- `PATH="/Users/zhang/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/bin:$PATH" npx wrangler whoami`
+- `PATH="/Users/zhang/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/bin:$PATH" npx opennextjs-cloudflare deploy`
+- Live checks: `/zh` includes `KeyproTools`, `/zh/products/carbide-end-mills` 200, `/zh/products/drill-bits` 200, `/zh/articles` 200, `/assets/tools/carbide-end-mills.png` 200, `/zh/admin?tab=products` 307 to `/zh/admin/login`.
+
+Cloudflare:
+- Version ID: `1367d4f8-3ae2-4887-92ce-e40a1259c594`
