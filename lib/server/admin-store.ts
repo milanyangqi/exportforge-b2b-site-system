@@ -237,6 +237,10 @@ function normalizePages(pages: AdminState["pages"] = [], updatedAt?: string) {
 }
 
 async function getCloudflareKv() {
+  if (process.env.EXPORTFORGE_SELF_HOST === "1") {
+    return null;
+  }
+
   try {
     const { getCloudflareContext } = await import("@opennextjs/cloudflare");
     const context = await getCloudflareContext({ async: true }) as CloudflareContext;
