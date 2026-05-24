@@ -130,10 +130,19 @@ export default async function LocaleHome({ params }: { params: Promise<{ locale:
       </section>
 
       <section className="section rfq-section" id="rfq">
-        <div>
+        <div className="rfq-copy">
           <span className="eyebrow">Request a quote</span>
           <h2>Share your tool list and export requirements.</h2>
           <p>Send product type, size range, quantity, coating, destination, and packing needs. The sales team will turn it into a clear quotation.</p>
+          <div className="rfq-guidance">
+            <strong>For a faster reply, include:</strong>
+            <ul>
+              <li>Tool diameter, flute length, shank size, and tolerance.</li>
+              <li>Workpiece material, coating preference, and application details.</li>
+              <li>Packaging, private label, target quantity, and delivery market.</li>
+            </ul>
+          </div>
+          <p className="rfq-response-note">KeyproTools usually reviews RFQ details by product family so the quotation can match stock, OEM marking, and export packing requirements.</p>
         </div>
         <RfqForm locale={locale} />
       </section>

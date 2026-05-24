@@ -7,7 +7,7 @@ const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 export async function POST(request: Request) {
   const payload = (await request.json()) as Partial<LeadPayload>;
 
-  if (!payload.productType || !payload.quantity || !payload.email || !emailPattern.test(payload.email)) {
+  if (!payload.fullName || !payload.productType || !payload.quantity || !payload.email || !emailPattern.test(payload.email)) {
     return NextResponse.json({ error: "Missing required RFQ fields." }, { status: 400 });
   }
 
@@ -15,10 +15,14 @@ export async function POST(request: Request) {
     id: crypto.randomUUID(),
     status: "new" as const,
     createdAt: new Date().toISOString(),
+    fullName: payload.fullName,
+    company: payload.company ?? "",
     productType: payload.productType,
     quantity: payload.quantity,
     email: payload.email,
+    whatsapp: payload.whatsapp ?? "",
     destination: payload.destination ?? "",
+    workpieceMaterial: payload.workpieceMaterial ?? "",
     message: payload.message ?? "",
     locale: payload.locale ?? "en",
     sourcePath: payload.sourcePath ?? ""

@@ -40,6 +40,11 @@ export type Permission =
   | "products:edit"
   | "products:delete"
   | "products:publish"
+  | "pages:view"
+  | "pages:create"
+  | "pages:edit"
+  | "pages:delete"
+  | "pages:publish"
   | "articles:view"
   | "articles:create"
   | "articles:edit"
@@ -109,12 +114,24 @@ export type Article = {
   coverImageUrl?: string;
 };
 
+export type SitePage = {
+  id?: string;
+  slug: string;
+  title: Translation;
+  excerpt: Translation;
+  body: Translation;
+  status?: "draft" | "published" | "trash";
+  publishedAt?: string;
+  deletedAt?: string;
+};
+
 export type SiteNavigationItem = {
   id: string;
   label: Translation;
   href: string;
   enabled: boolean;
   order: number;
+  parentId?: string;
   openInNewTab?: boolean;
 };
 
@@ -133,10 +150,14 @@ export type UploadedFile = {
 export type LeadStatus = "new" | "contacted" | "quoted" | "closed" | "spam";
 
 export type LeadPayload = {
+  fullName?: string;
+  company?: string;
   productType: string;
   quantity: string;
   email: string;
+  whatsapp?: string;
   destination?: string;
+  workpieceMaterial?: string;
   message?: string;
   locale?: LocaleCode;
   sourcePath?: string;
@@ -210,6 +231,7 @@ export type SiteSettings = {
 
 export type AdminState = {
   products: ProductCategory[];
+  pages: SitePage[];
   articles: Article[];
   leads: AdminLead[];
   contactChannels: ContactChannel[];

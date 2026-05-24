@@ -9,7 +9,7 @@ export default async function ProductsPage({ params }: { params: Promise<{ local
   const state = await readAdminState();
 
   return (
-    <main className="subpage">
+    <main className="subpage products-subpage">
       <section className="section">
         <div className="section-head">
           <span className="eyebrow">KeyproTools products</span>

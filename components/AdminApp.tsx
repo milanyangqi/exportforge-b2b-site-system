@@ -40,13 +40,14 @@ import {
 } from "lucide-react";
 import { locales } from "@/config/locales";
 import { themes } from "@/config/themes";
-import type { AdminState, AdminUser, Article, ContactChannel, ContactChannelType, LeadStatus, LocaleCode, ProductCategory, RoleKey, SiteNavigationItem, ThemeKey, UploadedFile } from "@/types/site";
+import type { AdminState, AdminUser, Article, ContactChannel, ContactChannelType, LeadStatus, LocaleCode, ProductCategory, RoleKey, SiteNavigationItem, SitePage, ThemeKey, UploadedFile } from "@/types/site";
 
-type Tab = "overview" | "products" | "articles" | "files" | "leads" | "contacts" | "users" | "settings" | "languages" | "themes" | "account" | "ai";
+type Tab = "overview" | "products" | "pages" | "articles" | "files" | "leads" | "contacts" | "navigation" | "users" | "settings" | "languages" | "themes" | "account" | "ai";
 type ArticleEditorView = "visual" | "code";
+type PageMode = "list" | "editor";
 type MediaTypeFilter = "all" | "image" | "document" | "spreadsheet" | "archive" | "other";
 type MediaTimeFilter = "all" | "7d" | "30d" | "90d";
-type SettingsSection = "general" | "writing" | "reading" | "media" | "permalinks" | "privacy" | "navigation";
+type SettingsSection = "general" | "writing" | "reading" | "media" | "permalinks" | "privacy";
 type ProductFormState = {
   zh: string;
   en: string;
@@ -67,6 +68,11 @@ type ProductTableRow = {
   product: ProductCategory;
   depth: number;
 };
+type NavigationTableRow = {
+  item: SiteNavigationItem;
+  depth: number;
+  childCount: number;
+};
 type NewUserFormState = {
   name: string;
   email: string;
@@ -77,10 +83,12 @@ type NewUserFormState = {
 const tabs: { key: Tab; label: string; icon: typeof Gauge }[] = [
   { key: "overview", label: "仪表盘", icon: Gauge },
   { key: "products", label: "分类", icon: FolderTree },
+  { key: "pages", label: "页面", icon: FileText },
   { key: "articles", label: "文章", icon: FileText },
   { key: "files", label: "媒体库", icon: Library },
   { key: "leads", label: "询盘", icon: Inbox },
   { key: "contacts", label: "社媒及联系", icon: Share2 },
+  { key: "navigation", label: "导航栏", icon: Menu },
   { key: "users", label: "用户权限", icon: Users },
   { key: "languages", label: "语言", icon: Languages },
   { key: "themes", label: "主题", icon: Palette },
@@ -91,10 +99,12 @@ const tabKeys = new Set<Tab>([...tabs.map((item) => item.key), "account"]);
 const adminPageAccessOptions: { key: Tab; label: string }[] = [
   { key: "overview", label: "仪表盘" },
   { key: "products", label: "分类" },
+  { key: "pages", label: "页面" },
   { key: "articles", label: "文章" },
   { key: "files", label: "媒体库" },
   { key: "leads", label: "询盘" },
   { key: "contacts", label: "社媒及联系" },
+  { key: "navigation", label: "导航栏" },
   { key: "users", label: "用户权限" },
   { key: "settings", label: "设置" },
   { key: "languages", label: "语言" },
@@ -103,8 +113,8 @@ const adminPageAccessOptions: { key: Tab; label: string }[] = [
 ];
 const defaultAllowedTabsByRole: Record<RoleKey, Tab[]> = {
   "super-admin": adminPageAccessOptions.map((item) => item.key),
-  admin: ["overview", "products", "articles", "files", "leads", "contacts", "settings", "languages", "themes"],
-  editor: ["overview", "products", "articles", "files", "ai"],
+  admin: ["overview", "products", "pages", "articles", "files", "leads", "contacts", "navigation", "settings", "languages", "themes"],
+  editor: ["overview", "products", "pages", "articles", "files", "ai"],
   sales: ["overview", "products", "leads", "contacts"],
   viewer: ["overview", "products", "articles", "files"]
 };
@@ -253,8 +263,7 @@ const settingsSections: { key: SettingsSection; label: string; description: stri
   { key: "reading", label: "阅读", description: "首页内容、列表数量和搜索可见性。" },
   { key: "media", label: "媒体", description: "图片尺寸和媒体整理方式。" },
   { key: "permalinks", label: "固定链接", description: "产品、文章和资料的 URL 基础路径。" },
-  { key: "privacy", label: "隐私", description: "隐私页面、Cookie 提示和数据说明。" },
-  { key: "navigation", label: "导航栏", description: "前台 Header 导航名称、链接和排序。" }
+  { key: "privacy", label: "隐私", description: "隐私页面、Cookie 提示和数据说明。" }
 ];
 const siteFontOptions = [
   { label: "现代无衬线（默认）", value: "\"Manrope\", \"PingFang SC\", \"Microsoft YaHei\", sans-serif" },
@@ -517,7 +526,19 @@ function emptyArticle(category = "uncategorized"): Article {
   };
 }
 
-function emptyNavigationItem(order: number): SiteNavigationItem {
+function emptyPage(): SitePage {
+  const id = `page-${Date.now()}`;
+  return {
+    id,
+    slug: id,
+    title: { en: "New page", zh: "新页面" },
+    excerpt: { en: "Short page summary.", zh: "填写页面摘要。" },
+    body: { en: "Write page content here.", zh: "在这里填写页面内容。" },
+    status: "draft"
+  };
+}
+
+function emptyNavigationItem(order: number, parentId?: string): SiteNavigationItem {
   const id = `nav-custom-${Date.now()}`;
 
   return {
@@ -525,13 +546,20 @@ function emptyNavigationItem(order: number): SiteNavigationItem {
     label: { en: "New Link", zh: "新导航" },
     href: "/",
     enabled: true,
-    order
+    order,
+    parentId
   };
 }
 
 function articleStatusLabel(article: Article) {
   if (article.status === "trash") return "回收站";
   if (article.status === "published") return "已发布";
+  return "草稿";
+}
+
+function pageStatusLabel(page: SitePage) {
+  if (page.status === "trash") return "回收站";
+  if (page.status === "published") return "已发布";
   return "草稿";
 }
 
@@ -629,6 +657,55 @@ function buildProductTableRows(products: ProductCategory[], rawQuery: string): P
   return [...rows, ...orphanRows];
 }
 
+function navigationWouldCreateCycle(items: SiteNavigationItem[], itemId: string, nextParentId?: string) {
+  const parentById = new Map(items.map((item) => [item.id, item.parentId]));
+  const visited = new Set([itemId]);
+  let currentParentId = nextParentId;
+
+  while (currentParentId) {
+    if (visited.has(currentParentId)) return true;
+    visited.add(currentParentId);
+    currentParentId = parentById.get(currentParentId);
+  }
+
+  return false;
+}
+
+function buildNavigationTableRows(items: SiteNavigationItem[]): NavigationTableRow[] {
+  const sortedItems = [...items].sort((a, b) => a.order - b.order);
+  const itemIds = new Set(sortedItems.map((item) => item.id));
+  const childrenByParent = new Map<string, SiteNavigationItem[]>();
+  const roots: SiteNavigationItem[] = [];
+  const visited = new Set<string>();
+
+  sortedItems.forEach((item) => {
+    if (item.parentId && itemIds.has(item.parentId)) {
+      const siblings = childrenByParent.get(item.parentId) ?? [];
+      siblings.push(item);
+      childrenByParent.set(item.parentId, siblings);
+      return;
+    }
+
+    roots.push(item);
+  });
+
+  function walk(item: SiteNavigationItem, depth: number): NavigationTableRow[] {
+    if (visited.has(item.id)) return [];
+    visited.add(item.id);
+    const children = childrenByParent.get(item.id) ?? [];
+
+    return [
+      { item, depth, childCount: children.length },
+      ...children.flatMap((child) => walk(child, depth + 1))
+    ];
+  }
+
+  const rows = roots.flatMap((item) => walk(item, 0));
+  const orphanRows = sortedItems.flatMap((item) => visited.has(item.id) ? [] : walk(item, 0));
+
+  return [...rows, ...orphanRows];
+}
+
 function normalizeInitialTab(value?: string): Tab {
   return value && tabKeys.has(value as Tab) ? value as Tab : "overview";
 }
@@ -636,7 +713,18 @@ function normalizeInitialTab(value?: string): Tab {
 function getAllowedTabsForUser(user?: AdminUser) {
   const roleDefaults = defaultAllowedTabsByRole[user?.role ?? "viewer"] ?? defaultAllowedTabsByRole.viewer;
   const allowedTabs = user?.allowedTabs?.filter((item): item is Tab => tabKeys.has(item as Tab) && item !== "account");
-  return allowedTabs && allowedTabs.length > 0 ? allowedTabs : roleDefaults;
+  if (!allowedTabs || allowedTabs.length === 0) return roleDefaults;
+
+  if ((user?.role === "super-admin" || user?.role === "admin") && allowedTabs.includes("settings") && !allowedTabs.includes("navigation")) {
+    const settingsIndex = allowedTabs.indexOf("settings");
+    return [
+      ...allowedTabs.slice(0, settingsIndex),
+      "navigation",
+      ...allowedTabs.slice(settingsIndex)
+    ];
+  }
+
+  return allowedTabs;
 }
 
 export function AdminApp({ email, initialTab, locale }: { email: string; initialTab?: string; locale: LocaleCode }) {
@@ -651,6 +739,10 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
   const [articleCategoryFilter, setArticleCategoryFilter] = useState<string>("all");
   const [selectedArticleIds, setSelectedArticleIds] = useState<string[]>([]);
   const [articleBulkAction, setArticleBulkAction] = useState("");
+  const [activePageId, setActivePageId] = useState<string | null>(null);
+  const [pageMode, setPageMode] = useState<PageMode>("list");
+  const [pageQuery, setPageQuery] = useState("");
+  const [pageStatusFilter, setPageStatusFilter] = useState<"all" | "published" | "draft" | "trash">("all");
   const [productQuery, setProductQuery] = useState("");
   const [editingProductId, setEditingProductId] = useState<string | null>(null);
   const [productForm, setProductForm] = useState<ProductFormState>(emptyProductForm);
@@ -679,6 +771,10 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
     ?? state?.articles[0];
   const activeArticleIndex = state && activeArticle ? state.articles.findIndex((article) => (article.id ?? article.slug) === (activeArticle.id ?? activeArticle.slug)) : -1;
   const activeArticleBody = activeArticle?.body?.zh ?? activeArticle?.body?.en ?? "";
+  const activePage = state?.pages.find((page) => (page.id ?? page.slug) === activePageId)
+    ?? state?.pages.find((page) => page.status !== "trash")
+    ?? state?.pages[0];
+  const activePageIndex = state && activePage ? state.pages.findIndex((page) => (page.id ?? page.slug) === (activePage.id ?? activePage.slug)) : -1;
 
   useEffect(() => {
     setTab(normalizeInitialTab(initialTab));
@@ -726,6 +822,7 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
     if (!state) return null;
     return [
       ["产品品类", state.products.length],
+      ["已发布页面", state.pages.filter((page) => page.status === "published").length],
       ["已发布文章", state.articles.filter((article) => article.status === "published").length],
       ["媒体资源", state.uploadedFiles.length],
       ["询盘", state.leads.length],
@@ -1015,28 +1112,39 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
 
   function updateNavigationItem(itemId: string, patch: Partial<SiteNavigationItem>) {
     if (!state || !guardFrontendSettingsAccess()) return;
+    const nextPatch = { ...patch };
+
+    if ("parentId" in nextPatch) {
+      nextPatch.parentId = nextPatch.parentId && nextPatch.parentId !== itemId && !navigationWouldCreateCycle(state.navigation, itemId, nextPatch.parentId)
+        ? nextPatch.parentId
+        : undefined;
+    }
+
     setState({
       ...state,
-      navigation: state.navigation.map((item) => (item.id === itemId ? { ...item, ...patch } : item))
+      navigation: state.navigation.map((item) => (item.id === itemId ? { ...item, ...nextPatch } : item))
     });
     setFrontendSettingsDirty(true);
   }
 
-  function addNavigationItem() {
+  function addNavigationItem(parentId?: string) {
     if (!state || !guardFrontendSettingsAccess()) return;
     const nextOrder = Math.max(0, ...state.navigation.map((item) => item.order)) + 10;
     setState({
       ...state,
-      navigation: [...state.navigation, emptyNavigationItem(nextOrder)]
+      navigation: [...state.navigation, emptyNavigationItem(nextOrder, parentId)]
     });
     setFrontendSettingsDirty(true);
   }
 
   function removeNavigationItem(itemId: string) {
     if (!state || !guardFrontendSettingsAccess()) return;
+    const removedItem = state.navigation.find((item) => item.id === itemId);
     setState({
       ...state,
-      navigation: state.navigation.filter((item) => item.id !== itemId)
+      navigation: state.navigation
+        .filter((item) => item.id !== itemId)
+        .map((item) => (item.parentId === itemId ? { ...item, parentId: removedItem?.parentId } : item))
     });
     setFrontendSettingsDirty(true);
   }
@@ -1161,6 +1269,138 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
     setStatus("账号设置已保存");
   }
 
+  function updateActivePage(patch: Partial<SitePage>) {
+    if (!state) return;
+    const targetId = activePageId ?? state.pages[0]?.id ?? state.pages[0]?.slug;
+    if (!targetId) return;
+    setState({
+      ...state,
+      pages: state.pages.map((page) => ((page.id ?? page.slug) === targetId ? { ...page, ...patch } : page))
+    });
+  }
+
+  function updatePageTitle(value: string) {
+    updateActivePage({ title: createSingleLanguageTranslation(value) });
+  }
+
+  function updatePageExcerpt(value: string) {
+    updateActivePage({ excerpt: createSingleLanguageTranslation(value) });
+  }
+
+  function updatePageBody(value: string) {
+    updateActivePage({ body: createSingleLanguageTranslation(value) });
+  }
+
+  function commitPage(index: number, patch: Partial<SitePage>) {
+    if (!state) return;
+    const nextState = {
+      ...state,
+      pages: state.pages.map((page, current) => (current === index ? { ...page, ...patch } : page))
+    };
+    setState(nextState);
+    void save(nextState);
+  }
+
+  function moveActivePageToTrash() {
+    if (!state || !activePage) return;
+    const targetId = activePage.id ?? activePage.slug;
+    const nextState = {
+      ...state,
+      pages: state.pages.map((page) => (
+        (page.id ?? page.slug) === targetId
+          ? { ...page, status: "trash" as const, deletedAt: new Date().toISOString() }
+          : page
+      ))
+    };
+
+    setState(nextState);
+    setActivePageId(null);
+    setPageMode("list");
+    setPageStatusFilter("trash");
+    void save(nextState);
+  }
+
+  function restoreActivePage() {
+    if (!state || !activePage) return;
+    const targetId = activePage.id ?? activePage.slug;
+    const nextState = {
+      ...state,
+      pages: state.pages.map((page) => (
+        (page.id ?? page.slug) === targetId
+          ? { ...page, status: "draft" as const, deletedAt: undefined }
+          : page
+      ))
+    };
+
+    setState(nextState);
+    setPageStatusFilter("draft");
+    void save(nextState);
+  }
+
+  function deleteActivePagePermanently() {
+    if (!state || !activePage) return;
+    const targetId = activePage.id ?? activePage.slug;
+    const nextState = {
+      ...state,
+      pages: state.pages.filter((page) => (page.id ?? page.slug) !== targetId)
+    };
+
+    setState(nextState);
+    setActivePageId(null);
+    setPageMode("list");
+    setPageStatusFilter("trash");
+    void save(nextState);
+  }
+
+  function movePageToTrashFromList(pageId: string) {
+    if (!state) return;
+    const nextState = {
+      ...state,
+      pages: state.pages.map((page) => (
+        (page.id ?? page.slug) === pageId
+          ? { ...page, status: "trash" as const, deletedAt: new Date().toISOString() }
+          : page
+      ))
+    };
+
+    setState(nextState);
+    if (activePageId === pageId) setActivePageId(null);
+    void save(nextState);
+  }
+
+  function deletePagePermanentlyFromList(pageId: string) {
+    if (!state) return;
+    const nextState = {
+      ...state,
+      pages: state.pages.filter((page) => (page.id ?? page.slug) !== pageId)
+    };
+
+    setState(nextState);
+    if (activePageId === pageId) setActivePageId(null);
+    void save(nextState);
+  }
+
+  function deletePageFromList(page: SitePage) {
+    const pageId = page.id ?? page.slug;
+    if (page.status === "trash") {
+      deletePagePermanentlyFromList(pageId);
+      return;
+    }
+
+    movePageToTrashFromList(pageId);
+  }
+
+  function startNewArticle() {
+    if (!state) return;
+    const article = {
+      ...emptyArticle(state.siteSettings.defaultArticleCategory || state.products[0]?.slug || "uncategorized"),
+      status: state.siteSettings.defaultArticleStatus
+    };
+    setState({ ...state, articles: [article, ...state.articles] });
+    setActiveArticleId(article.id ?? article.slug);
+    setArticleMode("editor");
+  }
+
   function updateArticle(index: number, patch: Partial<Article>) {
     if (!state) return;
     const articles = state.articles.map((article, current) => (current === index ? { ...article, ...patch } : article));
@@ -1236,6 +1476,46 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
     setArticleMode("list");
     setArticleStatusFilter("trash");
     void save(nextState);
+  }
+
+  function moveArticleToTrashFromList(articleId: string) {
+    if (!state) return;
+    const nextState = {
+      ...state,
+      articles: state.articles.map((article) => (
+        (article.id ?? article.slug) === articleId
+          ? { ...article, status: "trash" as const, featuredOnHome: false, deletedAt: new Date().toISOString() }
+          : article
+      ))
+    };
+
+    setState(nextState);
+    setSelectedArticleIds((current) => current.filter((id) => id !== articleId));
+    if (activeArticleId === articleId) setActiveArticleId(null);
+    void save(nextState);
+  }
+
+  function deleteArticlePermanentlyFromList(articleId: string) {
+    if (!state) return;
+    const nextState = {
+      ...state,
+      articles: state.articles.filter((article) => (article.id ?? article.slug) !== articleId)
+    };
+
+    setState(nextState);
+    setSelectedArticleIds((current) => current.filter((id) => id !== articleId));
+    if (activeArticleId === articleId) setActiveArticleId(null);
+    void save(nextState);
+  }
+
+  function deleteArticleFromList(article: Article) {
+    const articleId = article.id ?? article.slug;
+    if (article.status === "trash") {
+      deleteArticlePermanentlyFromList(articleId);
+      return;
+    }
+
+    moveArticleToTrashFromList(articleId);
   }
 
   function downloadArticleImportTemplate() {
@@ -1457,6 +1737,28 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
     draft: state.articles.filter((article) => article.status !== "published" && article.status !== "trash").length,
     trash: state.articles.filter((article) => article.status === "trash").length
   };
+  const pageCounts = {
+    all: state.pages.filter((page) => page.status !== "trash").length,
+    published: state.pages.filter((page) => page.status === "published").length,
+    draft: state.pages.filter((page) => page.status !== "published" && page.status !== "trash").length,
+    trash: state.pages.filter((page) => page.status === "trash").length
+  };
+  const filteredPages = state.pages.filter((page) => {
+    const pageStatus = page.status ?? "draft";
+    const statusMatches = pageStatusFilter === "all"
+      ? pageStatus !== "trash"
+      : pageStatus === pageStatusFilter;
+    const query = pageQuery.trim().toLowerCase();
+    const queryMatches = !query || [
+      page.title.zh,
+      page.title.en,
+      page.slug,
+      page.excerpt.zh,
+      page.excerpt.en
+    ].filter(Boolean).some((value) => value?.toLowerCase().includes(query));
+
+    return statusMatches && queryMatches;
+  });
   const filteredArticles = state.articles.filter((article) => {
     const articleStatus = article.status ?? "published";
     const statusMatches = articleStatusFilter === "all"
@@ -1477,6 +1779,8 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
   const visibleArticleIds = filteredArticles.map((article) => article.id ?? article.slug);
   const allVisibleArticlesSelected = visibleArticleIds.length > 0 && visibleArticleIds.every((id) => selectedArticleIds.includes(id));
   const sortedNavigation = [...state.navigation].sort((a, b) => a.order - b.order);
+  const navigationRows = buildNavigationTableRows(sortedNavigation);
+  const navigationDepthById = new Map(navigationRows.map((row) => [row.item.id, row.depth]));
   const filteredMediaFiles = state.uploadedFiles.filter((file) => {
     const typeMatches = mediaTypeFilter === "all" || getMediaType(file) === mediaTypeFilter;
     const query = mediaQuery.trim().toLowerCase();
@@ -1840,6 +2144,9 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
   const navigationArticleOptions = state.articles
     .filter((article) => article.status !== "trash")
     .sort((a, b) => (a.title.zh || a.title.en).localeCompare(b.title.zh || b.title.en));
+  const navigationPageOptions = state.pages
+    .filter((page) => page.status !== "trash")
+    .sort((a, b) => (a.title.zh || a.title.en).localeCompare(b.title.zh || b.title.en));
   const articleProductCategoryOptions = [...state.products]
     .sort((a, b) => (a.name.zh || a.name.en).localeCompare(b.name.zh || b.name.en))
     .map((product) => ({
@@ -1849,6 +2156,15 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
   const articleProductCategoryValues = new Set(articleProductCategoryOptions.map((item) => item.value));
   const articleProductCategoryLabelByValue = new Map(articleProductCategoryOptions.map((item) => [item.value, item.label]));
   const activeArticleCategoryIsProduct = activeArticle ? articleProductCategoryValues.has(activeArticle.category) : false;
+  const settingsSaveAction = (
+    <div className="settings-actions">
+      <button type="button" disabled={!canManageFrontendSettings} onClick={() => {
+        if (guardFrontendSettingsAccess()) void save();
+      }}>
+        保存设置
+      </button>
+    </div>
+  );
   const orderedLocaleOptions = [
     ...state.enabledLocales
       .map((localeCode) => locales.find((item) => item.code === localeCode))
@@ -1858,9 +2174,18 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
   const sidebarClassName = "admin-sidebar";
   const languageSettingsPanel = (
     <section className="settings-panel">
-      <div className="settings-panel-head">
-        <h2>前台可显示语言</h2>
-        <span>勾选后会出现在前台语言选择器中，URL 路由和 RTL 方向仍自动兼容。</span>
+      <div className="settings-panel-head with-action">
+        <div>
+          <h2>前台可显示语言</h2>
+          <span>勾选后会出现在前台语言选择器中，URL 路由和 RTL 方向仍自动兼容。</span>
+        </div>
+        <div className="settings-actions">
+          <button type="button" disabled={!canManageFrontendSettings || !frontendSettingsDirty} onClick={() => {
+            if (guardFrontendSettingsAccess()) void save();
+          }}>
+            {frontendSettingsDirty ? "保存语言" : "已保存"}
+          </button>
+        </div>
       </div>
       <div className="language-toggle-grid">
         {orderedLocaleOptions.map((item) => {
@@ -1895,6 +2220,77 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
                 />
               </label>
             </div>
+          );
+        })}
+      </div>
+    </section>
+  );
+  const navigationSettingsPanel = (
+    <section className="settings-panel navigation-panel">
+      <div className="settings-panel-head with-action">
+        <div>
+          <h2>首页导航栏</h2>
+          <span>设置前台 Header 的一级导航、下拉子导航、链接、排序和启用状态。</span>
+        </div>
+        <div className="settings-actions">
+          <button type="button" disabled={!canManageFrontendSettings || !frontendSettingsDirty} onClick={() => {
+            if (guardFrontendSettingsAccess()) void save();
+          }}>
+            {frontendSettingsDirty ? "保存导航" : "已保存"}
+          </button>
+          <button type="button" disabled={!canManageFrontendSettings} onClick={() => addNavigationItem()}>新增一级导航</button>
+        </div>
+      </div>
+      <div className="navigation-settings-list">
+        {navigationRows.map(({ item, depth, childCount }) => {
+          const parentOptions = sortedNavigation.filter((parent) => (
+            parent.id !== item.id && !navigationWouldCreateCycle(sortedNavigation, item.id, parent.id)
+          ));
+
+          return (
+            <article
+              className={depth > 0 ? "admin-edit-card compact nav-settings-card child" : "admin-edit-card compact nav-settings-card"}
+              key={item.id}
+              style={{ "--nav-depth": depth } as CSSProperties}
+            >
+              <div className="nav-hierarchy-cell">
+                <span className="nav-level-badge">{depth === 0 ? "一级导航" : `${depth + 1}级导航`}</span>
+                <label>导航名称
+                  <input disabled={!canManageFrontendSettings} value={item.label.zh || item.label.en} onChange={(event) => updateNavigationItem(item.id, { label: { ...item.label, en: event.target.value, zh: event.target.value } })} />
+                </label>
+                {childCount > 0 ? <small>包含 {childCount} 个下级导航</small> : <small>可添加为下拉菜单项</small>}
+              </div>
+              <label>父级导航
+                <select disabled={!canManageFrontendSettings} value={item.parentId ?? ""} onChange={(event) => updateNavigationItem(item.id, { parentId: event.target.value || undefined })}>
+                  <option value="">作为一级导航</option>
+                  {parentOptions.map((parent) => {
+                    const parentDepth = navigationDepthById.get(parent.id) ?? 0;
+                    return (
+                      <option key={parent.id} value={parent.id}>
+                        {`${parentDepth + 1}级 · ${parent.label.zh || parent.label.en}`}
+                      </option>
+                    );
+                  })}
+                </select>
+              </label>
+              <label>选择链接
+                <select disabled={!canManageFrontendSettings} value="" onChange={(event) => {
+                  if (event.target.value) updateNavigationItem(item.id, { href: event.target.value });
+                }}>
+                  <option value="">手动输入或选择</option>
+                  <optgroup label="系统页面">{systemNavigationOptions.map((option) => <option key={option.href} value={option.href}>{option.label}</option>)}</optgroup>
+                  {navigationPageOptions.length > 0 ? <optgroup label="页面">{navigationPageOptions.map((page) => <option key={page.id ?? page.slug} value={`/pages/${page.slug}`}>{compactOptionLabel(page.title.zh || page.title.en, "页面")}</option>)}</optgroup> : null}
+                  {navigationProductOptions.length > 0 ? <optgroup label="产品分类">{navigationProductOptions.map((product) => <option key={product.id ?? product.slug} value={`/products/${product.slug}`}>{compactOptionLabel(product.name.zh || product.name.en, "产品分类")}</option>)}</optgroup> : null}
+                  {navigationArticleOptions.length > 0 ? <optgroup label="文章">{navigationArticleOptions.map((article) => <option key={article.id ?? article.slug} value={`/articles/${article.slug}`}>{compactOptionLabel(article.title.zh || article.title.en, "文章")}</option>)}</optgroup> : null}
+                </select>
+              </label>
+              <label className="nav-link-field">链接<input disabled={!canManageFrontendSettings} value={item.href} onChange={(event) => updateNavigationItem(item.id, { href: event.target.value })} /></label>
+              <label>排序<input disabled={!canManageFrontendSettings} type="number" value={item.order} onChange={(event) => updateNavigationItem(item.id, { order: Number(event.target.value) || 0 })} /></label>
+              <label className="checkline"><input disabled={!canManageFrontendSettings} type="checkbox" checked={item.enabled} onChange={(event) => updateNavigationItem(item.id, { enabled: event.target.checked })} />显示</label>
+              <label className="checkline"><input disabled={!canManageFrontendSettings} type="checkbox" checked={Boolean(item.openInNewTab)} onChange={(event) => updateNavigationItem(item.id, { openInNewTab: event.target.checked })} />新窗口</label>
+              <button className="nav-child-button" disabled={!canManageFrontendSettings} type="button" onClick={() => addNavigationItem(item.id)}>新增下级</button>
+              <button className="contact-delete-button" disabled={!canManageFrontendSettings} type="button" onClick={() => removeNavigationItem(item.id)}>删除</button>
+            </article>
           );
         })}
       </div>
@@ -1971,10 +2367,6 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
 
           {tab === "products" ? (
             <>
-              <div className="admin-section-title">
-                <h1>分类目录</h1>
-              </div>
-
               <div className="wp-taxonomy-screen">
                 <aside className="wp-taxonomy-form">
                   <h2>{editingProductId ? "编辑分类" : "添加分类"}</h2>
@@ -2100,29 +2492,165 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
             </>
           ) : null}
 
-          {tab === "articles" ? (
+          {tab === "pages" ? (
             <>
-              <div className="admin-section-title">
-                <h1>{articleMode === "list" ? "文章" : "写文章"}</h1>
+              <div className="wp-screen-tabs">
+                <button className={pageMode === "list" ? "active" : ""} type="button" onClick={() => setPageMode("list")}>所有页面</button>
+                <button className={pageMode === "editor" ? "active" : ""} type="button" onClick={() => setPageMode("editor")}>编辑页面</button>
                 <button
+                  className="wp-screen-action"
                   type="button"
                   onClick={() => {
-                    const article = {
-                      ...emptyArticle(state.siteSettings.defaultArticleCategory || state.products[0]?.slug || "uncategorized"),
-                      status: state.siteSettings.defaultArticleStatus
-                    };
-                    setState({ ...state, articles: [article, ...state.articles] });
-                    setActiveArticleId(article.id ?? article.slug);
-                    setArticleMode("editor");
+                    const page = emptyPage();
+                    setState({ ...state, pages: [page, ...state.pages] });
+                    setActivePageId(page.id ?? page.slug);
+                    setPageMode("editor");
                   }}
                 >
-                  写文章
+                  新增页面
                 </button>
               </div>
 
+              {pageMode === "list" ? (
+                <div className="wp-list-screen">
+                  <section className="file-upload-panel">
+                    <strong>独立页面</strong>
+                    <span>用于创建关于我们、隐私政策、服务说明等非文章内容；发布后可在左侧“导航栏”选择并添加到前台导航。</span>
+                  </section>
+
+                  <div className="wp-counts">
+                    <button type="button" onClick={() => setPageStatusFilter("all")}>全部 ({pageCounts.all})</button>
+                    <button type="button" onClick={() => setPageStatusFilter("published")}>已发布 ({pageCounts.published})</button>
+                    <button type="button" onClick={() => setPageStatusFilter("draft")}>草稿 ({pageCounts.draft})</button>
+                    <button type="button" onClick={() => setPageStatusFilter("trash")}>回收站 ({pageCounts.trash})</button>
+                  </div>
+
+                  <div className="wp-list-toolbar">
+                    <select value={pageStatusFilter} onChange={(event) => setPageStatusFilter(event.target.value as "all" | "published" | "draft" | "trash")}>
+                      <option value="all">全部状态</option>
+                      <option value="published">已发布</option>
+                      <option value="draft">草稿</option>
+                      <option value="trash">回收站</option>
+                    </select>
+                    <input placeholder="搜索页面" value={pageQuery} onChange={(event) => setPageQuery(event.target.value)} />
+                  </div>
+
+                  <div className="wp-article-table wp-page-table" role="table" aria-label="页面列表">
+                    <div className="wp-article-row wp-page-row header" role="row">
+                      <strong>标题</strong>
+                      <strong>Slug</strong>
+                      <strong>状态</strong>
+                      <strong>日期</strong>
+                      <strong>操作</strong>
+                    </div>
+                    {filteredPages.map((page) => {
+                      const pageId = page.id ?? page.slug;
+
+                      return (
+                        <div className="wp-article-row wp-page-row" role="row" key={pageId}>
+                          <Link
+                            className="wp-article-title-link"
+                            href={`/${locale}/pages/${page.slug}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                          >
+                            {page.title.zh || page.title.en || "未命名页面"}
+                            <small>查看 · /pages/{page.slug}</small>
+                          </Link>
+                          <span>{page.slug}</span>
+                          <span>{pageStatusLabel(page)}</span>
+                          <span>{page.status === "trash" ? (page.deletedAt ? new Date(page.deletedAt).toLocaleString() : "已移至回收站") : (page.publishedAt ? new Date(page.publishedAt).toLocaleString() : "尚未发布")}</span>
+                          <div className="wp-article-actions">
+                            <button
+                              className="wp-article-edit-button"
+                              type="button"
+                              onClick={() => {
+                                setActivePageId(pageId);
+                                setPageMode("editor");
+                              }}
+                            >
+                              编辑
+                            </button>
+                            <button
+                              className="wp-article-delete-button"
+                              type="button"
+                              onClick={() => deletePageFromList(page)}
+                            >
+                              {page.status === "trash" ? "永久删除" : "删除"}
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                    {filteredPages.length === 0 ? <div className="wp-empty-row">没有找到页面。</div> : null}
+                  </div>
+                </div>
+              ) : null}
+
+              {pageMode === "editor" ? (
+                activePage && activePageIndex >= 0 ? (
+                  <div className="wp-editor-screen">
+                    <article className="wp-editor">
+                      <input
+                        className="wp-title-input"
+                        placeholder="添加页面标题"
+                        value={activePage.title.zh ?? activePage.title.en ?? ""}
+                        onChange={(event) => updatePageTitle(event.target.value)}
+                      />
+                      <label>页面摘要<textarea className="wp-excerpt" value={activePage.excerpt.zh ?? activePage.excerpt.en ?? ""} onChange={(event) => updatePageExcerpt(event.target.value)} /></label>
+                      <label>页面正文
+                        <textarea
+                          className="wp-body page-body-editor"
+                          rows={24}
+                          value={activePage.body.zh ?? activePage.body.en ?? ""}
+                          onChange={(event) => updatePageBody(event.target.value)}
+                        />
+                      </label>
+                    </article>
+
+                    <aside className="wp-editor-side">
+                      <section className="wp-side-box">
+                        <h2>发布</h2>
+                        <span>状态：{pageStatusLabel(activePage)}</span>
+                        <span>日期：{activePage.status === "trash" ? (activePage.deletedAt ? new Date(activePage.deletedAt).toLocaleString() : "已移至回收站") : (activePage.publishedAt ? new Date(activePage.publishedAt).toLocaleString() : "立即发布")}</span>
+                        <div className="wp-publish-box">
+                          {activePage.status === "trash" ? (
+                            <>
+                              <button className="primary" type="button" onClick={restoreActivePage}>恢复页面</button>
+                              <button className="danger" type="button" onClick={deleteActivePagePermanently}>永久删除</button>
+                            </>
+                          ) : (
+                            <>
+                              <button type="button" onClick={() => save()}>保存草稿</button>
+                              <button className="primary" type="button" onClick={() => commitPage(activePageIndex, { status: "published", publishedAt: new Date().toISOString(), deletedAt: undefined })}>发布</button>
+                              <button className="danger full" type="button" onClick={moveActivePageToTrash}>移至回收站</button>
+                            </>
+                          )}
+                        </div>
+                      </section>
+
+                      <section className="wp-side-box">
+                        <h2>固定链接</h2>
+                        <label>Slug<input value={activePage.slug} onChange={(event) => updateActivePage({ slug: slugify(event.target.value) })} /></label>
+                        <span>发布地址：/{locale}/pages/{activePage.slug || "page-slug"}</span>
+                      </section>
+                    </aside>
+                  </div>
+                ) : (
+                  <div className="wp-editor empty">还没有页面，点击“新增页面”开始。</div>
+                )
+              ) : null}
+            </>
+          ) : null}
+
+          {tab === "articles" ? (
+            <>
               <div className="wp-screen-tabs">
                 <button className={articleMode === "list" ? "active" : ""} type="button" onClick={() => setArticleMode("list")}>所有文章</button>
-                <button className={articleMode === "editor" ? "active" : ""} type="button" onClick={() => setArticleMode("editor")}>写文章</button>
+                <button className={articleMode === "editor" ? "active" : ""} type="button" onClick={() => {
+                  if (articleMode === "editor") return;
+                  startNewArticle();
+                }}>写文章</button>
               </div>
 
               {articleMode === "list" ? (
@@ -2200,6 +2728,7 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
                       <strong>分类目录</strong>
                       <strong>状态</strong>
                       <strong>日期</strong>
+                      <strong>操作</strong>
                     </div>
                     {filteredArticles.map((article) => {
                       const articleId = article.id ?? article.slug;
@@ -2214,20 +2743,38 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
                               type="checkbox"
                             />
                           </span>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setActiveArticleId(articleId);
-                              setArticleMode("editor");
-                            }}
+                          <Link
+                            className="wp-article-title-link"
+                            href={`/${locale}/articles/${article.slug}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
                           >
                             {article.title.zh || article.title.en || "未命名文章"}
-                            <small>编辑 · {article.slug}</small>
-                          </button>
+                            <small>查看 · {article.slug}</small>
+                          </Link>
                           <span>{currentEmail}</span>
                           <span>{articleProductCategoryLabelByValue.get(article.category) ?? article.category}</span>
                           <span>{articleStatusLabel(article)}{article.featuredOnHome && article.status !== "trash" ? " · 首页" : ""}</span>
                           <span>{article.status === "trash" ? (article.deletedAt ? new Date(article.deletedAt).toLocaleString() : "已移至回收站") : (article.publishedAt ? new Date(article.publishedAt).toLocaleString() : "尚未发布")}</span>
+                          <div className="wp-article-actions">
+                            <button
+                              className="wp-article-edit-button"
+                              type="button"
+                              onClick={() => {
+                                setActiveArticleId(articleId);
+                                setArticleMode("editor");
+                              }}
+                            >
+                              编辑
+                            </button>
+                            <button
+                              className="wp-article-delete-button"
+                              type="button"
+                              onClick={() => deleteArticleFromList(article)}
+                            >
+                              {article.status === "trash" ? "永久删除" : "删除"}
+                            </button>
+                          </div>
                         </div>
                       );
                     })}
@@ -2493,8 +3040,11 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
 
           {tab === "files" ? (
             <>
-              <div className="admin-section-title">
-                <h1>媒体库</h1>
+              <section className="file-upload-panel media-upload-panel">
+                <div>
+                  <strong>站点媒体与资料库</strong>
+                  <span>集中管理图片、PDF、Word、Excel、压缩包等媒体资源。上传后会进入前台“资料下载”页面，也可以在文章编辑器中插入链接或图片。</span>
+                </div>
                 <label className="admin-upload-button">
                   上传媒体
                   <input
@@ -2505,10 +3055,6 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
                     }}
                   />
                 </label>
-              </div>
-              <section className="file-upload-panel">
-                <strong>站点媒体与资料库</strong>
-                <span>集中管理图片、PDF、Word、Excel、压缩包等媒体资源。上传后会进入前台“资料下载”页面，也可以在文章编辑器中插入链接或图片。</span>
               </section>
               <div className="media-library-toolbar">
                 <select value={mediaTypeFilter} onChange={(event) => setMediaTypeFilter(event.target.value as MediaTypeFilter)}>
@@ -2554,10 +3100,24 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
               <div className="admin-table">
                 {state.leads.length === 0 ? <p>暂无询盘。前台提交 RFQ 后会自动进入这里。</p> : null}
                 {state.leads.map((lead) => (
-                  <div className="admin-row" key={lead.id}>
-                    <strong>{lead.productType}</strong>
-                    <span>{lead.email}</span>
-                    <span>{lead.destination || "No destination"}</span>
+                  <div className="admin-row lead-row" key={lead.id}>
+                    <div>
+                      <strong>{lead.fullName || "未填写姓名"}</strong>
+                      <span>{lead.company || "No company"}</span>
+                    </div>
+                    <div>
+                      <strong>{lead.productType}</strong>
+                      <span>{lead.quantity}</span>
+                    </div>
+                    <div>
+                      <span>{lead.email}</span>
+                      <span>{lead.whatsapp || "No WhatsApp / Phone"}</span>
+                    </div>
+                    <div>
+                      <span>{lead.destination || "No destination"}</span>
+                      <span>{lead.workpieceMaterial || "No material"}</span>
+                    </div>
+                    <span>{new Date(lead.createdAt).toLocaleString()}</span>
                     <select
                       value={lead.status}
                       onChange={(event) =>
@@ -2569,6 +3129,7 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
                     >
                       {leadStatuses.map((statusOption) => <option key={statusOption}>{statusOption}</option>)}
                     </select>
+                    {lead.message ? <p>{lead.message}</p> : null}
                   </div>
                 ))}
               </div>
@@ -2577,17 +3138,16 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
 
           {tab === "contacts" ? (
             <>
-              <div className="admin-section-title">
-                <h1>社交媒体与联系浮窗</h1>
+              <div className="settings-lock-note contact-settings-note">
+                <span>启用的联系方式会同步显示在前台联系页、页脚社媒图标中；带二维码的渠道仍会显示在右下角联系浮窗。</span>
                 <button type="button" onClick={() => save()}>
                   保存联系方式
                 </button>
               </div>
-              <p className="settings-lock-note">启用的社媒链接会同步显示在前台页脚社媒图标中；带二维码的渠道仍会显示在右下角联系浮窗。</p>
               <div className="admin-form-list contact-channel-list">
                 {state.contactChannels.map((channel, index) => (
                   <article className="admin-edit-card compact contact-card" key={channel.id}>
-                    <label>显示名称<input value={channel.label.zh ?? channel.label.en} onChange={(event) => updateContact(index, { label: { ...channel.label, zh: event.target.value } })} /></label>
+                    <label>显示名称<input value={channel.label.zh ?? channel.label.en} onChange={(event) => updateContact(index, { label: { ...channel.label, en: event.target.value, zh: event.target.value } })} /></label>
                     <label>类型
                       <select value={channel.type} onChange={(event) => updateContact(index, { type: event.target.value as ContactChannelType })}>
                         {contactTypeOptions.map((type) => (
@@ -2637,11 +3197,8 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
                       ))}
                     </select>
                   </label>
-                  <label>中文名称
-                    <input value={contactForm.zh} onChange={(event) => setContactForm({ ...contactForm, zh: event.target.value })} />
-                  </label>
-                  <label>英文名称
-                    <input value={contactForm.en} onChange={(event) => setContactForm({ ...contactForm, en: event.target.value })} />
+                  <label>显示名称
+                    <input value={contactForm.zh || contactForm.en} onChange={(event) => setContactForm({ ...contactForm, en: event.target.value, zh: event.target.value })} />
                   </label>
                   <label>账号/号码
                     <input value={contactForm.value} onChange={(event) => setContactForm({ ...contactForm, value: event.target.value })} />
@@ -2751,17 +3308,15 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
             </>
           ) : null}
 
+          {tab === "navigation" ? (
+            <>
+              {!canManageFrontendSettings ? <p className="settings-lock-note">当前账号没有前台设置权限。请使用 Super Admin 或 Admin 账号修改导航栏。</p> : null}
+              {navigationSettingsPanel}
+            </>
+          ) : null}
+
           {tab === "settings" ? (
             <>
-              <div className="admin-section-title">
-                <h1>设置</h1>
-                <button type="button" disabled={!canManageFrontendSettings} onClick={() => {
-                  if (guardFrontendSettingsAccess()) void save();
-                }}>
-                  保存设置
-                </button>
-              </div>
-
               {!canManageFrontendSettings ? <p className="settings-lock-note">当前账号没有前台设置权限。请使用 Super Admin 或 Admin 账号修改设置。</p> : null}
 
               <div className="wp-settings-screen">
@@ -2777,7 +3332,10 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
                 <section className="settings-panel wp-settings-panel">
                   {settingsSection === "general" ? (
                     <>
-                      <div className="settings-panel-head"><h2>常规选项</h2><span>对应 WordPress 常规设置：标题、网址、管理员邮箱、语言和时区。</span></div>
+                      <div className="settings-panel-head with-action">
+                        <div><h2>常规选项</h2><span>对应 WordPress 常规设置：标题、网址、管理员邮箱、语言和时区。</span></div>
+                        {settingsSaveAction}
+                      </div>
                       <div className="wp-settings-form">
                         <label>站点标题<input disabled={!canManageFrontendSettings} value={state.siteSettings.title} onChange={(event) => updateSiteSettings({ title: event.target.value })} /></label>
                         <label>副标题<input disabled={!canManageFrontendSettings} value={state.siteSettings.tagline} onChange={(event) => updateSiteSettings({ tagline: event.target.value })} /></label>
@@ -2851,7 +3409,10 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
 
                   {settingsSection === "writing" ? (
                     <>
-                      <div className="settings-panel-head"><h2>撰写设置</h2><span>设置新文章的默认产品分类和默认保存状态。</span></div>
+                      <div className="settings-panel-head with-action">
+                        <div><h2>撰写设置</h2><span>设置新文章的默认产品分类和默认保存状态。</span></div>
+                        {settingsSaveAction}
+                      </div>
                       <div className="wp-settings-form">
                         <label>默认文章分类
                           <select disabled={!canManageFrontendSettings} value={state.siteSettings.defaultArticleCategory} onChange={(event) => updateSiteSettings({ defaultArticleCategory: event.target.value })}>
@@ -2870,7 +3431,10 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
 
                   {settingsSection === "reading" ? (
                     <>
-                      <div className="settings-panel-head"><h2>阅读设置</h2><span>控制首页文章展示、列表数量和搜索引擎可见性。</span></div>
+                      <div className="settings-panel-head with-action">
+                        <div><h2>阅读设置</h2><span>控制首页文章展示、列表数量和搜索引擎可见性。</span></div>
+                        {settingsSaveAction}
+                      </div>
                       <div className="wp-settings-form">
                         <label>每页显示数量<input disabled={!canManageFrontendSettings} min={1} type="number" value={state.siteSettings.postsPerPage} onChange={(event) => updateSiteSettings({ postsPerPage: Number(event.target.value) || 1 })} /></label>
                         <label className="checkline"><input disabled={!canManageFrontendSettings} type="checkbox" checked={state.siteSettings.showFeaturedArticles} onChange={(event) => updateSiteSettings({ showFeaturedArticles: event.target.checked })} />首页显示精选文章</label>
@@ -2881,7 +3445,10 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
 
                   {settingsSection === "media" ? (
                     <>
-                      <div className="settings-panel-head"><h2>媒体设置</h2><span>管理上传图片尺寸和文件整理方式。</span></div>
+                      <div className="settings-panel-head with-action">
+                        <div><h2>媒体设置</h2><span>管理上传图片尺寸和文件整理方式。</span></div>
+                        {settingsSaveAction}
+                      </div>
                       <div className="wp-settings-form media-size-form">
                         <label>缩略图宽度<input disabled={!canManageFrontendSettings} min={0} type="number" value={state.siteSettings.thumbnailWidth} onChange={(event) => updateSiteSettings({ thumbnailWidth: Number(event.target.value) || 0 })} /></label>
                         <label>缩略图高度<input disabled={!canManageFrontendSettings} min={0} type="number" value={state.siteSettings.thumbnailHeight} onChange={(event) => updateSiteSettings({ thumbnailHeight: Number(event.target.value) || 0 })} /></label>
@@ -2896,7 +3463,10 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
 
                   {settingsSection === "permalinks" ? (
                     <>
-                      <div className="settings-panel-head"><h2>固定链接设置</h2><span>设置前台产品、文章和资料下载路径的基础别名。</span></div>
+                      <div className="settings-panel-head with-action">
+                        <div><h2>固定链接设置</h2><span>设置前台产品、文章和资料下载路径的基础别名。</span></div>
+                        {settingsSaveAction}
+                      </div>
                       <div className="wp-settings-form">
                         <label>产品 URL 基础<input disabled={!canManageFrontendSettings} value={state.siteSettings.productUrlBase} onChange={(event) => updateSiteSettings({ productUrlBase: slugify(event.target.value) })} /></label>
                         <label>文章 URL 基础<input disabled={!canManageFrontendSettings} value={state.siteSettings.articleUrlBase} onChange={(event) => updateSiteSettings({ articleUrlBase: slugify(event.target.value) })} /></label>
@@ -2907,7 +3477,10 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
 
                   {settingsSection === "privacy" ? (
                     <>
-                      <div className="settings-panel-head"><h2>隐私设置</h2><span>设置隐私页面、Cookie 提示和询盘数据使用说明。</span></div>
+                      <div className="settings-panel-head with-action">
+                        <div><h2>隐私设置</h2><span>设置隐私页面、Cookie 提示和询盘数据使用说明。</span></div>
+                        {settingsSaveAction}
+                      </div>
                       <div className="wp-settings-form">
                         <label>隐私页面 URL<input disabled={!canManageFrontendSettings} value={state.siteSettings.privacyPageUrl} onChange={(event) => updateSiteSettings({ privacyPageUrl: event.target.value })} /></label>
                         <label className="checkline"><input disabled={!canManageFrontendSettings} type="checkbox" checked={state.siteSettings.cookieNoticeEnabled} onChange={(event) => updateSiteSettings({ cookieNoticeEnabled: event.target.checked })} />启用 Cookie 提示</label>
@@ -2916,43 +3489,6 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
                     </>
                   ) : null}
 
-                  {settingsSection === "navigation" ? (
-                    <>
-                      <div className="settings-panel-head with-action">
-                        <div>
-                          <h2>首页导航栏</h2>
-                          <span>可设置前台 Header 显示的导航名称、链接、排序和是否启用。</span>
-                        </div>
-                        <div className="settings-actions">
-                          <button type="button" disabled={!canManageFrontendSettings} onClick={addNavigationItem}>新增导航</button>
-                        </div>
-                      </div>
-                      <div className="navigation-settings-list">
-                        {sortedNavigation.map((item) => (
-                          <article className="admin-edit-card compact nav-settings-card" key={item.id}>
-                            <label>导航名称
-                              <input disabled={!canManageFrontendSettings} value={item.label.zh || item.label.en} onChange={(event) => updateNavigationItem(item.id, { label: { ...item.label, en: event.target.value, zh: event.target.value } })} />
-                            </label>
-                            <label>选择链接
-                              <select disabled={!canManageFrontendSettings} value="" onChange={(event) => {
-                                if (event.target.value) updateNavigationItem(item.id, { href: event.target.value });
-                              }}>
-                                <option value="">手动输入或选择</option>
-                                <optgroup label="系统页面">{systemNavigationOptions.map((option) => <option key={option.href} value={option.href}>{option.label}</option>)}</optgroup>
-                                {navigationProductOptions.length > 0 ? <optgroup label="产品分类">{navigationProductOptions.map((product) => <option key={product.id ?? product.slug} value={`/products/${product.slug}`}>{compactOptionLabel(product.name.zh || product.name.en, "产品分类")}</option>)}</optgroup> : null}
-                                {navigationArticleOptions.length > 0 ? <optgroup label="文章">{navigationArticleOptions.map((article) => <option key={article.id ?? article.slug} value={`/articles/${article.slug}`}>{compactOptionLabel(article.title.zh || article.title.en, "文章")}</option>)}</optgroup> : null}
-                              </select>
-                            </label>
-                            <label className="nav-link-field">链接<input disabled={!canManageFrontendSettings} value={item.href} onChange={(event) => updateNavigationItem(item.id, { href: event.target.value })} /></label>
-                            <label>排序<input disabled={!canManageFrontendSettings} type="number" value={item.order} onChange={(event) => updateNavigationItem(item.id, { order: Number(event.target.value) || 0 })} /></label>
-                            <label className="checkline"><input disabled={!canManageFrontendSettings} type="checkbox" checked={item.enabled} onChange={(event) => updateNavigationItem(item.id, { enabled: event.target.checked })} />显示</label>
-                            <label className="checkline"><input disabled={!canManageFrontendSettings} type="checkbox" checked={Boolean(item.openInNewTab)} onChange={(event) => updateNavigationItem(item.id, { openInNewTab: event.target.checked })} />新窗口</label>
-                            <button className="contact-delete-button" disabled={!canManageFrontendSettings} type="button" onClick={() => removeNavigationItem(item.id)}>删除</button>
-                          </article>
-                        ))}
-                      </div>
-                    </>
-                  ) : null}
                 </section>
               </div>
 
@@ -2961,14 +3497,6 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
 
           {tab === "languages" ? (
             <>
-              <div className="admin-section-title">
-                <h1>语言设置</h1>
-                <button type="button" disabled={!canManageFrontendSettings || !frontendSettingsDirty} onClick={() => {
-                  if (guardFrontendSettingsAccess()) void save();
-                }}>
-                  {frontendSettingsDirty ? "保存语言" : "已保存"}
-                </button>
-              </div>
               {!canManageFrontendSettings ? <p className="settings-lock-note">当前账号没有前台设置权限。请使用 Super Admin 或 Admin 账号修改语言。</p> : null}
               {languageSettingsPanel}
             </>
@@ -2976,7 +3504,6 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
 
           {tab === "themes" ? (
             <>
-              <h1>主题样式</h1>
               <p>点击主题后会立即预览并保存，前台刷新后同样生效。</p>
               <div className="theme-picker theme-picker-detailed">
                 {themeOptions.map((theme) => (
@@ -3093,7 +3620,6 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
 
           {tab === "ai" ? (
             <>
-              <h1>AI 内容生成设置</h1>
               <div className="admin-edit-card">
                 <label>供应商<input value={state.aiSettings.provider} onChange={(event) => setState({ ...state, aiSettings: { ...state.aiSettings, provider: event.target.value } })} /></label>
                 <label>模型<input value={state.aiSettings.model} onChange={(event) => setState({ ...state, aiSettings: { ...state.aiSettings, model: event.target.value } })} /></label>

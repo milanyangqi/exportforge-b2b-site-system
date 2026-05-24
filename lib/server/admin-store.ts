@@ -72,6 +72,7 @@ export function buildStoredFileUrl(id: string) {
 export function createDefaultAdminState(): AdminState {
   return {
     products: productCategories,
+    pages: [],
     articles,
     leads: [],
     contactChannels,
@@ -178,10 +179,33 @@ function normalizeNavigation(existingNavigation?: SiteNavigationItem[]) {
     href: item.href || "/",
     enabled: item.enabled ?? true,
     order: Number.isFinite(item.order) ? item.order : (index + 1) * 10,
+    parentId: item.parentId,
     openInNewTab: item.openInNewTab ?? false
   }));
+  const ids = new Set(normalizedNavigation.map((item) => item.id));
+  const parentById = new Map(normalizedNavigation.map((item) => [item.id, item.parentId]));
 
-  return normalizedNavigation.sort((a, b) => a.order - b.order);
+  function createsCycle(itemId: string, parentId?: string) {
+    const visited = new Set([itemId]);
+    let currentParentId = parentId;
+
+    while (currentParentId) {
+      if (visited.has(currentParentId)) return true;
+      visited.add(currentParentId);
+      currentParentId = parentById.get(currentParentId);
+    }
+
+    return false;
+  }
+
+  return normalizedNavigation
+    .map((item) => ({
+      ...item,
+      parentId: item.parentId && ids.has(item.parentId) && !createsCycle(item.id, item.parentId)
+        ? item.parentId
+        : undefined
+    }))
+    .sort((a, b) => a.order - b.order);
 }
 
 function shouldRefreshKeyproContent(parsed: AdminState) {
@@ -200,6 +224,16 @@ function mergeSeedArticles(existingArticles = articles) {
   const missingSeedArticles = articles.filter((article) => !existingSlugs.has(article.slug));
 
   return [...existingArticles, ...missingSeedArticles];
+}
+
+function normalizePages(pages: AdminState["pages"] = [], updatedAt?: string) {
+  return pages.map((page, index) => ({
+    ...page,
+    id: page.id ?? `page-${index}-${page.slug}`,
+    status: page.status ?? "draft",
+    publishedAt: page.publishedAt ?? updatedAt,
+    body: page.body ?? { en: "", zh: "" }
+  }));
 }
 
 async function getCloudflareKv() {
@@ -287,6 +321,7 @@ function normalizeAdminState(parsed: AdminState): AdminState {
       ...product,
       id: product.id ?? `product-${index}-${product.slug}`
     })),
+    pages: normalizePages(parsed.pages, parsed.updatedAt),
     articles: articlesSource.map((article) => ({
       ...article,
       id: article.id ?? `article-${article.slug}`,

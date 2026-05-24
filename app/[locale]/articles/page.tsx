@@ -11,9 +11,9 @@ export default async function ArticlesPage({ params }: { params: Promise<{ local
   const publishedArticles = state.articles.filter((article) => article.status === "published");
 
   return (
-    <main className="subpage">
+    <main className="subpage articles-subpage">
       <section className="section">
-        <div className="section-head">
+        <div className="section-head subpage-head">
           <span className="eyebrow">Technical library</span>
           <h1>Buying guides and application notes for end mills, drill bits, and OEM tool orders.</h1>
         </div>

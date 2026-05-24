@@ -1,5 +1,5 @@
 import { RfqForm } from "@/components/RfqForm";
-import { t } from "@/lib/i18n";
+import { PublicContactList } from "@/components/PublicContactList";
 import { readAdminState } from "@/lib/server/admin-store";
 import type { LocaleCode } from "@/types/site";
 
@@ -11,21 +11,18 @@ export default async function ContactPage({ params }: { params: Promise<{ locale
 
   return (
     <main className="subpage">
-      <section className="section split">
-        <div>
+      <section className="section split contact-section">
+        <div className="contact-copy">
           <span className="eyebrow">Contact</span>
           <h1>Send your end mill, drill bit, or OEM tooling request to KeyproTools.</h1>
           <p>Share drawings, size lists, coating requirements, packaging details, and destination so the sales team can prepare a practical export quote.</p>
-          <div className="stack-list public">
-            {state.contactChannels.filter((channel) => channel.enabled).map((channel) => (
-              <a key={channel.id} href={channel.href}>
-                <strong>{t(channel.label, locale)}</strong>
-                <span>{channel.value}</span>
-              </a>
-            ))}
-          </div>
+          <PublicContactList channels={state.contactChannels} locale={locale} />
         </div>
-        <RfqForm locale={locale} />
+        <div className="contact-rfq-panel" id="rfq">
+          <span className="eyebrow">RFQ details</span>
+          <h2>Tell us what to quote.</h2>
+          <RfqForm locale={locale} />
+        </div>
       </section>
     </main>
   );

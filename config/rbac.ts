@@ -6,6 +6,11 @@ const allPermissions: Permission[] = [
   "products:edit",
   "products:delete",
   "products:publish",
+  "pages:view",
+  "pages:create",
+  "pages:edit",
+  "pages:delete",
+  "pages:publish",
   "articles:view",
   "articles:create",
   "articles:edit",
@@ -30,7 +35,7 @@ export const roles: Record<RoleKey, { label: string; permissions: Permission[] }
   },
   editor: {
     label: "Editor",
-    permissions: ["products:view", "products:create", "products:edit", "articles:view", "articles:create", "articles:edit", "ai:generate"]
+    permissions: ["products:view", "products:create", "products:edit", "pages:view", "pages:create", "pages:edit", "articles:view", "articles:create", "articles:edit", "ai:generate"]
   },
   sales: {
     label: "Sales",
@@ -38,7 +43,7 @@ export const roles: Record<RoleKey, { label: string; permissions: Permission[] }
   },
   viewer: {
     label: "Viewer",
-    permissions: ["products:view", "articles:view", "leads:view"]
+    permissions: ["products:view", "pages:view", "articles:view", "leads:view"]
   }
 };
 
