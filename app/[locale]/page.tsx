@@ -7,7 +7,7 @@ import { themes } from "@/config/themes";
 import { siteSettings } from "@/data/site";
 import { t, ui } from "@/lib/i18n";
 import { readAdminState } from "@/lib/server/admin-store";
-import type { LocaleCode } from "@/types/site";
+import type { LocaleCode, ProductCategory } from "@/types/site";
 
 export const dynamic = "force-dynamic";
 
@@ -16,6 +16,17 @@ export default async function LocaleHome({ params }: { params: Promise<{ locale:
   const state = await readAdminState();
   const activeTheme = themes[state.activeTheme] ?? themes.industrial;
   const homeArticles = state.articles.filter((article) => article.status === "published" && article.featuredOnHome);
+  const homeProductSlugs = [
+    "carbide-end-mills",
+    "drill-bits",
+    "custom-tooling",
+    "square-end-mills",
+    "solid-carbide-drills",
+    "coating-oem-packaging"
+  ];
+  const homeProducts = homeProductSlugs
+    .map((slug) => state.products.find((product) => product.slug === slug))
+    .filter((product): product is ProductCategory => Boolean(product));
   const visibleLocales = locales.filter((item) => state.enabledLocales.includes(item.code));
 
   return (
@@ -48,7 +59,7 @@ export default async function LocaleHome({ params }: { params: Promise<{ locale:
           <h2>End mills, drill bits, and OEM tooling built for repeat purchasing.</h2>
           <p>Browse core categories for CNC shops, hardware distributors, maintenance suppliers, and private-label tool programs.</p>
         </div>
-        <ProductGrid locale={locale} products={state.products} />
+        <ProductGrid flat locale={locale} products={homeProducts} />
       </section>
 
       <section className="section dark-band">

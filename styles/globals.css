@@ -577,6 +577,15 @@ html[data-theme="consumer-goods"] .industrial-visual {
   gap: 10px;
 }
 
+.product-tree-grid-flat {
+  align-items: stretch;
+  grid-auto-rows: 1fr;
+}
+
+.article-grid {
+  grid-auto-rows: 1fr;
+}
+
 .product-subcategory-list {
   display: grid;
   gap: 10px;
@@ -613,7 +622,19 @@ html[data-theme="consumer-goods"] .industrial-visual {
 
 .product-card,
 .article-card {
+  display: flex;
+  height: 100%;
+  flex-direction: column;
   overflow: hidden;
+}
+
+.product-card p,
+.article-card p {
+  flex: 1 1 auto;
+}
+
+.product-card .chips {
+  margin-top: auto;
 }
 
 .product-card-media,

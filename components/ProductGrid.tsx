@@ -73,8 +73,18 @@ function ProductTreeBranch({ locale, product, depth = 0 }: { locale: LocaleCode;
   );
 }
 
-export function ProductGrid({ locale, products }: { locale: LocaleCode; products: ProductCategory[] }) {
+export function ProductGrid({ flat = false, locale, products }: { flat?: boolean; locale: LocaleCode; products: ProductCategory[] }) {
   const items = buildProductTree(products ?? []);
+
+  if (flat) {
+    return (
+      <div className="product-tree-grid product-tree-grid-flat">
+        {(products ?? []).map((product) => (
+          <ProductCard key={product.slug} locale={locale} product={product} />
+        ))}
+      </div>
+    );
+  }
 
   return (
     <div className="product-tree-grid">

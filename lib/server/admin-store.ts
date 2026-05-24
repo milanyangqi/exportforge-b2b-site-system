@@ -180,10 +180,8 @@ function normalizeNavigation(existingNavigation?: SiteNavigationItem[]) {
     order: Number.isFinite(item.order) ? item.order : (index + 1) * 10,
     openInNewTab: item.openInNewTab ?? false
   }));
-  const existingIds = new Set(normalizedNavigation.map((item) => item.id));
-  const missingDefaults = defaultNavigation.filter((item) => !existingIds.has(item.id));
 
-  return [...normalizedNavigation, ...missingDefaults].sort((a, b) => a.order - b.order);
+  return normalizedNavigation.sort((a, b) => a.order - b.order);
 }
 
 function shouldRefreshKeyproContent(parsed: AdminState) {
@@ -195,6 +193,13 @@ function mergeKeyproMedia(existingFiles = uploadedFiles) {
   const retainedFiles = existingFiles.filter((file) => !seedIds.has(file.id));
 
   return [...uploadedFiles, ...retainedFiles];
+}
+
+function mergeSeedArticles(existingArticles = articles) {
+  const existingSlugs = new Set(existingArticles.map((article) => article.slug));
+  const missingSeedArticles = articles.filter((article) => !existingSlugs.has(article.slug));
+
+  return [...existingArticles, ...missingSeedArticles];
 }
 
 async function getCloudflareKv() {
@@ -262,9 +267,9 @@ async function deleteLocalUploadFile(id: string) {
 function normalizeAdminState(parsed: AdminState): AdminState {
   const refreshKeyproContent = shouldRefreshKeyproContent(parsed);
   const productsSource = refreshKeyproContent ? productCategories : (parsed.products ?? productCategories);
-  const articlesSource = refreshKeyproContent ? articles : (parsed.articles ?? articles);
+  const articlesSource = refreshKeyproContent ? articles : mergeSeedArticles(parsed.articles ?? articles);
   const navigationSource = refreshKeyproContent ? defaultNavigation : parsed.navigation;
-  const uploadedFilesSource = refreshKeyproContent ? mergeKeyproMedia(parsed.uploadedFiles) : (parsed.uploadedFiles ?? uploadedFiles);
+  const uploadedFilesSource = refreshKeyproContent ? mergeKeyproMedia(parsed.uploadedFiles) : mergeKeyproMedia(parsed.uploadedFiles ?? uploadedFiles);
   const siteSettingsSource = refreshKeyproContent
     ? {
         ...(parsed.siteSettings ?? {}),

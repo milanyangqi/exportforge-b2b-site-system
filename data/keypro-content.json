@@ -539,6 +539,48 @@
       "featuredOnHome": true,
       "publishedAt": "2026-05-24T04:23:00.000Z",
       "coverImageUrl": "/assets/tools/export-packaging.png"
+    },
+    {
+      "id": "article-end-mill-rfq-details",
+      "slug": "end-mill-rfq-details-flutes-corner-radius-coating",
+      "title": {
+        "en": "End mill RFQ details: flute count, corner radius, coating, and tolerance",
+        "zh": "铣刀询价要写清哪些参数：刃数、圆角、涂层和公差"
+      },
+      "excerpt": {
+        "en": "A buyer checklist for turning end mill drawings and sample requests into quotation-ready specifications.",
+        "zh": "把铣刀图纸和样品需求整理成可报价规格的采购清单。"
+      },
+      "body": {
+        "en": "![End mill RFQ details](/assets/tools/hero-tooling-range.jpg)\n\n## Why RFQ detail matters\n\nA small change in flute count, neck relief, corner radius, coating, or tolerance can change both price and lead time. Buyers get faster answers when each end mill line is written as a complete tool specification.\n\n## Recommended RFQ fields\n\n- Diameter, flute length, overall length, shank diameter, and neck length.\n- Flute count, helix angle preference, corner radius, or ball radius.\n- Workpiece material, hardness, coolant condition, and target operation.\n- Coating, laser marking, label language, and packaging format.\n\n| RFQ item | Why it matters |\n| --- | --- |\n| Corner radius | Improves edge strength and changes finishing behavior |\n| Neck length | Controls clearance for deep walls and mold features |\n| Coating | Aligns tool life, heat resistance, and product tier |\n| Tolerance | Affects grinding process and inspection requirements |\n\nKeyproTools can quote standard catalog items first, then move to custom grinding when the RFQ includes drawings or samples.",
+        "zh": "![铣刀询价参数](/assets/tools/hero-tooling-range.jpg)\n\n## 询价信息越清楚，报价越快\n\n刃数、避空颈、刀尖圆角、涂层和公差只要有一项变化，价格和交期都可能不同。经销商把每一支铣刀写成完整规格，工厂才能更快判断是否走标准品或定制研磨。\n\n## 建议写清的字段\n\n- 直径、刃长、总长、柄径和颈长。\n- 刃数、螺旋角偏好、刀尖圆角或球头半径。\n- 工件材料、硬度、冷却条件和加工工序。\n- 涂层、激光打标、标签语言和包装方式。\n\n| 询价项目 | 影响点 |\n| --- | --- |\n| 刀尖圆角 | 提升刀尖强度，也会影响精加工表现 |\n| 颈长 | 影响深腔、深壁和模具结构的避让能力 |\n| 涂层 | 决定寿命、耐热和产品档次定位 |\n| 公差 | 影响研磨工艺和检测要求 |\n\nKeyproTools 可先按标准目录报价，若 RFQ 附图纸或样品，再进入定制研磨评估。"
+      },
+      "category": "carbide-end-mills",
+      "status": "published",
+      "featuredOnHome": true,
+      "publishedAt": "2026-05-24T13:45:00.000Z",
+      "coverImageUrl": "/assets/tools/hero-tooling-range.jpg"
+    },
+    {
+      "id": "article-drill-assortment-planning",
+      "slug": "drill-bit-assortment-planning-for-distributors",
+      "title": {
+        "en": "Planning drill bit assortments for distributor stocking programs",
+        "zh": "经销商钻头备货组合怎么规划"
+      },
+      "excerpt": {
+        "en": "How to balance fast-moving HSS drills, cobalt drills, carbide drills, and sets for repeat orders.",
+        "zh": "如何平衡 HSS、含钴钻、硬质合金钻和套装，形成可持续复购的备货结构。"
+      },
+      "body": {
+        "en": "![Drill assortment planning](/assets/tools/hero-export-packing.jpg)\n\n## Start from buyer use cases\n\nA good drill bit assortment is not only a size list. It should match the distributor's customers: hardware retail, maintenance teams, sheet-metal users, or CNC machining shops.\n\n## Practical stocking mix\n\n1. Use HSS twist drills for high-volume general demand.\n2. Add M35 cobalt drills for stainless steel and harder maintenance jobs.\n3. Keep solid carbide drills for CNC accounts that value hole accuracy.\n4. Package popular sizes as sets and replenish slow sizes in bulk.\n\n| Assortment layer | Typical role |\n| --- | --- |\n| HSS twist drills | Traffic product and regular replenishment |\n| M35 cobalt drills | Higher-margin stainless steel solution |\n| Carbide drills | Precision CNC buyer retention |\n| Sets and private labels | Shelf-ready retail and distributor branding |\n\nKeyproTools can prepare mixed cartons, foam tray assortments, plastic tube labels, and reorder lists for distributor programs.",
+        "zh": "![钻头备货组合](/assets/tools/hero-export-packing.jpg)\n\n## 先看客户使用场景\n\n好的钻头组合不是简单规格表，而要匹配经销商服务的客户：五金零售、维修维护、钣金开孔，或 CNC 加工厂。\n\n## 实用备货结构\n\n1. 用 HSS 麻花钻覆盖通用走量需求。\n2. 加入 M35 含钴钻，应对不锈钢和较硬材料维修场景。\n3. 保留整体硬质合金钻，服务重视孔精度的 CNC 客户。\n4. 热销规格做套装，慢销规格按散装补货。\n\n| 组合层级 | 典型作用 |\n| --- | --- |\n| HSS 麻花钻 | 走量基础品和常规复购 |\n| M35 含钴钻 | 不锈钢加工的高毛利方案 |\n| 硬质合金钻 | 绑定精密 CNC 客户 |\n| 套装与私标 | 适合货架销售和经销商品牌化 |\n\nKeyproTools 可为经销商项目准备混装外箱、泡棉托盘、塑管标签和复购清单。"
+      },
+      "category": "drill-bits",
+      "status": "published",
+      "featuredOnHome": true,
+      "publishedAt": "2026-05-24T13:45:00.000Z",
+      "coverImageUrl": "/assets/tools/hero-export-packing.jpg"
     }
   ],
   "siteSettings": {
