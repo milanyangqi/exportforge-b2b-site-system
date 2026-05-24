@@ -56,6 +56,7 @@ cp .env.example .env
 
 - `NEXT_PUBLIC_SITE_URL`
 - `APP_PORT`，宿主机端口，默认 `3000`
+- `NPM_CONFIG_REGISTRY`，Docker 构建拉包源，默认 `https://registry.npmmirror.com`
 - `INITIAL_ADMIN_EMAIL`
 - `INITIAL_ADMIN_PASSWORD`
 - `AUTH_SECRET`
