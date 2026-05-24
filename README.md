@@ -42,9 +42,33 @@ npm run dev
 
 ## Self-host
 
+Docker 自部署只需要 Web 服务。后台数据、上传文件会持久化到宿主机的 `.data/` 目录，不依赖 Postgres。
+
+```bash
+docker compose up -d --build
+```
+
+不配置 `.env` 也可以直接启动。生产部署前建议复制并修改 `.env`：
+
 ```bash
 cp .env.example .env
-docker compose up --build
+```
+
+- `NEXT_PUBLIC_SITE_URL`
+- `INITIAL_ADMIN_EMAIL`
+- `INITIAL_ADMIN_PASSWORD`
+- `AUTH_SECRET`
+
+部署后访问：
+
+- `http://localhost:3000/zh`
+- `http://localhost:3000/zh/admin`
+
+查看运行状态：
+
+```bash
+docker compose ps
+docker compose logs -f web
 ```
 
 ## Cloudflare Workers

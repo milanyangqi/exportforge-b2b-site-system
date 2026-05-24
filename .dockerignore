@@ -1,0 +1,15 @@
+.data
+.env
+.env.*
+.git
+.next
+.open-next
+.wrangler
+backups
+coverage
+dist
+node_modules
+uploads
+*.log
+*.tsbuildinfo
+.DS_Store

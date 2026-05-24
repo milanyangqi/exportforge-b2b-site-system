@@ -1,26 +1,25 @@
 services:
   web:
     build: .
+    image: exportforge-b2b-site-system:latest
+    restart: unless-stopped
     ports:
       - "3000:3000"
-    env_file:
-      - .env
-    depends_on:
-      - db
-    volumes:
-      - ./uploads:/app/uploads
-
-  db:
-    image: postgres:16-alpine
-    restart: unless-stopped
     environment:
-      POSTGRES_DB: export_site
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-    ports:
-      - "5432:5432"
+      NODE_ENV: production
+      NEXT_PUBLIC_SITE_URL: ${NEXT_PUBLIC_SITE_URL:-http://localhost:3000}
+      INITIAL_ADMIN_EMAIL: ${INITIAL_ADMIN_EMAIL:-admin@example.com}
+      INITIAL_ADMIN_PASSWORD: ${INITIAL_ADMIN_PASSWORD:-change-me}
+      AUTH_SECRET: ${AUTH_SECRET:-replace-with-a-long-random-secret}
+      AI_PROVIDER: ${AI_PROVIDER:-openai-compatible}
+      AI_API_KEY: ${AI_API_KEY:-}
+      AI_BASE_URL: ${AI_BASE_URL:-}
+      AI_MODEL: ${AI_MODEL:-}
     volumes:
-      - postgres_data:/var/lib/postgresql/data
-
-volumes:
-  postgres_data:
+      - ./.data:/app/.data
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:3000/zh >/dev/null 2>&1 || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
