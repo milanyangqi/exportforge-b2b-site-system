@@ -1,4 +1,5 @@
 import { IndustrialVisual } from "@/components/IndustrialVisual";
+import { HeroPosterCarousel } from "@/components/HeroPosterCarousel";
 import { ProductGrid } from "@/components/ProductGrid";
 import { RfqForm } from "@/components/RfqForm";
 import { locales } from "@/config/locales";
@@ -20,21 +21,25 @@ export default async function LocaleHome({ params }: { params: Promise<{ locale:
   return (
     <main>
       <section className="hero-section">
-        <div className="hero-copy">
-          <span className="eyebrow">{t(ui.heroKicker, locale)}</span>
-          <h1>{t(ui.heroTitle, locale)}</h1>
-          <p>{t(ui.heroBody, locale)}</p>
-          <div className="hero-actions">
-            <a className="button primary" href="#rfq">{t(ui.quote, locale)}</a>
-            <a className="button secondary" href={`/${locale}/products`}>{t(ui.navProducts, locale)}</a>
+        <HeroPosterCarousel />
+        <div className="hero-poster-overlay" aria-hidden="true" />
+        <div className="hero-inner">
+          <div className="hero-copy">
+            <span className="eyebrow">{t(ui.heroKicker, locale)}</span>
+            <h1>{t(ui.heroTitle, locale)}</h1>
+            <p>{t(ui.heroBody, locale)}</p>
+            <div className="hero-actions">
+              <a className="button primary" href="#rfq">{t(ui.quote, locale)}</a>
+              <a className="button secondary" href={`/${locale}/products`}>{t(ui.navProducts, locale)}</a>
+            </div>
+            <div className="metrics">
+              <div><strong>0.2-25mm</strong><span>End mill diameter range</span></div>
+              <div><strong>HSS / M35 / Carbide</strong><span>Drill bit supply</span></div>
+              <div><strong>OEM</strong><span>Laser marking and packing</span></div>
+            </div>
           </div>
-          <div className="metrics">
-            <div><strong>0.2-25mm</strong><span>End mill diameter range</span></div>
-            <div><strong>HSS / M35 / Carbide</strong><span>Drill bit supply</span></div>
-            <div><strong>OEM</strong><span>Laser marking and packing</span></div>
-          </div>
+          <IndustrialVisual />
         </div>
-        <IndustrialVisual />
       </section>
 
       <section className="section">

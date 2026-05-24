@@ -197,6 +197,45 @@
         "zh": "出口包装与 OEM 刀具备货场景图。"
       },
       "enabled": true
+    },
+    {
+      "id": "media-keypro-hero-tooling-range",
+      "name": "KeyproTools hero tooling range",
+      "mimeType": "image/jpeg",
+      "size": 334923,
+      "url": "/assets/tools/hero-tooling-range.jpg",
+      "createdAt": "2026-05-24T13:21:00.000Z",
+      "description": {
+        "en": "Wide hero poster showing carbide end mills and drill bits.",
+        "zh": "首屏轮播海报：硬质合金铣刀与钻头系列。"
+      },
+      "enabled": true
+    },
+    {
+      "id": "media-keypro-hero-cnc-factory",
+      "name": "KeyproTools hero CNC factory",
+      "mimeType": "image/jpeg",
+      "size": 359039,
+      "url": "/assets/tools/hero-cnc-factory.jpg",
+      "createdAt": "2026-05-24T13:21:00.000Z",
+      "description": {
+        "en": "Wide hero poster for CNC factory tooling supply.",
+        "zh": "首屏轮播海报：CNC 工厂刀具供应场景。"
+      },
+      "enabled": true
+    },
+    {
+      "id": "media-keypro-hero-export-packing",
+      "name": "KeyproTools hero export packing",
+      "mimeType": "image/jpeg",
+      "size": 440868,
+      "url": "/assets/tools/hero-export-packing.jpg",
+      "createdAt": "2026-05-24T13:21:00.000Z",
+      "description": {
+        "en": "Wide hero poster showing export packing and distributor-ready tool assortments.",
+        "zh": "首屏轮播海报：出口包装与经销商备货。"
+      },
+      "enabled": true
     }
   ],
   "productCategories": [

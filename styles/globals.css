@@ -54,9 +54,9 @@ textarea {
 }
 
 .site-header {
-  position: sticky;
+  position: relative;
   z-index: 20;
-  top: 14px;
+  top: auto;
   display: flex;
   width: min(1180px, calc(100% - 32px));
   min-height: 70px;
@@ -164,7 +164,6 @@ body:has(.real-admin) .site-header {
   cursor: pointer;
 }
 
-.hero-section,
 .section,
 .subpage {
   width: min(1180px, calc(100% - 40px));
@@ -172,12 +171,128 @@ body:has(.real-admin) .site-header {
 }
 
 .hero-section {
+  position: relative;
+  width: 100%;
+  margin: 0;
+  overflow: hidden;
+  color: #fff;
+  isolation: isolate;
+}
+
+.hero-inner {
   display: grid;
   grid-template-columns: 0.98fr 1.02fr;
   gap: 54px;
   align-items: center;
+  width: min(1180px, calc(100% - 40px));
+  margin: 0 auto;
   min-height: calc(100vh - 84px);
-  padding: 80px 0 70px;
+  padding: 92px 0 78px;
+}
+
+.hero-poster-carousel,
+.hero-poster-slide,
+.hero-poster-overlay {
+  position: absolute;
+  inset: 0;
+}
+
+.hero-poster-carousel {
+  z-index: -3;
+  overflow: hidden;
+  background: #061923;
+}
+
+.hero-poster-slide {
+  background-image: var(--poster-image);
+  background-position: center;
+  background-size: cover;
+  opacity: 0;
+  transform: scale(1.04);
+  animation: heroPosterCycle 21s infinite;
+}
+
+.hero-poster-slide:nth-child(1) {
+  opacity: 1;
+  animation-delay: 0s;
+}
+
+.hero-poster-slide:nth-child(2) {
+  animation-delay: 7s;
+}
+
+.hero-poster-slide:nth-child(3) {
+  animation-delay: 14s;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero-poster-slide {
+    animation: none;
+  }
+
+  .hero-poster-slide:not(:first-child) {
+    opacity: 0;
+  }
+}
+
+.hero-poster-overlay {
+  z-index: -2;
+  background:
+    linear-gradient(90deg, rgba(4, 18, 27, 0.9) 0%, rgba(6, 32, 45, 0.82) 34%, rgba(8, 42, 56, 0.48) 64%, rgba(4, 18, 27, 0.26) 100%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.08), rgba(0, 0, 0, 0.32));
+}
+
+@keyframes heroPosterCycle {
+  0%,
+  27% {
+    opacity: 1;
+    transform: scale(1.02);
+  }
+
+  34%,
+  94% {
+    opacity: 0;
+    transform: scale(1.08);
+  }
+
+  100% {
+    opacity: 1;
+    transform: scale(1.02);
+  }
+}
+
+.hero-section h1 {
+  color: #fff;
+  text-shadow: 0 24px 70px rgba(0, 0, 0, 0.42);
+}
+
+.hero-section .eyebrow {
+  color: #90f2e8;
+}
+
+.hero-section .hero-copy p {
+  color: rgba(235, 250, 255, 0.86);
+}
+
+.hero-section .button.secondary {
+  color: #fff;
+  border-color: rgba(255, 255, 255, 0.32);
+  background: rgba(255, 255, 255, 0.12);
+  backdrop-filter: blur(12px);
+}
+
+.hero-section .metrics div {
+  border-color: rgba(255, 255, 255, 0.22);
+  background: rgba(255, 255, 255, 0.12);
+  backdrop-filter: blur(14px);
+}
+
+.hero-section .metrics strong {
+  color: #7df1e2;
+}
+
+.hero-section .metrics span {
+  color: rgba(238, 251, 255, 0.78);
 }
 
 .eyebrow {
@@ -298,7 +413,7 @@ html[data-theme="clean-export"] .industrial-visual {
     repeating-linear-gradient(0deg, transparent 0 34px, rgba(255, 255, 255, 0.12) 34px 35px);
 }
 
-html[data-theme="premium-brand"] .hero-section {
+html[data-theme="premium-brand"] .hero-inner {
   grid-template-columns: 1fr;
   gap: 34px;
   text-align: center;
@@ -322,7 +437,7 @@ html[data-theme="premium-brand"] .industrial-visual {
     linear-gradient(90deg, rgba(255, 255, 255, 0.12), transparent 50%);
 }
 
-html[data-theme="equipment"] .hero-section {
+html[data-theme="equipment"] .hero-inner {
   grid-template-columns: 0.82fr 1.18fr;
 }
 
@@ -341,7 +456,7 @@ html[data-theme="consumer-goods"] .industrial-visual {
 
 .visual-grid {
   position: absolute;
-  inset: 34px;
+  inset: 30px;
   border: 1px solid rgba(255, 255, 255, 0.18);
   background:
     linear-gradient(rgba(255,255,255,0.08) 1px, transparent 1px),
@@ -351,8 +466,10 @@ html[data-theme="consumer-goods"] .industrial-visual {
 
 .visual-product-image {
   position: absolute;
-  inset: 54px 34px auto auto;
-  width: min(76%, 600px);
+  top: 58px;
+  right: 36px;
+  z-index: 2;
+  width: min(54%, 460px);
   aspect-ratio: 16 / 9;
   border: 1px solid rgba(255, 255, 255, 0.22);
   border-radius: 8px;
@@ -362,11 +479,12 @@ html[data-theme="consumer-goods"] .industrial-visual {
 
 .gauge {
   position: absolute;
-  top: 36px;
-  left: 34px;
+  top: 32px;
+  left: 32px;
+  z-index: 3;
   display: grid;
-  width: 148px;
-  height: 148px;
+  width: 128px;
+  height: 128px;
   place-items: center;
   border: 12px solid rgba(255, 255, 255, 0.18);
   border-top-color: var(--accent);
@@ -380,18 +498,20 @@ html[data-theme="consumer-goods"] .industrial-visual {
 }
 
 .gauge small {
-  margin-top: -54px;
+  margin-top: -46px;
   color: #cce8f1;
   font-weight: 800;
 }
 
 .tool-stack {
   position: absolute;
-  right: 42px;
-  bottom: 62px;
+  right: 52px;
+  bottom: 44px;
+  z-index: 1;
   display: grid;
   gap: 12px;
-  width: min(310px, 55%);
+  width: min(250px, 40%);
+  opacity: 0.48;
 }
 
 .tool-stack i {
@@ -407,6 +527,7 @@ html[data-theme="consumer-goods"] .industrial-visual {
   position: absolute;
   left: 42px;
   bottom: 44px;
+  z-index: 4;
   width: min(320px, 62%);
   border: 1px solid rgba(255, 255, 255, 0.2);
   border-radius: var(--radius);
@@ -3742,7 +3863,7 @@ textarea:disabled {
 }
 
 @media (max-width: 980px) {
-  .hero-section,
+  .hero-inner,
   .split,
   .rfq-section,
   .download-grid {
@@ -3765,10 +3886,38 @@ textarea:disabled {
 
 @media (max-width: 660px) {
   .site-header,
-  .hero-section,
+  .hero-inner,
   .section,
   .subpage {
     width: min(100% - 26px, 1180px);
+  }
+
+  .site-header {
+    gap: 10px;
+    min-height: 64px;
+    padding: 0 12px;
+    overflow: hidden;
+  }
+
+  .header-actions {
+    min-width: 0;
+    margin-left: auto;
+  }
+
+  .header-actions .quote-link {
+    display: none;
+  }
+
+  .hero-inner {
+    gap: 30px;
+    min-height: auto;
+    padding: 58px 0 62px;
+  }
+
+  .hero-poster-overlay {
+    background:
+      linear-gradient(180deg, rgba(4, 18, 27, 0.88), rgba(6, 32, 45, 0.72) 48%, rgba(4, 18, 27, 0.84)),
+      linear-gradient(90deg, rgba(4, 18, 27, 0.52), transparent);
   }
 
   .brand span:last-child,
@@ -3801,6 +3950,48 @@ textarea:disabled {
 
   .industrial-visual {
     min-height: 440px;
+  }
+
+  .visual-grid {
+    inset: 22px;
+  }
+
+  .visual-product-image {
+    top: 112px;
+    right: 20px;
+    width: calc(100% - 40px);
+  }
+
+  .gauge {
+    top: 22px;
+    left: 22px;
+    width: 98px;
+    height: 98px;
+    border-width: 9px;
+  }
+
+  .gauge span {
+    font-size: 23px;
+  }
+
+  .gauge small {
+    margin-top: -34px;
+    font-size: 11px;
+  }
+
+  .tool-stack {
+    right: 28px;
+    bottom: 96px;
+    width: 56%;
+    opacity: 0.32;
+  }
+
+  .spec-plate {
+    right: 22px;
+    bottom: 22px;
+    left: 22px;
+    width: auto;
+    padding: 15px;
   }
 
   .contact-dock {
