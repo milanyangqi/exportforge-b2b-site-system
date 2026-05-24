@@ -11,7 +11,10 @@
     "cf:build": "opennextjs-cloudflare build",
     "cf:preview": "opennextjs-cloudflare build && opennextjs-cloudflare preview",
     "cf:deploy": "opennextjs-cloudflare build && opennextjs-cloudflare deploy",
-    "cf:types": "wrangler types --env-interface CloudflareEnv cloudflare-env.d.ts"
+    "cf:types": "wrangler types --env-interface CloudflareEnv cloudflare-env.d.ts",
+    "backup:cloudflare": "node scripts/cloudflare-kv-backup.mjs",
+    "restore:cloudflare": "node scripts/cloudflare-kv-restore.mjs",
+    "deploy:cloudflare": "node scripts/cloudflare-deploy.mjs"
   },
   "dependencies": {
     "@types/node": "^20.12.12",

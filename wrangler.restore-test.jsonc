@@ -1,0 +1,27 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "exportforge-b2b-site-system-restore-test",
+  "main": ".open-next/worker.js",
+  "compatibility_date": "2026-05-23",
+  "compatibility_flags": ["nodejs_compat"],
+  "assets": {
+    "directory": ".open-next/assets",
+    "binding": "ASSETS"
+  },
+  "services": [
+    {
+      "binding": "WORKER_SELF_REFERENCE",
+      "service": "exportforge-b2b-site-system-restore-test"
+    }
+  ],
+  "kv_namespaces": [
+    {
+      "binding": "EXPORTFORGE_KV",
+      "id": "08d6ee9fc10d4ac48da964c91f88b6bd"
+    }
+  ],
+  "vars": {
+    "NEXT_PUBLIC_SITE_URL": "https://exportforge-b2b-site-system-restore-test.437991663.workers.dev",
+    "INITIAL_ADMIN_EMAIL": "admin@example.com"
+  }
+}
