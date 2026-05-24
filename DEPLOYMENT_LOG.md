@@ -107,6 +107,38 @@ Verification:
 Cloudflare:
 - Version ID: `1367d4f8-3ae2-4887-92ce-e40a1259c594`
 
+## 2026-05-24 KeyproTools Hero And Homepage Grid Fixes
+
+Status: deployed
+
+Changes:
+- Header now scrolls with the page instead of sticking to the viewport.
+- Added three generated industrial hero poster images and a CSS-only carousel.
+- Adjusted the hero product visual layering to prevent the QA gauge, product image, and decorative bars from overlapping.
+- Fixed admin navigation persistence by stopping deleted default navigation items from being reinserted during state normalization.
+- Homepage product catalog now shows 6 selected product cards in a complete 3x2 grid with equal card heights.
+- Homepage technical article cards now show 6 published articles with equal card heights.
+- Existing stored admin state now merges missing seed articles and media without resetting user navigation, leads, users, or contacts.
+
+Target:
+- https://exportforge-b2b-site-system.437991663.workers.dev
+
+GitHub:
+- Commit: `a7d3507`
+- Commit: `c7575a6`
+- Branch: `main`
+
+Verification:
+- `npm install`
+- `npm run typecheck`
+- `npm run build`
+- `PATH="/Users/zhang/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/bin:$PATH" npm run cf:build`
+- `PATH="/Users/zhang/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/bin:$PATH" npm run cf:deploy`
+- Live checks: `/en` 200 with CSS `6a93807c23a8a3da.css`; `/en/admin?tab=settings` 307 to `/en/admin/login`; online Playwright check found 6 product cards with equal 578px heights and 6 article cards with equal 476px heights; header position is `relative`.
+
+Cloudflare:
+- Version ID: `f6733213-b403-4e68-93f4-b71d836346ad`
+
 ## 2026-05-24 KeyproTools Cutting Tools Rebrand
 
 Status: deployed

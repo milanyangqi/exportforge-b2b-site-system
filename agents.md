@@ -193,3 +193,59 @@ PATH="/Users/zhang/.cache/codex-runtimes/codex-primary-runtime/dependencies/node
 - 线上地址：`https://exportforge-b2b-site-system.437991663.workers.dev`
 - Worker Version ID：`1367d4f8-3ae2-4887-92ce-e40a1259c594`
 - 线上验证：`/zh` 包含 `KeyproTools`、`硬质合金铣刀`、`钻头`；`/zh/products/carbide-end-mills` 和 `/zh/products/drill-bits` 返回 `HTTP/2 200`；`/zh/articles` 返回 `HTTP/2 200` 并显示五金工具文章；`/assets/tools/carbide-end-mills.png` 返回 `HTTP/2 200`；`/zh/admin?tab=products` 返回 `HTTP/2 307` 并重定向到 `/zh/admin/login`。
+
+## KeyproTools 首页轮播、导航保存与卡片布局修复（2026-05-24）
+
+继续修复用户在浏览器标注的问题：
+
+- Header 改为普通页面流布局，滚动页面时会一起离开视口，不再固定悬停。
+- 首页首屏增加 3 张无文字工业刀具海报轮播：`hero-tooling-range.jpg`、`hero-cnc-factory.jpg`、`hero-export-packing.jpg`。
+- 调整首屏右侧工业视觉层级和尺寸，避免质检圆环、产品图和装饰刀具条互相重叠。
+- 修复后台“设置 > 导航栏”删除默认导航后保存不生效的问题：`normalizeNavigation` 不再把用户删除的默认导航自动补回。
+- 首页产品目录改为精选 6 个产品卡片，形成完整 3 列 2 行，并统一卡片高度。
+- 首页技术文章从 4 篇增加到 6 篇，新增铣刀 RFQ 参数和钻头备货组合两篇文章。
+- 后台状态读取时会补齐缺失的 seed 文章和媒体资源，但不会重置用户已有导航、询盘、用户和联系方式。
+
+本轮验证记录：
+
+- 部署前已同步 GitHub：commit `a7d3507`（首页 3 张海报轮播）和 commit `c7575a6`（导航保存与首页卡片修复）均已 push 到 `origin/main`。
+- `npm install` 完成；默认 Node.js `v20.18.3` 下 Wrangler/Miniflare 仍提示需要 Node.js `>=22.0.0`，属于部署阶段已知提示。
+- `npm run typecheck` 通过。
+- `npm run build` 通过。
+- 使用 bundled Node 22 执行 `npm run cf:build` 通过。
+- 使用 bundled Node 22 执行 `npm run cf:deploy` 通过。
+
+发布信息：
+
+- 发布时间：2026-05-24
+- 线上地址：`https://exportforge-b2b-site-system.437991663.workers.dev`
+- Worker Version ID：`f6733213-b403-4e68-93f4-b71d836346ad`
+- 线上验证：`/en` 返回 `HTTP/2 200` 并预加载新 CSS：`6a93807c23a8a3da.css`；`/en/admin?tab=settings` 返回 `HTTP/2 307` 并重定向到 `/en/admin/login`；Playwright 线上验证产品卡数量为 `6`，高度均为 `578px`，文章卡数量为 `6`，高度均为 `476px`，Header `position` 为 `relative`。
+
+## KeyproTools 首页轮播、导航保存与卡片布局修复（2026-05-24）
+
+继续修复用户在浏览器标注的问题：
+
+- Header 改为普通页面流布局，滚动页面时会一起离开视口，不再固定悬停。
+- 首页首屏增加 3 张无文字工业刀具海报轮播：`hero-tooling-range.jpg`、`hero-cnc-factory.jpg`、`hero-export-packing.jpg`。
+- 调整首屏右侧工业视觉层级和尺寸，避免质检圆环、产品图和装饰刀具条互相重叠。
+- 修复后台“设置 > 导航栏”删除默认导航后保存不生效的问题：`normalizeNavigation` 不再把用户删除的默认导航自动补回。
+- 首页产品目录改为精选 6 个产品卡片，形成完整 3 列 2 行，并统一卡片高度。
+- 首页技术文章从 4 篇增加到 6 篇，新增铣刀 RFQ 参数和钻头备货组合两篇文章。
+- 后台状态读取时会补齐缺失的 seed 文章和媒体资源，但不会重置用户已有导航、询盘、用户和联系方式。
+
+本轮验证记录：
+
+- 部署前已同步 GitHub：commit `a7d3507`（首页 3 张海报轮播）和 commit `c7575a6`（导航保存与首页卡片修复）均已 push 到 `origin/main`。
+- `npm install` 完成；默认 Node.js `v20.18.3` 下 Wrangler/Miniflare 仍提示需要 Node.js `>=22.0.0`，属于部署阶段已知提示。
+- `npm run typecheck` 通过。
+- `npm run build` 通过。
+- 使用 bundled Node 22 执行 `npm run cf:build` 通过。
+- 使用 bundled Node 22 执行 `npm run cf:deploy` 通过。
+
+发布信息：
+
+- 发布时间：2026-05-24
+- 线上地址：`https://exportforge-b2b-site-system.437991663.workers.dev`
+- Worker Version ID：`f6733213-b403-4e68-93f4-b71d836346ad`
+- 线上验证：`/en` 返回 `HTTP/2 200` 并预加载新 CSS：`6a93807c23a8a3da.css`；`/en/admin?tab=settings` 返回 `HTTP/2 307` 并重定向到 `/en/admin/login`；Playwright 线上验证产品卡数量为 `6`，高度均为 `578px`，文章卡数量为 `6`，高度均为 `476px`，Header `position` 为 `relative`。
