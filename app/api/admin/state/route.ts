@@ -25,7 +25,8 @@ export async function PUT(request: Request) {
   const currentUser = existingState.users.find((user) => user.email.toLowerCase() === sessionEmail.toLowerCase());
   const frontendSettingsChanged =
     JSON.stringify(state.navigation ?? []) !== JSON.stringify(existingState.navigation ?? [])
-    || JSON.stringify(state.enabledLocales ?? []) !== JSON.stringify(existingState.enabledLocales ?? []);
+    || JSON.stringify(state.enabledLocales ?? []) !== JSON.stringify(existingState.enabledLocales ?? [])
+    || JSON.stringify(state.siteSettings ?? {}) !== JSON.stringify(existingState.siteSettings ?? {});
 
   if (frontendSettingsChanged && !frontendManagerRoles.has(currentUser?.role ?? "viewer")) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });

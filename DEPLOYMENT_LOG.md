@@ -30,3 +30,76 @@ Verification:
 
 Cloudflare:
 - Version ID: `ac4e8041-ad34-49bb-8169-f032e5a946d7`
+
+## 2026-05-23 Navigation Select Width Fix
+
+Status: deployed
+
+Changes:
+- 缩短首页导航栏“选择链接”的下拉选项显示文案。
+- 限制导航设置卡片内的输入框和下拉框宽度，避免控件撑出后台内容区域。
+
+Target:
+- https://exportforge-b2b-site-system.437991663.workers.dev
+
+Verification:
+- Included in deployment `2f85843d-e810-492d-9af9-a545df7207aa`.
+
+## 2026-05-23 Admin Dashboard World Clock
+
+Status: deployed
+
+Changes:
+- 后台侧边栏“总览”改为“仪表盘”。
+- 仪表盘新增世界主要城市时间，并按浏览器时间每秒刷新。
+
+Target:
+- https://exportforge-b2b-site-system.437991663.workers.dev
+
+Verification:
+- `npm run build`
+- `npm run typecheck`
+- `PATH=/usr/local/bin:$PATH npm run cf:deploy`
+- Live checks: `/zh` 200, `/zh/admin/login` 200.
+
+Cloudflare:
+- Version ID: `2f85843d-e810-492d-9af9-a545df7207aa`
+
+## 2026-05-23 Article Editor Height
+
+Status: deployed
+
+Changes:
+- 放大文章发布页的正文编辑窗口高度。
+- 给正文 textarea 增加行数兜底，避免样式加载顺序导致编辑框回落到较小高度。
+
+Target:
+- https://exportforge-b2b-site-system.437991663.workers.dev
+
+Verification:
+- `npm run build`
+- `npm run typecheck`
+- `PATH=/usr/local/bin:$PATH npm run cf:deploy`
+- Live checks: `/zh` 200, `/zh/admin/login` 200.
+
+Cloudflare:
+- Version ID: `03bf9d26-b85b-41d0-b738-6668b065cace`
+
+## 2026-05-23 Admin Layout And Editor Controls
+
+Status: pending deployment
+
+Changes:
+- 文章编辑器工具栏新增 H1/H4、删除线、下划线、上下标、代码、代码块、表格、待办、提示块、清空正文等编辑功能。
+- 首页导航栏区域新增就近的“保存导航”按钮，并显示已保存/待保存状态。
+- 联系方式页面改为更宽松的 12 栏布局，拉开显示名称、类型、账号、链接等字段间距。
+- 后台页面宽度放宽到自适应大屏浏览器。
+- 前台语言选择器删除选择器前的额外国旗，在下拉选项中保留国旗。
+- 后台侧边栏增加折叠/展开开关。
+- README 增加 typecheck 需要先生成 `.next/types` 的说明。
+
+Target:
+- https://exportforge-b2b-site-system.437991663.workers.dev
+
+Verification:
+- Pending

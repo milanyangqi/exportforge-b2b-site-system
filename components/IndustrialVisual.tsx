@@ -1,11 +1,14 @@
+/* eslint-disable @next/next/no-img-element */
+
 export function IndustrialVisual() {
   return (
-    <div className="industrial-visual" aria-label="Configurable industrial website visual">
+    <div className="industrial-visual" aria-label="KeyproTools cutting tools product visual">
       <div className="visual-grid">
         <div className="gauge">
           <span>0.002</span>
           <small>mm QA</small>
         </div>
+        <img className="visual-product-image" src="/assets/tools/export-packaging.png" alt="KeyproTools end mills and drill bits prepared for export packing" />
         <div className="tool-stack">
           <i />
           <i />
@@ -13,8 +16,8 @@ export function IndustrialVisual() {
           <i />
         </div>
         <div className="spec-plate">
-          <strong>Catalog Engine</strong>
-          <span>Products / RFQ / SEO / Leads</span>
+          <strong>KeyproTools</strong>
+          <span>End Mills / Drill Bits / OEM</span>
         </div>
         <div className="routing-lines" />
       </div>

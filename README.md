@@ -64,6 +64,19 @@ npm run cf:deploy
 
 后台入口仍为 `/zh/admin` 或 `/en/admin`。
 
+## Verification Notes
+
+`npm run typecheck` 会读取 `tsconfig.json` 中的 `.next/types/**/*.ts`。如果刚清理过 `.next`，或第一次在当前工作区运行校验，直接执行 `npm run typecheck` 可能会报 `.next/types/... not found`。
+
+推荐顺序：
+
+```bash
+npm run build
+npm run typecheck
+```
+
+`npm run build` 会先生成 Next.js 的 `.next/types`，之后再运行 `npm run typecheck` 就不会因为缺少生成类型而失败。
+
 ## Included
 
 - 多语言路由：`en`、`zh`、`th`、`vi`、`id`、`ms`、`fil`、`my`、`km`、`lo`、`ar`、`es`、`fr`、`de`、`it`、`pt`、`hi`、`ru`、`ja`、`ko`、`ur`

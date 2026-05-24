@@ -92,6 +92,7 @@ export type ProductCategory = {
   applications: Translation<string[]>;
   specs: string[];
   themeFit: ThemeKey[];
+  imageUrl?: string;
 };
 
 export type Article = {
@@ -100,7 +101,7 @@ export type Article = {
   title: Translation;
   excerpt: Translation;
   body?: Translation;
-  category: "buying-guide" | "application" | "quality" | "seo";
+  category: string;
   status?: "draft" | "published" | "trash";
   featuredOnHome?: boolean;
   publishedAt?: string;
@@ -124,6 +125,7 @@ export type UploadedFile = {
   size: number;
   url: string;
   createdAt: string;
+  storageKey?: string;
   description?: Translation;
   enabled?: boolean;
 };
@@ -153,6 +155,7 @@ export type AdminUser = {
   email: string;
   role: RoleKey;
   active: boolean;
+  allowedTabs?: string[];
   jobTitle?: string;
   phone?: string;
   avatarUrl?: string;
@@ -171,6 +174,40 @@ export type AiSettings = {
   enabled: boolean;
 };
 
+export type SiteSettings = {
+  title: string;
+  tagline: string;
+  contentVersion?: string;
+  siteIconUrl: string;
+  fontFamily: string;
+  siteUrl: string;
+  adminEmail: string;
+  allowRegistration: boolean;
+  defaultUserRole: RoleKey;
+  siteLanguage: LocaleCode;
+  timezone: string;
+  dateFormat: string;
+  timeFormat: string;
+  defaultArticleCategory: string;
+  defaultArticleStatus: "draft" | "published";
+  postsPerPage: number;
+  showFeaturedArticles: boolean;
+  searchEngineVisible: boolean;
+  thumbnailWidth: number;
+  thumbnailHeight: number;
+  mediumWidth: number;
+  mediumHeight: number;
+  largeWidth: number;
+  largeHeight: number;
+  uploadsOrganizedByMonth: boolean;
+  productUrlBase: string;
+  articleUrlBase: string;
+  fileUrlBase: string;
+  privacyPageUrl: string;
+  cookieNoticeEnabled: boolean;
+  privacySummary: string;
+};
+
 export type AdminState = {
   products: ProductCategory[];
   articles: Article[];
@@ -181,6 +218,7 @@ export type AdminState = {
   activeTheme: ThemeKey;
   enabledLocales: LocaleCode[];
   navigation: SiteNavigationItem[];
+  siteSettings: SiteSettings;
   aiSettings: AiSettings;
   updatedAt: string;
 };

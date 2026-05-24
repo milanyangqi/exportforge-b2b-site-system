@@ -29,9 +29,9 @@ export default async function LocaleHome({ params }: { params: Promise<{ locale:
             <a className="button secondary" href={`/${locale}/products`}>{t(ui.navProducts, locale)}</a>
           </div>
           <div className="metrics">
-            <div><strong>11</strong><span>Languages incl. SEA + Arabic</span></div>
-            <div><strong>5</strong><span>Theme presets</span></div>
-            <div><strong>RBAC</strong><span>User permissions</span></div>
+            <div><strong>0.2-25mm</strong><span>End mill diameter range</span></div>
+            <div><strong>HSS / M35 / Carbide</strong><span>Drill bit supply</span></div>
+            <div><strong>OEM</strong><span>Laser marking and packing</span></div>
           </div>
         </div>
         <IndustrialVisual />
@@ -39,24 +39,28 @@ export default async function LocaleHome({ params }: { params: Promise<{ locale:
 
       <section className="section">
         <div className="section-head">
-          <span className="eyebrow">Product content system</span>
-          <h2>Category-first product pages for SEO, trust, and RFQ conversion.</h2>
-          <p>Fields are intentionally extensible for machinery, tools, consumer goods, materials, and customized export catalogs.</p>
+          <span className="eyebrow">Cutting tool catalog</span>
+          <h2>End mills, drill bits, and OEM tooling built for repeat purchasing.</h2>
+          <p>Browse core categories for CNC shops, hardware distributors, maintenance suppliers, and private-label tool programs.</p>
         </div>
         <ProductGrid locale={locale} products={state.products} />
       </section>
 
       <section className="section dark-band">
         <div className="section-head">
-          <span className="eyebrow">Customization layer</span>
-          <h2>Themes and templates are separate from content, so each client can be customized without rewriting core logic.</h2>
+          <span className="eyebrow">Factory support</span>
+          <h2>Geometry, coating, inspection, and packing are aligned before every export order.</h2>
         </div>
         <div className="theme-grid">
-          {Object.values(themes).map((theme) => (
-            <article key={theme.key} className={theme.key === activeTheme.key ? "theme-card active" : "theme-card"}>
-              <span style={{ background: theme.colors.accent }} />
-              <h3>{theme.name}</h3>
-              <p>{theme.description}</p>
+          {[
+            ["Tool geometry", "Square, ball nose, corner radius, long-neck, micro, step, and coolant-through options."],
+            ["Coating choice", "AlTiN, TiSiN, DLC, bright finish, and buyer-specific series positioning."],
+            ["Export packing", "Plastic tubes, foam trays, barcode labels, carton marks, and distributor-ready assortments."]
+          ].map(([title, body], index) => (
+            <article key={title} className={index === 0 ? "theme-card active" : "theme-card"}>
+              <span style={{ background: index === 0 ? activeTheme.colors.accent : activeTheme.colors.primary }} />
+              <h3>{title}</h3>
+              <p>{body}</p>
             </article>
           ))}
         </div>
@@ -64,10 +68,10 @@ export default async function LocaleHome({ params }: { params: Promise<{ locale:
 
       <section className="section split">
         <div>
-          <span className="eyebrow">Multilingual market coverage</span>
-          <h2>Built for Southeast Asia, Arabic RTL, and future global expansion.</h2>
+          <span className="eyebrow">Export markets</span>
+          <h2>Buyer-ready communication for distributors across major tooling markets.</h2>
           <p>
-            URLs use language prefixes, content fields support localized values, and Arabic switches the page direction to RTL.
+            KeyproTools supports multilingual product pages, quick RFQ details, and export documentation for buyers comparing end mills, drill bits, and OEM assortments.
           </p>
           <div className="language-strip">
             {visibleLocales.map((item) => (
@@ -76,11 +80,11 @@ export default async function LocaleHome({ params }: { params: Promise<{ locale:
           </div>
         </div>
         <div className="workflow-panel">
-          <h3>AI draft workflow</h3>
+          <h3>RFQ checklist</h3>
           <ol>
-            <li>Input industry, products, markets, keywords, and brand voice.</li>
-            <li>Generate homepage, product, FAQ, SEO, article, or translation drafts.</li>
-            <li>Human editor reviews and publishes through role-based approval.</li>
+            <li>Tool type, diameter, flute length, overall length, and shank.</li>
+            <li>Workpiece material, hardness, coating, and cutting condition.</li>
+            <li>Quantity, packaging, laser marking, destination, and delivery target.</li>
           </ol>
           <p>{siteSettings.aiDraftPolicy}</p>
         </div>
@@ -88,12 +92,18 @@ export default async function LocaleHome({ params }: { params: Promise<{ locale:
 
       <section className="section">
         <div className="section-head">
-          <span className="eyebrow">SEO content</span>
-          <h2>Article and solution content is ready for buying guides, applications, and localization pages.</h2>
+          <span className="eyebrow">Technical articles</span>
+          <h2>Selection guides for buyers comparing tool geometry, coating, and packaging.</h2>
         </div>
         <div className="article-grid">
           {homeArticles.map((article) => (
             <a key={article.slug} className="article-card" href={`/${locale}/articles/${article.slug}`}>
+              {article.coverImageUrl ? (
+                <span className="article-card-media">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={article.coverImageUrl} alt={t(article.title, locale)} loading="lazy" />
+                </span>
+              ) : null}
               <span>{article.category}</span>
               <h3>{t(article.title, locale)}</h3>
               <p>{t(article.excerpt, locale)}</p>
@@ -105,9 +115,9 @@ export default async function LocaleHome({ params }: { params: Promise<{ locale:
 
       <section className="section rfq-section" id="rfq">
         <div>
-          <span className="eyebrow">RFQ lead capture</span>
-          <h2>Capture quote requests with locale, source page, product intent, and sales follow-up status.</h2>
-          <p>Email notification, CRM sync, and spam protection are isolated integration points for future development.</p>
+          <span className="eyebrow">Request a quote</span>
+          <h2>Share your tool list and export requirements.</h2>
+          <p>Send product type, size range, quantity, coating, destination, and packing needs. The sales team will turn it into a clear quotation.</p>
         </div>
         <RfqForm locale={locale} />
       </section>

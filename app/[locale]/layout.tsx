@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import { ContactDock } from "@/components/ContactDock";
+import { Footer } from "@/components/Footer";
 import { Header } from "@/components/Header";
 import { getLocaleMeta, isLocale } from "@/config/locales";
 import { themes } from "@/config/themes";
@@ -35,11 +36,13 @@ export default async function LocaleLayout({
       "--primary": activeTheme.colors.primary,
       "--accent": activeTheme.colors.accent,
       "--line": activeTheme.colors.line,
-      "--radius": activeTheme.radius
+      "--radius": activeTheme.radius,
+      "--site-font": state.siteSettings.fontFamily
     } as React.CSSProperties}>
       <body>
-        <Header locale={locale} navigation={state.navigation} enabledLocales={state.enabledLocales} />
+        <Header brandName={state.siteSettings.title} locale={locale} navigation={state.navigation} enabledLocales={state.enabledLocales} />
         {children}
+        <Footer brandName={state.siteSettings.title} locale={locale} navigation={state.navigation} channels={state.contactChannels} />
         <ContactDock locale={locale} channels={state.contactChannels} />
       </body>
     </html>

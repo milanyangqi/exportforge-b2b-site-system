@@ -14,7 +14,8 @@ export default async function ContactPage({ params }: { params: Promise<{ locale
       <section className="section split">
         <div>
           <span className="eyebrow">Contact</span>
-          <h1>Every channel is configurable from the future CMS.</h1>
+          <h1>Send your end mill, drill bit, or OEM tooling request to KeyproTools.</h1>
+          <p>Share drawings, size lists, coating requirements, packaging details, and destination so the sales team can prepare a practical export quote.</p>
           <div className="stack-list public">
             {state.contactChannels.filter((channel) => channel.enabled).map((channel) => (
               <a key={channel.id} href={channel.href}>

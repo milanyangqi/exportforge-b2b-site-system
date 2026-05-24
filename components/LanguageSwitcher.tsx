@@ -5,7 +5,10 @@ import { locales } from "@/config/locales";
 import type { LocaleCode } from "@/types/site";
 
 export function LanguageSwitcher({ locale, enabledLocales = locales.map((item) => item.code) }: { locale: LocaleCode; enabledLocales?: LocaleCode[] }) {
-  const visibleLocales = locales.filter((item) => enabledLocales.includes(item.code) || item.code === locale);
+  const visibleLocaleCodes = Array.from(new Set([...enabledLocales, locale]));
+  const visibleLocales = visibleLocaleCodes
+    .map((code) => locales.find((item) => item.code === code))
+    .filter((item): item is typeof locales[number] => Boolean(item));
 
   function changeLocale(nextLocale: string) {
     const segments = window.location.pathname.split("/");
@@ -19,7 +22,7 @@ export function LanguageSwitcher({ locale, enabledLocales = locales.map((item) =
       <select value={locale} onChange={(event) => changeLocale(event.target.value)}>
         {visibleLocales.map((item) => (
           <option key={item.code} value={item.code}>
-            {item.nativeName}
+            {item.flag} {item.nativeName}
           </option>
         ))}
       </select>

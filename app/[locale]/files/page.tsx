@@ -19,8 +19,8 @@ export default async function FilesPage({ params }: { params: Promise<{ locale: 
       <section className="section">
         <div className="section-head">
           <span className="eyebrow">Downloads</span>
-          <h1>资料下载</h1>
-          <p>产品目录、规格表、认证文件、案例资料和文章附件都会集中显示在这里。</p>
+          <h1>KeyproTools product images and tooling resources</h1>
+          <p>End mill, drill bit, coating, packaging, catalog, specification, and article media are collected here for buyer review.</p>
         </div>
         <div className="download-grid">
           {files.map((file) => (

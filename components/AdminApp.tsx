@@ -1,13 +1,52 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { type CSSProperties, useEffect, useMemo, useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import {
+  Bot,
+  Bold,
+  Code2,
+  FileText,
+  FolderTree,
+  Gauge,
+  Heading1,
+  Heading2,
+  Heading3,
+  ImageIcon,
+  Inbox,
+  Italic,
+  Languages,
+  LayoutPanelTop,
+  Library,
+  Link2,
+  List,
+  ListOrdered,
+  Menu,
+  Minus,
+  Paperclip,
+  Palette,
+  Pilcrow,
+  Quote,
+  Share2,
+  Strikethrough,
+  Subscript,
+  Superscript,
+  Table2,
+  Trash2,
+  Underline,
+  Users,
+  X
+} from "lucide-react";
 import { locales } from "@/config/locales";
 import { themes } from "@/config/themes";
 import type { AdminState, AdminUser, Article, ContactChannel, ContactChannelType, LeadStatus, LocaleCode, ProductCategory, RoleKey, SiteNavigationItem, ThemeKey, UploadedFile } from "@/types/site";
 
-type Tab = "overview" | "products" | "articles" | "files" | "leads" | "contacts" | "users" | "settings" | "themes" | "account" | "ai";
+type Tab = "overview" | "products" | "articles" | "files" | "leads" | "contacts" | "users" | "settings" | "languages" | "themes" | "account" | "ai";
+type ArticleEditorView = "visual" | "code";
+type MediaTypeFilter = "all" | "image" | "document" | "spreadsheet" | "archive" | "other";
+type MediaTimeFilter = "all" | "7d" | "30d" | "90d";
+type SettingsSection = "general" | "writing" | "reading" | "media" | "permalinks" | "privacy" | "navigation";
 type ProductFormState = {
   zh: string;
   en: string;
@@ -24,25 +63,120 @@ type ContactFormState = {
   href: string;
   color: string;
 };
+type ProductTableRow = {
+  product: ProductCategory;
+  depth: number;
+};
+type NewUserFormState = {
+  name: string;
+  email: string;
+  role: RoleKey;
+  password: string;
+};
 
-const tabs: { key: Tab; label: string }[] = [
-  { key: "overview", label: "总览" },
-  { key: "products", label: "产品分类" },
-  { key: "articles", label: "文章发布" },
-  { key: "files", label: "文件上传" },
+const tabs: { key: Tab; label: string; icon: typeof Gauge }[] = [
+  { key: "overview", label: "仪表盘", icon: Gauge },
+  { key: "products", label: "分类", icon: FolderTree },
+  { key: "articles", label: "文章", icon: FileText },
+  { key: "files", label: "媒体库", icon: Library },
+  { key: "leads", label: "询盘", icon: Inbox },
+  { key: "contacts", label: "社媒及联系", icon: Share2 },
+  { key: "users", label: "用户权限", icon: Users },
+  { key: "languages", label: "语言", icon: Languages },
+  { key: "themes", label: "主题", icon: Palette },
+  { key: "ai", label: "AI内容", icon: Bot },
+  { key: "settings", label: "设置", icon: LayoutPanelTop }
+];
+const tabKeys = new Set<Tab>([...tabs.map((item) => item.key), "account"]);
+const adminPageAccessOptions: { key: Tab; label: string }[] = [
+  { key: "overview", label: "仪表盘" },
+  { key: "products", label: "分类" },
+  { key: "articles", label: "文章" },
+  { key: "files", label: "媒体库" },
   { key: "leads", label: "询盘" },
-  { key: "contacts", label: "联系方式" },
+  { key: "contacts", label: "社媒及联系" },
   { key: "users", label: "用户权限" },
-  { key: "settings", label: "前台设置" },
+  { key: "settings", label: "设置" },
+  { key: "languages", label: "语言" },
   { key: "themes", label: "主题" },
   { key: "ai", label: "AI内容" }
 ];
-const tabKeys = new Set<Tab>([...tabs.map((item) => item.key), "account"]);
+const defaultAllowedTabsByRole: Record<RoleKey, Tab[]> = {
+  "super-admin": adminPageAccessOptions.map((item) => item.key),
+  admin: ["overview", "products", "articles", "files", "leads", "contacts", "settings", "languages", "themes"],
+  editor: ["overview", "products", "articles", "files", "ai"],
+  sales: ["overview", "products", "leads", "contacts"],
+  viewer: ["overview", "products", "articles", "files"]
+};
+
+const worldClockCities = [
+  { city: "北京", zone: "Asia/Shanghai" },
+  { city: "上海", zone: "Asia/Shanghai" },
+  { city: "香港", zone: "Asia/Hong_Kong" },
+  { city: "台北", zone: "Asia/Taipei" },
+  { city: "东京", zone: "Asia/Tokyo" },
+  { city: "首尔", zone: "Asia/Seoul" },
+  { city: "新加坡", zone: "Asia/Singapore" },
+  { city: "马尼拉", zone: "Asia/Manila" },
+  { city: "吉隆坡", zone: "Asia/Kuala_Lumpur" },
+  { city: "雅加达", zone: "Asia/Jakarta" },
+  { city: "曼谷", zone: "Asia/Bangkok" },
+  { city: "胡志明市", zone: "Asia/Ho_Chi_Minh" },
+  { city: "河内", zone: "Asia/Ho_Chi_Minh" },
+  { city: "金边", zone: "Asia/Phnom_Penh" },
+  { city: "万象", zone: "Asia/Vientiane" },
+  { city: "仰光", zone: "Asia/Yangon" },
+  { city: "孟买", zone: "Asia/Kolkata" },
+  { city: "新德里", zone: "Asia/Kolkata" },
+  { city: "达卡", zone: "Asia/Dhaka" },
+  { city: "卡拉奇", zone: "Asia/Karachi" },
+  { city: "科伦坡", zone: "Asia/Colombo" },
+  { city: "迪拜", zone: "Asia/Dubai" },
+  { city: "阿布扎比", zone: "Asia/Dubai" },
+  { city: "利雅得", zone: "Asia/Riyadh" },
+  { city: "吉达", zone: "Asia/Riyadh" },
+  { city: "多哈", zone: "Asia/Qatar" },
+  { city: "科威特城", zone: "Asia/Kuwait" },
+  { city: "马斯喀特", zone: "Asia/Muscat" },
+  { city: "开罗", zone: "Africa/Cairo" },
+  { city: "约翰内斯堡", zone: "Africa/Johannesburg" },
+  { city: "开普敦", zone: "Africa/Johannesburg" },
+  { city: "拉各斯", zone: "Africa/Lagos" },
+  { city: "内罗毕", zone: "Africa/Nairobi" },
+  { city: "卡萨布兰卡", zone: "Africa/Casablanca" },
+  { city: "伊斯坦布尔", zone: "Europe/Istanbul" },
+  { city: "伦敦", zone: "Europe/London" },
+  { city: "巴黎", zone: "Europe/Paris" },
+  { city: "鹿特丹", zone: "Europe/Amsterdam" },
+  { city: "汉堡", zone: "Europe/Berlin" },
+  { city: "法兰克福", zone: "Europe/Berlin" },
+  { city: "米兰", zone: "Europe/Rome" },
+  { city: "马德里", zone: "Europe/Madrid" },
+  { city: "华沙", zone: "Europe/Warsaw" },
+  { city: "莫斯科", zone: "Europe/Moscow" },
+  { city: "纽约", zone: "America/New_York" },
+  { city: "多伦多", zone: "America/Toronto" },
+  { city: "芝加哥", zone: "America/Chicago" },
+  { city: "休斯敦", zone: "America/Chicago" },
+  { city: "洛杉矶", zone: "America/Los_Angeles" },
+  { city: "温哥华", zone: "America/Vancouver" },
+  { city: "迈阿密", zone: "America/New_York" },
+  { city: "墨西哥城", zone: "America/Mexico_City" },
+  { city: "波哥大", zone: "America/Bogota" },
+  { city: "利马", zone: "America/Lima" },
+  { city: "圣地亚哥", zone: "America/Santiago" },
+  { city: "布宜诺斯艾利斯", zone: "America/Argentina/Buenos_Aires" },
+  { city: "圣保罗", zone: "America/Sao_Paulo" },
+  { city: "里约热内卢", zone: "America/Sao_Paulo" },
+  { city: "悉尼", zone: "Australia/Sydney" },
+  { city: "墨尔本", zone: "Australia/Melbourne" },
+  { city: "珀斯", zone: "Australia/Perth" },
+  { city: "奥克兰", zone: "Pacific/Auckland" }
+];
 
 const themeOptions: ThemeKey[] = ["industrial", "clean-export", "premium-brand", "equipment", "consumer-goods"];
 const roleOptions: RoleKey[] = ["super-admin", "admin", "editor", "sales", "viewer"];
 const leadStatuses: LeadStatus[] = ["new", "contacted", "quoted", "closed", "spam"];
-const articleCategories: Article["category"][] = ["buying-guide", "application", "quality", "seo"];
 const contactTypeOptions: ContactChannelType[] = [
   "phone",
   "whatsapp",
@@ -62,16 +196,16 @@ const contactTypeOptions: ContactChannelType[] = [
 const contactTypePresets: Record<ContactChannelType, { en: string; zh: string; value: string; href: string; color: string }> = {
   phone: { en: "Phone", zh: "电话", value: "+86 188 0000 0000", href: "tel:+8618800000000", color: "#10b981" },
   whatsapp: { en: "WhatsApp", zh: "WhatsApp", value: "+86 188 0000 0000", href: "https://wa.me/8618800000000", color: "#25d366" },
-  email: { en: "Email", zh: "邮箱", value: "sales@example.com", href: "mailto:sales@example.com", color: "#ff4f66" },
-  wechat: { en: "WeChat", zh: "微信", value: "ExportFactory", href: "#wechat", color: "#23c80d" },
+  email: { en: "Email", zh: "邮箱", value: "sales@keyprotools.com", href: "mailto:sales@keyprotools.com", color: "#ff4f66" },
+  wechat: { en: "WeChat", zh: "微信", value: "KeyproTools", href: "#wechat", color: "#23c80d" },
   zalo: { en: "Zalo", zh: "Zalo", value: "+84 900 000 000", href: "https://zalo.me/84900000000", color: "#0068ff" },
-  line: { en: "Line", zh: "Line", value: "@exportforge", href: "https://line.me/R/ti/p/@exportforge", color: "#06c755" },
-  facebook: { en: "Facebook", zh: "Facebook", value: "ExportForge", href: "https://facebook.com/exportforge", color: "#1877f2" },
-  instagram: { en: "Instagram", zh: "Instagram", value: "@exportforge", href: "https://instagram.com/exportforge", color: "#e4405f" },
-  tiktok: { en: "TikTok", zh: "TikTok", value: "@exportforge", href: "https://www.tiktok.com/@exportforge", color: "#111827" },
-  messenger: { en: "Messenger", zh: "Messenger", value: "ExportForge", href: "https://m.me/exportforge", color: "#0084ff" },
-  linkedin: { en: "LinkedIn", zh: "LinkedIn", value: "ExportForge", href: "https://www.linkedin.com/company/exportforge", color: "#0a66c2" },
-  skype: { en: "Skype", zh: "Skype", value: "live:exportforge", href: "skype:live:exportforge?chat", color: "#00aff0" },
+  line: { en: "Line", zh: "Line", value: "@keyprotools", href: "https://line.me/R/ti/p/@keyprotools", color: "#06c755" },
+  facebook: { en: "Facebook", zh: "Facebook", value: "KeyproTools", href: "https://facebook.com/keyprotools", color: "#1877f2" },
+  instagram: { en: "Instagram", zh: "Instagram", value: "@keyprotools", href: "https://instagram.com/keyprotools", color: "#e4405f" },
+  tiktok: { en: "TikTok", zh: "TikTok", value: "@keyprotools", href: "https://www.tiktok.com/@keyprotools", color: "#111827" },
+  messenger: { en: "Messenger", zh: "Messenger", value: "KeyproTools", href: "https://m.me/keyprotools", color: "#0084ff" },
+  linkedin: { en: "LinkedIn", zh: "LinkedIn", value: "KeyproTools", href: "https://www.linkedin.com/company/keyprotools", color: "#0a66c2" },
+  skype: { en: "Skype", zh: "Skype", value: "live:keyprotools", href: "skype:live:keyprotools?chat", color: "#00aff0" },
   rfq: { en: "RFQ", zh: "询盘", value: "Request quote", href: "#rfq", color: "#243b78" },
   custom: { en: "Custom", zh: "自定义", value: "", href: "", color: "#0b5f7d" }
 };
@@ -99,6 +233,42 @@ const articleImportHeaders = [
 ] as const;
 const truthyImportValues = new Set(["1", "true", "yes", "y", "是", "首页"]);
 const falsyImportValues = new Set(["0", "false", "no", "n", "否"]);
+const mediaTypeOptions: { value: MediaTypeFilter; label: string }[] = [
+  { value: "all", label: "全部类型" },
+  { value: "image", label: "图片" },
+  { value: "document", label: "文档 / PDF" },
+  { value: "spreadsheet", label: "表格" },
+  { value: "archive", label: "压缩包" },
+  { value: "other", label: "其他" }
+];
+const mediaTimeOptions: { value: MediaTimeFilter; label: string }[] = [
+  { value: "all", label: "全部时间" },
+  { value: "7d", label: "最近 7 天" },
+  { value: "30d", label: "最近 30 天" },
+  { value: "90d", label: "最近 90 天" }
+];
+const settingsSections: { key: SettingsSection; label: string; description: string }[] = [
+  { key: "general", label: "常规", description: "站点标题、网址、语言和时区。" },
+  { key: "writing", label: "撰写", description: "文章默认分类与发布方式。" },
+  { key: "reading", label: "阅读", description: "首页内容、列表数量和搜索可见性。" },
+  { key: "media", label: "媒体", description: "图片尺寸和媒体整理方式。" },
+  { key: "permalinks", label: "固定链接", description: "产品、文章和资料的 URL 基础路径。" },
+  { key: "privacy", label: "隐私", description: "隐私页面、Cookie 提示和数据说明。" },
+  { key: "navigation", label: "导航栏", description: "前台 Header 导航名称、链接和排序。" }
+];
+const siteFontOptions = [
+  { label: "现代无衬线（默认）", value: "\"Manrope\", \"PingFang SC\", \"Microsoft YaHei\", sans-serif" },
+  { label: "工业清晰", value: "\"Archivo\", \"PingFang SC\", \"Microsoft YaHei\", sans-serif" },
+  { label: "系统字体", value: "-apple-system, BlinkMacSystemFont, \"Segoe UI\", \"PingFang SC\", \"Microsoft YaHei\", sans-serif" },
+  { label: "中文商务", value: "\"PingFang SC\", \"Microsoft YaHei\", \"Noto Sans CJK SC\", sans-serif" },
+  { label: "经典衬线", value: "Georgia, \"Times New Roman\", \"Songti SC\", SimSun, serif" }
+];
+const hiddenAdminStatusMessages = new Set([
+  "图片已插入正文，点击保存或发布后生效",
+  "媒体链接已插入正文，点击保存或发布后生效",
+  "图片已上传并插入正文，点击保存或发布后生效",
+  "媒体已上传并插入正文，点击保存或发布后生效"
+]);
 
 const emptyProductForm: ProductFormState = {
   zh: "",
@@ -107,6 +277,12 @@ const emptyProductForm: ProductFormState = {
   parentId: "",
   summaryZh: "",
   summaryEn: ""
+};
+const emptyNewUserForm: NewUserFormState = {
+  name: "",
+  email: "",
+  role: "viewer",
+  password: ""
 };
 
 function createContactForm(type: ContactChannelType = "custom"): ContactFormState {
@@ -183,8 +359,8 @@ function parseCsv(text: string) {
   return rows;
 }
 
-function normalizeArticleCategory(value: string): Article["category"] {
-  return articleCategories.includes(value as Article["category"]) ? value as Article["category"] : "buying-guide";
+function normalizeArticleCategory(value: string, fallback = "uncategorized") {
+  return slugify(value) || fallback;
 }
 
 function parseFeaturedOnHome(value: string) {
@@ -249,7 +425,85 @@ function applyThemeToDocument(themeKey: ThemeKey) {
   root.style.setProperty("--radius", theme.radius);
 }
 
-function emptyArticle(): Article {
+function applySiteFontToDocument(fontFamily: string) {
+  if (typeof document === "undefined") return;
+  document.documentElement.style.setProperty("--site-font", fontFamily || siteFontOptions[0].value);
+}
+
+function escapeEditableHtml(value: string) {
+  return value
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
+
+function markdownToEditableHtml(body: string) {
+  const blocks = body.split(/\n{2,}/).map((block) => block.trim()).filter(Boolean);
+
+  if (blocks.length === 0) return "";
+
+  return blocks.map((block) => {
+    const imageMatch = /^!\[([^\]]*)]\(([^)]+)\)$/.exec(block);
+    const legacyImageMatch = /^\[下载文件：([^\]]+)]\(([^)]+)\)$/.exec(block);
+
+    if (imageMatch) {
+      return `<figure class="article-inline-image" contenteditable="false"><img src="${escapeEditableHtml(imageMatch[2])}" alt="${escapeEditableHtml(imageMatch[1] || "Article image")}"></figure>`;
+    }
+
+    if (legacyImageMatch && /\.(apng|avif|gif|jpe?g|png|svg|webp)(\?.*)?$/i.test(`${legacyImageMatch[1]} ${legacyImageMatch[2]}`)) {
+      return `<figure class="article-inline-image" contenteditable="false"><img src="${escapeEditableHtml(legacyImageMatch[2])}" alt="${escapeEditableHtml(legacyImageMatch[1] || "Article image")}"></figure>`;
+    }
+
+    const safeBlock = escapeEditableHtml(block).replace(/\n/g, "<br>");
+    if (block.startsWith("# ")) return `<h1>${escapeEditableHtml(block.slice(2))}</h1>`;
+    if (block.startsWith("## ")) return `<h2>${escapeEditableHtml(block.slice(3))}</h2>`;
+    if (block.startsWith("### ")) return `<h3>${escapeEditableHtml(block.slice(4))}</h3>`;
+    if (block.startsWith("#### ")) return `<h4>${escapeEditableHtml(block.slice(5))}</h4>`;
+    return `<p>${safeBlock}</p>`;
+  }).join("");
+}
+
+function editableNodeToMarkdown(node: Node): string {
+  if (node.nodeType === Node.TEXT_NODE) return node.textContent ?? "";
+  if (!(node instanceof HTMLElement)) return "";
+
+  if (node.tagName === "BR") return "\n";
+  if (node.tagName === "IMG") return `![${node.getAttribute("alt") ?? ""}](${node.getAttribute("src") ?? ""})`;
+  if (node.tagName === "FIGURE") {
+    const image = node.querySelector("img");
+    return image ? `![${image.getAttribute("alt") ?? ""}](${image.getAttribute("src") ?? ""})` : "";
+  }
+
+  const content = Array.from(node.childNodes).map(editableNodeToMarkdown).join("").trim();
+
+  if (!content) return "";
+  if (node.tagName === "STRONG" || node.tagName === "B") return `**${content}**`;
+  if (node.tagName === "EM" || node.tagName === "I") return `*${content}*`;
+  if (node.tagName === "S" || node.tagName === "STRIKE" || node.tagName === "DEL") return `~~${content}~~`;
+  if (node.tagName === "U") return `<u>${content}</u>`;
+  if (node.tagName === "SUP") return `<sup>${content}</sup>`;
+  if (node.tagName === "SUB") return `<sub>${content}</sub>`;
+  if (node.tagName === "A") return `[${content}](${node.getAttribute("href") ?? ""})`;
+  if (node.tagName === "H1") return `# ${content}`;
+  if (node.tagName === "H2") return `## ${content}`;
+  if (node.tagName === "H3") return `### ${content}`;
+  if (node.tagName === "H4") return `#### ${content}`;
+  if (node.tagName === "BLOCKQUOTE") return content.split("\n").map((line) => `> ${line}`).join("\n");
+  if (node.tagName === "LI") return `- ${content}`;
+
+  return content;
+}
+
+function editableHtmlToMarkdown(root: HTMLElement) {
+  return Array.from(root.childNodes)
+    .map(editableNodeToMarkdown)
+    .map((block) => block.trim())
+    .filter(Boolean)
+    .join("\n\n");
+}
+
+function emptyArticle(category = "uncategorized"): Article {
   const id = `article-${Date.now()}`;
   return {
     id,
@@ -257,7 +511,7 @@ function emptyArticle(): Article {
     title: { en: "New buying guide", zh: "新文章标题" },
     excerpt: { en: "Short summary shown on article cards and homepage.", zh: "这段摘要会显示在文章卡片和首页。" },
     body: { en: "Write the full article content here.", zh: "在这里填写文章正文。" },
-    category: "buying-guide",
+    category,
     status: "draft",
     featuredOnHome: true
   };
@@ -291,12 +545,98 @@ function formatFileSize(size: number) {
   return `${(size / 1024 / 1024).toFixed(1)} MB`;
 }
 
+function getMediaType(file: UploadedFile): MediaTypeFilter {
+  const mimeType = file.mimeType.toLowerCase();
+  const name = file.name.toLowerCase();
+
+  if (mimeType.startsWith("image/")) return "image";
+  if (mimeType.includes("spreadsheet") || mimeType.includes("excel") || /\.(csv|xls|xlsx|ods)$/.test(name)) return "spreadsheet";
+  if (mimeType.includes("pdf") || mimeType.includes("word") || mimeType.includes("document") || /\.(pdf|doc|docx|txt|md|rtf)$/.test(name)) return "document";
+  if (mimeType.includes("zip") || mimeType.includes("compressed") || /\.(zip|rar|7z|gz|tar)$/.test(name)) return "archive";
+  return "other";
+}
+
+function getMediaTypeLabel(file: UploadedFile) {
+  return mediaTypeOptions.find((option) => option.value === getMediaType(file))?.label ?? "其他";
+}
+
+function buildArticleMediaMarkup(file: UploadedFile) {
+  const label = sanitizeMarkdownLabel(file.name);
+  if (getMediaType(file) === "image") {
+    return `\n\n![${label}](${file.url})\n\n`;
+  }
+
+  return `\n\n[下载文件：${label}](${file.url})\n\n`;
+}
+
 function sanitizeMarkdownLabel(value: string) {
   return value.replace(/[[\]\n\r]/g, " ").trim() || "文件";
 }
 
+function compactOptionLabel(value: string, fallback: string) {
+  const label = value.trim() || fallback;
+  return label.length > 24 ? `${label.slice(0, 24)}...` : label;
+}
+
+function getProductId(product: ProductCategory) {
+  return product.id ?? product.slug;
+}
+
+function productMatchesQuery(product: ProductCategory, query: string) {
+  if (!query) return true;
+  return [
+    product.name.zh,
+    product.name.en,
+    product.slug,
+    product.summary.zh,
+    product.summary.en
+  ].filter(Boolean).some((value) => value?.toLowerCase().includes(query));
+}
+
+function buildProductTableRows(products: ProductCategory[], rawQuery: string): ProductTableRow[] {
+  const query = rawQuery.trim().toLowerCase();
+  const productIds = new Set(products.map(getProductId));
+  const childrenByParent = new Map<string, ProductCategory[]>();
+  const roots: ProductCategory[] = [];
+  const visited = new Set<string>();
+
+  products.forEach((product) => {
+    if (product.parentId && productIds.has(product.parentId)) {
+      const siblings = childrenByParent.get(product.parentId) ?? [];
+      siblings.push(product);
+      childrenByParent.set(product.parentId, siblings);
+      return;
+    }
+
+    roots.push(product);
+  });
+
+  function walk(product: ProductCategory, depth: number, forceVisible = false): ProductTableRow[] {
+    const productId = getProductId(product);
+    if (visited.has(productId)) return [];
+    visited.add(productId);
+
+    const selfVisible = forceVisible || productMatchesQuery(product, query);
+    const childRows = (childrenByParent.get(productId) ?? []).flatMap((child) => walk(child, depth + 1, selfVisible));
+
+    if (!selfVisible && childRows.length === 0) return [];
+    return [{ product, depth }, ...childRows];
+  }
+
+  const rows = roots.flatMap((product) => walk(product, 0));
+  const orphanRows = products.flatMap((product) => visited.has(getProductId(product)) ? [] : walk(product, 0));
+
+  return [...rows, ...orphanRows];
+}
+
 function normalizeInitialTab(value?: string): Tab {
   return value && tabKeys.has(value as Tab) ? value as Tab : "overview";
+}
+
+function getAllowedTabsForUser(user?: AdminUser) {
+  const roleDefaults = defaultAllowedTabsByRole[user?.role ?? "viewer"] ?? defaultAllowedTabsByRole.viewer;
+  const allowedTabs = user?.allowedTabs?.filter((item): item is Tab => tabKeys.has(item as Tab) && item !== "account");
+  return allowedTabs && allowedTabs.length > 0 ? allowedTabs : roleDefaults;
 }
 
 export function AdminApp({ email, initialTab, locale }: { email: string; initialTab?: string; locale: LocaleCode }) {
@@ -305,20 +645,44 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
   const [status, setStatus] = useState("加载后台数据...");
   const [activeArticleId, setActiveArticleId] = useState<string | null>(null);
   const [articleMode, setArticleMode] = useState<"list" | "editor">("list");
+  const [articleEditorView, setArticleEditorView] = useState<ArticleEditorView>("visual");
   const [articleQuery, setArticleQuery] = useState("");
   const [articleStatusFilter, setArticleStatusFilter] = useState<"all" | "published" | "draft" | "trash">("all");
-  const [articleCategoryFilter, setArticleCategoryFilter] = useState<Article["category"] | "all">("all");
+  const [articleCategoryFilter, setArticleCategoryFilter] = useState<string>("all");
   const [selectedArticleIds, setSelectedArticleIds] = useState<string[]>([]);
   const [articleBulkAction, setArticleBulkAction] = useState("");
   const [productQuery, setProductQuery] = useState("");
   const [editingProductId, setEditingProductId] = useState<string | null>(null);
   const [productForm, setProductForm] = useState<ProductFormState>(emptyProductForm);
   const [selectedProductIds, setSelectedProductIds] = useState<string[]>([]);
+  const [expandedProductIds, setExpandedProductIds] = useState<string[]>([]);
   const [productBulkAction, setProductBulkAction] = useState("");
+  const [mediaTypeFilter, setMediaTypeFilter] = useState<MediaTypeFilter>("all");
+  const [mediaTimeFilter, setMediaTimeFilter] = useState<MediaTimeFilter>("all");
+  const [mediaQuery, setMediaQuery] = useState("");
+  const [articleMediaPickerOpen, setArticleMediaPickerOpen] = useState(false);
   const [contactForm, setContactForm] = useState<ContactFormState>(() => createContactForm());
+  const [newUserForm, setNewUserForm] = useState<NewUserFormState>(emptyNewUserForm);
+  const [expandedUserPermissionsId, setExpandedUserPermissionsId] = useState<string | null>(null);
+  const [resetUserPasswords, setResetUserPasswords] = useState<Record<string, string>>({});
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [accountPassword, setAccountPassword] = useState({ current: "", next: "", confirm: "" });
+  const [frontendSettingsDirty, setFrontendSettingsDirty] = useState(false);
+  const [settingsSection, setSettingsSection] = useState<SettingsSection>("general");
+  const [clockNow, setClockNow] = useState<Date | null>(null);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const visualEditorRef = useRef<HTMLDivElement | null>(null);
+  const visualEditorInputRef = useRef(false);
   const activeThemeKey = state?.activeTheme;
+  const activeArticle = state?.articles.find((article) => (article.id ?? article.slug) === activeArticleId)
+    ?? state?.articles.find((article) => article.status !== "trash")
+    ?? state?.articles[0];
+  const activeArticleIndex = state && activeArticle ? state.articles.findIndex((article) => (article.id ?? article.slug) === (activeArticle.id ?? activeArticle.slug)) : -1;
+  const activeArticleBody = activeArticle?.body?.zh ?? activeArticle?.body?.en ?? "";
+
+  useEffect(() => {
+    setTab(normalizeInitialTab(initialTab));
+  }, [initialTab]);
 
   useEffect(() => {
     fetch("/api/admin/state")
@@ -331,6 +695,7 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
         setState(payload);
         setCurrentUserId(sessionUser?.id ?? null);
         applyThemeToDocument(payload.activeTheme);
+        applySiteFontToDocument(payload.siteSettings.fontFamily);
         setStatus("已连接本地后台数据");
       })
       .catch(() => setStatus("后台会话失效，请重新登录"));
@@ -340,16 +705,52 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
     if (activeThemeKey) applyThemeToDocument(activeThemeKey);
   }, [activeThemeKey]);
 
+  useEffect(() => {
+    setClockNow(new Date());
+    const timer = window.setInterval(() => setClockNow(new Date()), 1000);
+    return () => window.clearInterval(timer);
+  }, []);
+
+  useEffect(() => {
+    const editor = visualEditorRef.current;
+    if (!editor || articleEditorView !== "visual") return;
+    if (visualEditorInputRef.current) {
+      visualEditorInputRef.current = false;
+      return;
+    }
+    const nextHtml = markdownToEditableHtml(activeArticleBody);
+    if (editor.innerHTML !== nextHtml) editor.innerHTML = nextHtml;
+  }, [activeArticle?.id, activeArticle?.slug, activeArticleBody, articleEditorView]);
+
   const stats = useMemo(() => {
     if (!state) return null;
     return [
       ["产品品类", state.products.length],
       ["已发布文章", state.articles.filter((article) => article.status === "published").length],
-      ["文件数量", state.uploadedFiles.length],
+      ["媒体资源", state.uploadedFiles.length],
       ["询盘", state.leads.length],
       ["联系渠道", state.contactChannels.filter((item) => item.enabled).length]
     ];
   }, [state]);
+
+  const worldClocks = useMemo(() => {
+    if (!clockNow) return worldClockCities.map((item) => ({ ...item, time: "--:--", date: "--" }));
+    return worldClockCities.map((item) => ({
+      ...item,
+      time: new Intl.DateTimeFormat("zh-CN", {
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: false,
+        timeZone: item.zone
+      }).format(clockNow),
+      date: new Intl.DateTimeFormat("zh-CN", {
+        month: "2-digit",
+        day: "2-digit",
+        weekday: "short",
+        timeZone: item.zone
+      }).format(clockNow)
+    }));
+  }, [clockNow]);
 
   async function save(nextState = state) {
     if (!nextState) return;
@@ -365,6 +766,7 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
     }
     const payload = (await response.json()) as AdminState;
     setState(payload);
+    setFrontendSettingsDirty(false);
     setStatus("已保存");
   }
 
@@ -391,6 +793,24 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
     return false;
   }
 
+  function updateSiteSettings(patch: Partial<AdminState["siteSettings"]>) {
+    if (!state || !guardFrontendSettingsAccess()) return;
+    if (patch.fontFamily !== undefined) applySiteFontToDocument(patch.fontFamily);
+    setState({
+      ...state,
+      siteSettings: {
+        ...state.siteSettings,
+        ...patch
+      }
+    });
+    setFrontendSettingsDirty(true);
+  }
+
+  function switchAdminTab(nextTab: Tab) {
+    setTab(nextTab);
+    window.history.replaceState(null, "", `/${locale}/admin?tab=${nextTab}`);
+  }
+
   function resetProductForm() {
     setEditingProductId(null);
     setProductForm(emptyProductForm);
@@ -402,18 +822,21 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
     const nameEn = productForm.en.trim() || nameZh || "New Category";
     const slug = slugify(productForm.slug || nameEn || nameZh) || `category-${Date.now()}`;
     const id = editingProductId ?? `product-${slug}-${Date.now()}`;
+    const existingProduct = editingProductId
+      ? state.products.find((product) => (product.id ?? product.slug) === editingProductId)
+      : undefined;
     const nextProduct: ProductCategory = {
       id,
       slug,
       name: { en: nameEn, zh: nameZh || nameEn },
       summary: {
-        en: productForm.summaryEn.trim() || "Describe this category for overseas buyers.",
-        zh: productForm.summaryZh.trim() || "填写分类描述。"
+        en: productForm.summaryEn.trim() || productForm.summaryZh.trim() || existingProduct?.summary.en || "Describe this category for overseas buyers.",
+        zh: productForm.summaryZh.trim() || productForm.summaryEn.trim() || existingProduct?.summary.zh || "填写分类描述。"
       },
       parentId: productForm.parentId || undefined,
-      applications: { en: ["Export catalog"], zh: ["外贸目录"] },
-      specs: [],
-      themeFit: [state.activeTheme]
+      applications: existingProduct?.applications ?? { en: ["Export catalog"], zh: ["外贸目录"] },
+      specs: existingProduct?.specs ?? [],
+      themeFit: existingProduct?.themeFit ?? [state.activeTheme]
     };
     const exists = Boolean(editingProductId);
     const products = exists
@@ -490,6 +913,95 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
     void save(nextState);
   }
 
+  function createAdminUser() {
+    if (!state) return;
+    const name = newUserForm.name.trim();
+    const nextEmail = newUserForm.email.trim().toLowerCase();
+    const password = newUserForm.password;
+
+    if (!name || !nextEmail || !password) {
+      setStatus("请填写新用户姓名、邮箱和初始密码");
+      return;
+    }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(nextEmail)) {
+      setStatus("请输入有效的新用户邮箱");
+      return;
+    }
+    if (password.length < 8) {
+      setStatus("初始密码至少需要 8 位");
+      return;
+    }
+    if (state.users.some((user) => user.email.toLowerCase() === nextEmail)) {
+      setStatus("这个邮箱已经存在");
+      return;
+    }
+
+    setStatus("正在新增用户...");
+    fetch("/api/admin/users", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        name,
+        email: nextEmail,
+        role: newUserForm.role,
+        allowedTabs: defaultAllowedTabsByRole[newUserForm.role],
+        password
+      })
+    })
+      .then(async (response) => {
+        const payload = await response.json().catch(() => ({ error: "新增用户失败" })) as { state?: AdminState; error?: string };
+        if (!response.ok || !payload.state) throw new Error(payload.error || "新增用户失败");
+        return payload.state;
+      })
+      .then((savedState) => {
+        setState(savedState);
+        setNewUserForm(emptyNewUserForm);
+        setStatus("新用户已创建");
+      })
+      .catch((error) => setStatus(error instanceof Error ? error.message : "新增用户失败"));
+  }
+
+  function updateUserAllowedTab(userId: string, tabKey: Tab, checked: boolean) {
+    if (!state) return;
+    setState({
+      ...state,
+      users: state.users.map((user) => {
+        if (user.id !== userId) return user;
+        const current = new Set(getAllowedTabsForUser(user));
+        if (checked) current.add(tabKey);
+        else current.delete(tabKey);
+        if (current.size === 0) current.add("overview");
+        return { ...user, allowedTabs: Array.from(current) };
+      })
+    });
+  }
+
+  function resetAdminUserPassword(userId: string) {
+    const password = resetUserPasswords[userId] ?? "";
+    if (password.length < 8) {
+      setStatus("重置密码至少需要 8 位");
+      return;
+    }
+
+    setStatus("正在重置用户密码...");
+    fetch("/api/admin/users", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ userId, password })
+    })
+      .then(async (response) => {
+        const payload = await response.json().catch(() => ({ error: "重置密码失败" })) as { state?: AdminState; error?: string };
+        if (!response.ok || !payload.state) throw new Error(payload.error || "重置密码失败");
+        return payload.state;
+      })
+      .then((savedState) => {
+        setState(savedState);
+        setResetUserPasswords((current) => ({ ...current, [userId]: "" }));
+        setStatus("用户密码已重置");
+      })
+      .catch((error) => setStatus(error instanceof Error ? error.message : "重置密码失败"));
+  }
+
   function removeContactChannel(channelId: string) {
     if (!state) return;
     const nextState = {
@@ -507,6 +1019,7 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
       ...state,
       navigation: state.navigation.map((item) => (item.id === itemId ? { ...item, ...patch } : item))
     });
+    setFrontendSettingsDirty(true);
   }
 
   function addNavigationItem() {
@@ -516,6 +1029,7 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
       ...state,
       navigation: [...state.navigation, emptyNavigationItem(nextOrder)]
     });
+    setFrontendSettingsDirty(true);
   }
 
   function removeNavigationItem(itemId: string) {
@@ -524,6 +1038,7 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
       ...state,
       navigation: state.navigation.filter((item) => item.id !== itemId)
     });
+    setFrontendSettingsDirty(true);
   }
 
   function toggleEnabledLocale(localeCode: LocaleCode, checked: boolean) {
@@ -538,6 +1053,21 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
     }
 
     setState({ ...state, enabledLocales: nextLocales });
+    setFrontendSettingsDirty(true);
+  }
+
+  function updateEnabledLocaleOrder(localeCode: LocaleCode, order: number) {
+    if (!state || !guardFrontendSettingsAccess()) return;
+    const currentIndex = state.enabledLocales.indexOf(localeCode);
+    const nextIndex = Math.max(0, Math.min(state.enabledLocales.length - 1, Math.trunc(order) - 1));
+
+    if (currentIndex < 0 || !Number.isFinite(order) || nextIndex === currentIndex) return;
+
+    const nextLocales = [...state.enabledLocales];
+    const [localeToMove] = nextLocales.splice(currentIndex, 1);
+    nextLocales.splice(nextIndex, 0, localeToMove);
+    setState({ ...state, enabledLocales: nextLocales });
+    setFrontendSettingsDirty(true);
   }
 
   function uploadContactQr(index: number, file: File | null) {
@@ -792,7 +1322,7 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
               en: record.body_en || record.body_zh || "",
               zh: record.body_zh || record.body_en || ""
             },
-            category: normalizeArticleCategory(record.category || ""),
+            category: normalizeArticleCategory(record.category || "", state.siteSettings.defaultArticleCategory || state.products[0]?.slug || "uncategorized"),
             status: statusValue,
             featuredOnHome: parseFeaturedOnHome(record.featured_on_home || ""),
             publishedAt
@@ -817,7 +1347,7 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
   function generateAiArticleDraft() {
     if (!state) return;
     const market = state.aiSettings.targetMarkets[0] ?? "Global";
-    const keyword = state.aiSettings.requiredKeywords[0] ?? "B2B export";
+    const keyword = state.aiSettings.requiredKeywords[0] ?? "carbide end mills";
     const created = new Date();
     const draft: Article = {
       id: `ai-article-${created.getTime()}`,
@@ -842,7 +1372,7 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
           `建议关键词：${state.aiSettings.requiredKeywords.join("，")}。`
         ].join("\n\n")
       },
-      category: "seo",
+      category: state.siteSettings.defaultArticleCategory || state.products[0]?.slug || "uncategorized",
       status: "draft",
       featuredOnHome: true
     };
@@ -856,27 +1386,35 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
   if (!state) {
     return (
       <main className="real-admin">
-        <div className="admin-topbar"><strong>ExportForge Admin</strong><span>{status}</span></div>
+        <div className="admin-topbar"><strong>KeyproTools Admin</strong><span>{status}</span></div>
       </main>
     );
   }
 
-  const activeArticle = state.articles.find((article) => (article.id ?? article.slug) === activeArticleId)
-    ?? state.articles.find((article) => article.status !== "trash")
-    ?? state.articles[0];
-  const activeArticleIndex = activeArticle ? state.articles.findIndex((article) => (article.id ?? article.slug) === (activeArticle.id ?? activeArticle.slug)) : -1;
-  const filteredProducts = state.products.filter((product) => {
-    const query = productQuery.trim().toLowerCase();
-    if (!query) return true;
-    return [
-      product.name.zh,
-      product.name.en,
-      product.slug,
-      product.summary.zh,
-      product.summary.en
-    ].filter(Boolean).some((value) => value?.toLowerCase().includes(query));
+  const productRows = buildProductTableRows(state.products, productQuery);
+  const expandedProductSet = new Set(expandedProductIds);
+  const productSearchActive = productQuery.trim().length > 0;
+  const productIds = new Set(state.products.map((product) => product.id ?? product.slug));
+  const productById = new Map(state.products.map((product) => [product.id ?? product.slug, product]));
+  const productChildCounts = state.products.reduce((counts, product) => {
+    if (product.parentId && productIds.has(product.parentId)) {
+      counts.set(product.parentId, (counts.get(product.parentId) ?? 0) + 1);
+    }
+    return counts;
+  }, new Map<string, number>());
+  const productVisibleRows = productRows.filter(({ product, depth }) => {
+    if (productSearchActive) return true;
+    if (depth === 0) return true;
+    let parentId = product.parentId;
+
+    while (parentId && productById.has(parentId)) {
+      if (!expandedProductSet.has(parentId)) return false;
+      parentId = productById.get(parentId)?.parentId;
+    }
+
+    return true;
   });
-  const visibleProductIds = filteredProducts.map((product) => product.id ?? product.slug);
+  const visibleProductIds = productVisibleRows.map(({ product }) => product.id ?? product.slug);
   const allVisibleProductsSelected = visibleProductIds.length > 0 && visibleProductIds.every((id) => selectedProductIds.includes(id));
 
   function toggleVisibleProducts(checked: boolean) {
@@ -890,6 +1428,13 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
     setSelectedProductIds((current) => {
       if (checked) return Array.from(new Set([...current, productId]));
       return current.filter((id) => id !== productId);
+    });
+  }
+
+  function toggleProductExpanded(productId: string) {
+    setExpandedProductIds((current) => {
+      if (current.includes(productId)) return current.filter((id) => id !== productId);
+      return [...current, productId];
     });
   }
 
@@ -932,6 +1477,20 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
   const visibleArticleIds = filteredArticles.map((article) => article.id ?? article.slug);
   const allVisibleArticlesSelected = visibleArticleIds.length > 0 && visibleArticleIds.every((id) => selectedArticleIds.includes(id));
   const sortedNavigation = [...state.navigation].sort((a, b) => a.order - b.order);
+  const filteredMediaFiles = state.uploadedFiles.filter((file) => {
+    const typeMatches = mediaTypeFilter === "all" || getMediaType(file) === mediaTypeFilter;
+    const query = mediaQuery.trim().toLowerCase();
+    const queryMatches = !query || [file.name, file.mimeType, file.description?.zh, file.description?.en]
+      .filter(Boolean)
+      .some((value) => value?.toLowerCase().includes(query));
+
+    if (!typeMatches || !queryMatches) return false;
+    if (mediaTimeFilter === "all") return true;
+
+    const days = Number(mediaTimeFilter.replace("d", ""));
+    const createdAt = new Date(file.createdAt).getTime();
+    return Number.isFinite(createdAt) && Date.now() - createdAt <= days * 24 * 60 * 60 * 1000;
+  });
 
   function updateArticleTitle(value: string) {
     updateActiveArticle({ title: createSingleLanguageTranslation(value) });
@@ -945,8 +1504,21 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
     updateActiveArticle({ body: createSingleLanguageTranslation(value) });
   }
 
+  function syncVisualEditorBody() {
+    const editor = visualEditorRef.current;
+    if (!editor) return;
+    visualEditorInputRef.current = true;
+    updateArticleBody(editableHtmlToMarkdown(editor));
+  }
+
   function insertTextIntoArticleBody(insertText: string, cursorStartOffset = insertText.length, cursorEndOffset = cursorStartOffset) {
     if (!activeArticle) return;
+    if (articleEditorView === "visual" && visualEditorRef.current) {
+      visualEditorRef.current.focus();
+      document.execCommand("insertText", false, insertText);
+      syncVisualEditorBody();
+      return;
+    }
     const editor = document.getElementById("article-body-editor") as HTMLTextAreaElement | null;
     const currentBody = activeArticle.body?.zh ?? activeArticle.body?.en ?? "";
     const start = editor?.selectionStart ?? currentBody.length;
@@ -956,12 +1528,42 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
     updateArticleBody(nextBody);
     window.requestAnimationFrame(() => {
       editor?.focus();
-      editor?.setSelectionRange(start + cursorStartOffset, start + cursorEndOffset);
+      if (editor instanceof HTMLTextAreaElement) editor.setSelectionRange(start + cursorStartOffset, start + cursorEndOffset);
     });
   }
 
   function insertArticleMarkup(before: string, after = "", fallback = "文字") {
     if (!activeArticle) return;
+    if (articleEditorView === "visual" && visualEditorRef.current) {
+      const formatMap: Record<string, string> = {
+        "# ": "H1",
+        "## ": "H2",
+        "### ": "H3",
+        "#### ": "H4",
+        "> ": "BLOCKQUOTE"
+      };
+      const inlineCommandMap: Record<string, string> = {
+        "**|**": "bold",
+        "*|*": "italic",
+        "~~|~~": "strikeThrough",
+        "<u>|</u>": "underline",
+        "<sup>|</sup>": "superscript",
+        "<sub>|</sub>": "subscript",
+        "`|`": "insertText"
+      };
+      const commandKey = `${before}|${after}`;
+
+      visualEditorRef.current.focus();
+      if (formatMap[before] && !after) {
+        document.execCommand("formatBlock", false, formatMap[before]);
+      } else if (inlineCommandMap[commandKey] && inlineCommandMap[commandKey] !== "insertText") {
+        document.execCommand(inlineCommandMap[commandKey], false);
+      } else {
+        document.execCommand("insertText", false, `${before}${fallback}${after}`);
+      }
+      syncVisualEditorBody();
+      return;
+    }
     const editor = document.getElementById("article-body-editor") as HTMLTextAreaElement | null;
     const currentBody = activeArticle.body?.zh ?? activeArticle.body?.en ?? "";
     const start = editor?.selectionStart ?? currentBody.length;
@@ -972,8 +1574,56 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
     updateArticleBody(nextBody);
     window.requestAnimationFrame(() => {
       editor?.focus();
-      editor?.setSelectionRange(start + before.length, start + before.length + selected.length);
+      if (editor instanceof HTMLTextAreaElement) editor.setSelectionRange(start + before.length, start + before.length + selected.length);
     });
+  }
+
+  function insertArticleParagraphTemplate() {
+    insertTextIntoArticleBody("\n\n## 小标题\n\n在这里填写段落内容，说明产品优势、应用场景或采购建议。\n\n- 要点一\n- 要点二\n\n");
+  }
+
+  function insertArticleTableTemplate() {
+    insertTextIntoArticleBody("\n\n| 项目 | 说明 | 备注 |\n| --- | --- | --- |\n| 参数 | 填写内容 | 填写内容 |\n| 应用 | 填写内容 | 填写内容 |\n\n");
+  }
+
+  function insertArticleChecklistTemplate() {
+    insertTextIntoArticleBody("\n\n- [ ] 待确认事项\n- [ ] 需要补充的内容\n- [ ] 发布前检查\n\n");
+  }
+
+  function insertArticleCalloutTemplate() {
+    insertTextIntoArticleBody("\n\n> 提示：在这里填写采购建议、注意事项或重点提醒。\n\n");
+  }
+
+  function clearArticleBody() {
+    if (!activeArticle) return;
+    if (visualEditorRef.current) visualEditorRef.current.innerHTML = "";
+    updateArticleBody("");
+    setStatus("正文已清空，点击保存或发布后生效");
+    window.requestAnimationFrame(() => {
+      document.getElementById("article-body-editor")?.focus();
+    });
+  }
+
+  function clearArticleFormatting() {
+    if (!activeArticle) return;
+    if (articleEditorView === "visual" && visualEditorRef.current) {
+      const plainText = visualEditorRef.current.innerText.trim();
+      visualEditorRef.current.textContent = plainText;
+      updateArticleBody(plainText);
+      setStatus("已清理正文格式，点击保存或发布后生效");
+      return;
+    }
+    const currentBody = activeArticle.body?.zh ?? activeArticle.body?.en ?? "";
+    const cleanedBody = currentBody
+      .replace(/\*\*([^*]+)\*\*/g, "$1")
+      .replace(/\*([^*]+)\*/g, "$1")
+      .replace(/^#{2,3}\s+/gm, "")
+      .replace(/^>\s+/gm, "")
+      .replace(/^[-*]\s+/gm, "")
+      .replace(/^\d+\.\s+/gm, "");
+
+    updateArticleBody(cleanedBody);
+    setStatus("已清理正文格式，点击保存或发布后生效");
   }
 
   function uploadArticleImage(file: File | null, insertIntoBody = false) {
@@ -982,58 +1632,74 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
       setStatus("请选择文章图片文件");
       return;
     }
-
-    const reader = new FileReader();
-    reader.onload = () => {
-      if (typeof reader.result !== "string") {
-        setStatus("文章图片读取失败");
-        return;
-      }
-
-      const patch: Partial<Article> = {
-        coverImageUrl: activeArticle.coverImageUrl || reader.result
-      };
-
-      if (insertIntoBody) {
-        const editor = document.getElementById("article-body-editor") as HTMLTextAreaElement | null;
-        const currentBody = activeArticle.body?.zh ?? activeArticle.body?.en ?? "";
-        const start = editor?.selectionStart ?? currentBody.length;
-        const end = editor?.selectionEnd ?? currentBody.length;
-        const imageMarkdown = `\n\n![${sanitizeMarkdownLabel(file.name || activeArticle.title.zh || activeArticle.title.en || "文章图片")}](${reader.result})\n\n`;
-        patch.body = createSingleLanguageTranslation(`${currentBody.slice(0, start)}${imageMarkdown}${currentBody.slice(end)}`);
-        window.requestAnimationFrame(() => {
-          const cursor = start + imageMarkdown.length;
-          editor?.focus();
-          editor?.setSelectionRange(cursor, cursor);
-        });
-      }
-
-      updateActiveArticle(patch);
-      setStatus(insertIntoBody ? "图片已插入正文，点击保存或发布后生效" : "特色图片已上传，点击保存或发布后生效");
-    };
-    reader.onerror = () => setStatus("文章图片读取失败");
-    reader.readAsDataURL(file);
-  }
-
-  function appendFileToActiveArticle(file: UploadedFile) {
-    if (!activeArticle || !state) return state;
     const targetId = activeArticle.id ?? activeArticle.slug;
     const editor = document.getElementById("article-body-editor") as HTMLTextAreaElement | null;
     const currentBody = activeArticle.body?.zh ?? activeArticle.body?.en ?? "";
-    const fileLink = `\n\n[下载文件：${sanitizeMarkdownLabel(file.name)}](${file.url})\n\n`;
     const start = editor?.selectionStart ?? currentBody.length;
     const end = editor?.selectionEnd ?? currentBody.length;
-    const nextBody = `${currentBody.slice(0, start)}${fileLink}${currentBody.slice(end)}`;
+    const formData = new FormData();
+
+    formData.append("file", file);
+    setStatus("图片上传中...");
+    fetch("/api/admin/upload", { method: "POST", body: formData })
+      .then(async (response) => {
+        if (!response.ok) {
+          const payload = await response.json().catch(() => ({ error: "图片上传失败" }));
+          throw new Error(payload.error || "图片上传失败");
+        }
+        return response.json() as Promise<{ file: UploadedFile; state: AdminState }>;
+      })
+      .then(({ file: uploadedFile, state: savedState }) => {
+        const imageMarkdown = `\n\n![${sanitizeMarkdownLabel(uploadedFile.name || activeArticle.title.zh || activeArticle.title.en || "文章图片")}](${uploadedFile.url})\n\n`;
+        const nextState = {
+          ...savedState,
+          articles: savedState.articles.map((article) => {
+            if ((article.id ?? article.slug) !== targetId) return article;
+            const nextArticle: Article = {
+              ...article,
+              coverImageUrl: article.coverImageUrl || uploadedFile.url
+            };
+
+            if (insertIntoBody) {
+              nextArticle.body = createSingleLanguageTranslation(`${currentBody.slice(0, start)}${imageMarkdown}${currentBody.slice(end)}`);
+            }
+
+            return nextArticle;
+          })
+        };
+
+        setState(nextState);
+        if (insertIntoBody) {
+          window.requestAnimationFrame(() => {
+            const cursor = start + imageMarkdown.length;
+            editor?.focus();
+            if (editor instanceof HTMLTextAreaElement) editor.setSelectionRange(cursor, cursor);
+          });
+        }
+        setStatus(insertIntoBody ? "图片已上传并插入正文，点击保存或发布后生效" : "特色图片已上传，点击保存或发布后生效");
+      })
+      .catch((error) => setStatus(error instanceof Error ? error.message : "图片上传失败"));
+  }
+
+  function appendFileToActiveArticle(file: UploadedFile, sourceState = state) {
+    if (!activeArticle || !sourceState) return sourceState;
+    const targetId = activeArticle.id ?? activeArticle.slug;
+    const editor = document.getElementById("article-body-editor") as HTMLTextAreaElement | null;
+    const currentBody = activeArticle.body?.zh ?? activeArticle.body?.en ?? "";
+    const mediaMarkup = buildArticleMediaMarkup(file);
+    const start = editor?.selectionStart ?? currentBody.length;
+    const end = editor?.selectionEnd ?? currentBody.length;
+    const nextBody = `${currentBody.slice(0, start)}${mediaMarkup}${currentBody.slice(end)}`;
 
     window.requestAnimationFrame(() => {
-      const cursor = start + fileLink.length;
+      const cursor = start + mediaMarkup.length;
       editor?.focus();
-      editor?.setSelectionRange(cursor, cursor);
+      if (editor instanceof HTMLTextAreaElement) editor.setSelectionRange(cursor, cursor);
     });
 
     return {
-      ...state,
-      articles: state.articles.map((article) => (
+      ...sourceState,
+      articles: sourceState.articles.map((article) => (
         (article.id ?? article.slug) === targetId
           ? { ...article, body: createSingleLanguageTranslation(nextBody) }
           : article
@@ -1043,40 +1709,63 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
 
   function uploadSiteFile(file: File | null, insertIntoArticle = false) {
     if (!state || !file) return;
+    const formData = new FormData();
 
-    const reader = new FileReader();
-    reader.onload = () => {
-      if (typeof reader.result !== "string") {
-        setStatus("文件读取失败");
-        return;
-      }
+    formData.append("file", file);
+    setStatus("媒体上传中...");
+    fetch("/api/admin/upload", { method: "POST", body: formData })
+      .then(async (response) => {
+        if (!response.ok) {
+          const payload = await response.json().catch(() => ({ error: "媒体上传失败" }));
+          throw new Error(payload.error || "媒体上传失败");
+        }
+        return response.json() as Promise<{ file: UploadedFile; state: AdminState }>;
+      })
+      .then(({ file: uploadedFile, state: savedState }) => {
+        if (insertIntoArticle && activeArticle) {
+          const nextState = appendFileToActiveArticle(uploadedFile, savedState);
+          setState(nextState ?? savedState);
+        } else {
+          setState(savedState);
+        }
+        setStatus(insertIntoArticle ? "媒体已上传并插入正文，点击保存或发布后生效" : "媒体已上传并保存");
+      })
+      .catch((error) => setStatus(error instanceof Error ? error.message : "媒体上传失败"));
+  }
 
-      const uploadedFile: UploadedFile = {
-        id: `file-${Date.now()}`,
-        name: file.name,
-        mimeType: file.type || "application/octet-stream",
-        size: file.size,
-        url: reader.result,
-        createdAt: new Date().toISOString(),
-        enabled: true
-      };
-      const nextWithFile = {
-        ...state,
-        uploadedFiles: [uploadedFile, ...state.uploadedFiles]
-      };
-      const nextState = insertIntoArticle && activeArticle
-        ? {
-          ...appendFileToActiveArticle(uploadedFile),
-          uploadedFiles: nextWithFile.uploadedFiles
-        } as AdminState
-        : nextWithFile;
+  function uploadSiteIcon(file: File | null) {
+    if (!state || !file) return;
+    if (!guardFrontendSettingsAccess()) return;
 
-      setState(nextState);
-      setStatus(insertIntoArticle ? "文件已上传并插入正文，正在保存..." : "文件已上传，正在保存...");
-      void save(nextState);
-    };
-    reader.onerror = () => setStatus("文件读取失败");
-    reader.readAsDataURL(file);
+    const iconExtensionPattern = /\.(ico|png|jpe?g|gif|webp|svg)$/i;
+    if (!file.type.startsWith("image/") && !iconExtensionPattern.test(file.name)) {
+      setStatus("请选择图片或 ICO 图标文件");
+      return;
+    }
+
+    const formData = new FormData();
+    formData.append("file", file);
+    setStatus("站点图标上传中...");
+    fetch("/api/admin/upload", { method: "POST", body: formData })
+      .then(async (response) => {
+        if (!response.ok) {
+          const payload = await response.json().catch(() => ({ error: "站点图标上传失败" }));
+          throw new Error(payload.error || "站点图标上传失败");
+        }
+        return response.json() as Promise<{ file: UploadedFile; state: AdminState }>;
+      })
+      .then(({ file: uploadedFile, state: savedState }) => {
+        setState({
+          ...savedState,
+          siteSettings: {
+            ...savedState.siteSettings,
+            siteIconUrl: uploadedFile.url
+          }
+        });
+        setFrontendSettingsDirty(true);
+        setStatus("站点图标已上传，点击保存设置后生效");
+      })
+      .catch((error) => setStatus(error instanceof Error ? error.message : "站点图标上传失败"));
   }
 
   function insertExistingFileIntoArticle(file: UploadedFile) {
@@ -1084,18 +1773,26 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
     if (!nextState) return;
 
     setState(nextState);
-    setStatus("文件链接已插入正文，点击保存或发布后生效");
+    setArticleMediaPickerOpen(false);
+    setStatus(getMediaType(file) === "image" ? "图片已插入正文，点击保存或发布后生效" : "媒体链接已插入正文，点击保存或发布后生效");
   }
 
   function removeUploadedFile(fileId: string) {
     if (!state) return;
-    const nextState = {
-      ...state,
-      uploadedFiles: state.uploadedFiles.filter((file) => file.id !== fileId)
-    };
-
-    setState(nextState);
-    void save(nextState);
+    setStatus("正在删除媒体...");
+    fetch(`/api/admin/upload?id=${encodeURIComponent(fileId)}`, { method: "DELETE" })
+      .then(async (response) => {
+        if (!response.ok) {
+          const payload = await response.json().catch(() => ({ error: "媒体删除失败" }));
+          throw new Error(payload.error || "媒体删除失败");
+        }
+        return response.json() as Promise<{ state: AdminState }>;
+      })
+      .then(({ state: savedState }) => {
+        setState(savedState);
+        setStatus("媒体已删除");
+      })
+      .catch((error) => setStatus(error instanceof Error ? error.message : "媒体删除失败"));
   }
 
   function toggleVisibleArticles(checked: boolean) {
@@ -1134,22 +1831,99 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
   const currentUserName = currentUser?.name || "Admin";
   const currentEmail = currentUser?.email || email;
   const accountInitial = (currentUserName || email).slice(0, 1).toUpperCase();
+  const canResetUserPasswords = currentUser?.role === "super-admin";
+  const allowedTabsForCurrentUser = new Set(getAllowedTabsForUser(currentUser));
+  const visibleSidebarTabs = tabs.filter((item) => allowedTabsForCurrentUser.has(item.key));
   const canManageFrontendSettings = canManageFrontendState();
+  const shouldShowAdminStatus = Boolean(status && status !== "已连接本地后台数据" && !hiddenAdminStatusMessages.has(status));
   const navigationProductOptions = [...state.products].sort((a, b) => (a.name.zh || a.name.en).localeCompare(b.name.zh || b.name.en));
   const navigationArticleOptions = state.articles
     .filter((article) => article.status !== "trash")
     .sort((a, b) => (a.title.zh || a.title.en).localeCompare(b.title.zh || b.title.en));
+  const articleProductCategoryOptions = [...state.products]
+    .sort((a, b) => (a.name.zh || a.name.en).localeCompare(b.name.zh || b.name.en))
+    .map((product) => ({
+      label: product.name.zh || product.name.en,
+      value: product.slug
+    }));
+  const articleProductCategoryValues = new Set(articleProductCategoryOptions.map((item) => item.value));
+  const articleProductCategoryLabelByValue = new Map(articleProductCategoryOptions.map((item) => [item.value, item.label]));
+  const activeArticleCategoryIsProduct = activeArticle ? articleProductCategoryValues.has(activeArticle.category) : false;
+  const orderedLocaleOptions = [
+    ...state.enabledLocales
+      .map((localeCode) => locales.find((item) => item.code === localeCode))
+      .filter((item): item is typeof locales[number] => Boolean(item)),
+    ...locales.filter((item) => !state.enabledLocales.includes(item.code as LocaleCode))
+  ];
+  const sidebarClassName = "admin-sidebar";
+  const languageSettingsPanel = (
+    <section className="settings-panel">
+      <div className="settings-panel-head">
+        <h2>前台可显示语言</h2>
+        <span>勾选后会出现在前台语言选择器中，URL 路由和 RTL 方向仍自动兼容。</span>
+      </div>
+      <div className="language-toggle-grid">
+        {orderedLocaleOptions.map((item) => {
+          const localeCode = item.code as LocaleCode;
+          const enabledIndex = state.enabledLocales.indexOf(localeCode);
+          const isEnabled = enabledIndex >= 0;
+
+          return (
+            <div className={isEnabled ? "language-toggle enabled" : "language-toggle"} key={item.code}>
+              <label>
+                <input
+                  disabled={!canManageFrontendSettings}
+                  type="checkbox"
+                  checked={isEnabled}
+                  onChange={(event) => toggleEnabledLocale(localeCode, event.target.checked)}
+                />
+                <span>
+                  <strong><span className="language-toggle-flag">{item.flag}</span>{item.nativeName}</strong>
+                  <small>{item.label} · {item.region}</small>
+                </span>
+              </label>
+              <label className="language-order-field">
+                <span>排序</span>
+                <input
+                  aria-label={`${item.nativeName} 排序序号`}
+                  disabled={!canManageFrontendSettings || !isEnabled}
+                  max={state.enabledLocales.length}
+                  min={1}
+                  type="number"
+                  value={isEnabled ? enabledIndex + 1 : ""}
+                  onChange={(event) => updateEnabledLocaleOrder(localeCode, Number(event.target.value))}
+                />
+              </label>
+            </div>
+          );
+        })}
+      </div>
+    </section>
+  );
 
   return (
     <main className="real-admin">
-      <div className="admin-layout">
-        <aside className="admin-sidebar">
-          {tabs.map((item) => (
-            <button className={tab === item.key ? "active" : ""} key={item.key} onClick={() => setTab(item.key)} type="button">
-              {item.label}
-            </button>
-          ))}
+      <div className={sidebarCollapsed ? "admin-layout sidebar-collapsed" : "admin-layout"}>
+        <aside className={sidebarClassName}>
+          {visibleSidebarTabs.map((item) => {
+            const Icon = item.icon;
+            return (
+              <button className={tab === item.key ? "active" : ""} key={item.key} onClick={() => switchAdminTab(item.key)} title={item.label} type="button">
+                <span className="admin-sidebar-icon"><Icon size={17} /></span>
+                <span className="admin-sidebar-label">{item.label}</span>
+              </button>
+            );
+          })}
           <div className="admin-sidebar-footer">
+            <button
+              className="admin-sidebar-toggle"
+              type="button"
+              onClick={() => setSidebarCollapsed((current) => !current)}
+              aria-expanded={!sidebarCollapsed}
+            >
+              <span className="admin-sidebar-icon"><Menu size={17} /></span>
+              <span className="admin-sidebar-label">{sidebarCollapsed ? "展开菜单" : "收起菜单"}</span>
+            </button>
             <Link className={tab === "account" ? "admin-account-trigger active" : "admin-account-trigger"} href={`/${locale}/admin?tab=account`} onClick={() => setTab("account")}>
               <span className="admin-avatar">
                 {currentUser?.avatarUrl ? <Image src={currentUser.avatarUrl} alt={currentUserName} width={36} height={36} unoptimized /> : accountInitial}
@@ -1163,9 +1937,13 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
         </aside>
 
         <section className="admin-workspace">
+          {shouldShowAdminStatus ? (
+            <div className="admin-workspace-toolbar">
+              <span>{status}</span>
+            </div>
+          ) : null}
           {tab === "overview" ? (
             <>
-              <h1>真实后台控制台</h1>
               <div className="admin-stat-grid">
                 {stats?.map(([label, value]) => (
                   <div key={label}>
@@ -1174,6 +1952,20 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
                   </div>
                 ))}
               </div>
+              <section className="world-clock-panel" aria-label="世界主要城市时间">
+                <div className="admin-section-title">
+                  <h2>世界主要城市时间</h2>
+                </div>
+                <div className="world-clock-grid">
+                  {worldClocks.map((clock) => (
+                    <article className="world-clock-card" key={`${clock.city}-${clock.zone}`}>
+                      <span>{clock.city}</span>
+                      <strong>{clock.time}</strong>
+                      <small>{clock.date}</small>
+                    </article>
+                  ))}
+                </div>
+              </section>
             </>
           ) : null}
 
@@ -1247,12 +2039,14 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
                       <strong>父级</strong>
                       <strong>总数</strong>
                     </div>
-                    {filteredProducts.map((product) => {
+                    {productVisibleRows.map(({ product, depth }) => {
                       const productId = product.id ?? product.slug;
                       const parent = state.products.find((item) => (item.id ?? item.slug) === product.parentId);
+                      const childCount = productChildCounts.get(productId) ?? 0;
+                      const expanded = productSearchActive || expandedProductSet.has(productId);
 
                       return (
-                        <div className="wp-taxonomy-row" role="row" key={productId}>
+                        <div className={childCount > 0 ? "wp-taxonomy-row has-children" : "wp-taxonomy-row"} role="row" key={productId} style={{ "--category-depth": depth } as CSSProperties}>
                           <span>
                             <input
                               type="checkbox"
@@ -1261,10 +2055,24 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
                               onChange={(event) => toggleProductSelection(productId, event.target.checked)}
                             />
                           </span>
-                          <button type="button" onClick={() => editProduct(product)}>
-                            {product.name.zh || product.name.en}
-                            <small>编辑</small>
-                          </button>
+                          <div className="taxonomy-name-cell">
+                            {childCount > 0 ? (
+                              <button
+                                aria-expanded={expanded}
+                                className="taxonomy-tree-toggle"
+                                disabled={productSearchActive}
+                                type="button"
+                                onClick={() => toggleProductExpanded(productId)}
+                              >
+                                {expanded ? "收起" : "展开"}
+                              </button>
+                            ) : null}
+                            <button className="taxonomy-edit-trigger" type="button" onClick={() => editProduct(product)}>
+                              <span className="taxonomy-name">{product.name.zh || product.name.en}</span>
+                              <small>编辑</small>
+                            </button>
+                            {childCount > 0 ? <span className="taxonomy-child-count">子目录 {childCount}</span> : null}
+                          </div>
                           <span>{product.summary.zh || product.summary.en || "-"}</span>
                           <span>{product.slug}</span>
                           <span>{parent ? parent.name.zh || parent.name.en : "-"}</span>
@@ -1285,7 +2093,7 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
                         </div>
                       );
                     })}
-                    {filteredProducts.length === 0 ? <div className="wp-empty-row">没有找到分类。</div> : null}
+                    {productVisibleRows.length === 0 ? <div className="wp-empty-row">没有找到分类。</div> : null}
                   </div>
                 </section>
               </div>
@@ -1299,7 +2107,10 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
                 <button
                   type="button"
                   onClick={() => {
-                    const article = emptyArticle();
+                    const article = {
+                      ...emptyArticle(state.siteSettings.defaultArticleCategory || state.products[0]?.slug || "uncategorized"),
+                      status: state.siteSettings.defaultArticleStatus
+                    };
                     setState({ ...state, articles: [article, ...state.articles] });
                     setActiveArticleId(article.id ?? article.slug);
                     setArticleMode("editor");
@@ -1366,9 +2177,9 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
                       <option value="draft">草稿</option>
                       <option value="trash">回收站</option>
                     </select>
-                    <select value={articleCategoryFilter} onChange={(event) => setArticleCategoryFilter(event.target.value as Article["category"] | "all")}>
+                    <select value={articleCategoryFilter} onChange={(event) => setArticleCategoryFilter(event.target.value)}>
                       <option value="all">所有分类</option>
-                      {articleCategories.map((category) => <option key={category} value={category}>{category}</option>)}
+                      {articleProductCategoryOptions.map((category) => <option key={category.value} value={category.value}>{category.label}</option>)}
                     </select>
                     <input placeholder="搜索文章" value={articleQuery} onChange={(event) => setArticleQuery(event.target.value)} />
                   </div>
@@ -1414,7 +2225,7 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
                             <small>编辑 · {article.slug}</small>
                           </button>
                           <span>{currentEmail}</span>
-                          <span>{article.category}</span>
+                          <span>{articleProductCategoryLabelByValue.get(article.category) ?? article.category}</span>
                           <span>{articleStatusLabel(article)}{article.featuredOnHome && article.status !== "trash" ? " · 首页" : ""}</span>
                           <span>{article.status === "trash" ? (article.deletedAt ? new Date(article.deletedAt).toLocaleString() : "已移至回收站") : (article.publishedAt ? new Date(article.publishedAt).toLocaleString() : "尚未发布")}</span>
                         </div>
@@ -1437,18 +2248,66 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
                       />
                       <label>摘要<textarea className="wp-excerpt" value={activeArticle.excerpt.zh ?? activeArticle.excerpt.en ?? ""} onChange={(event) => updateArticleExcerpt(event.target.value)} /></label>
                       <div className="article-editor-shell">
+                        <div className="article-editor-viewbar" aria-label="编辑器模式">
+                          <button
+                            className={articleEditorView === "visual" ? "active" : ""}
+                            type="button"
+                            onClick={() => setArticleEditorView("visual")}
+                          >
+                            可视化
+                          </button>
+                          <button
+                            className={articleEditorView === "code" ? "active" : ""}
+                            type="button"
+                            onClick={() => setArticleEditorView("code")}
+                          >
+                            代码
+                          </button>
+                        </div>
                         <div className="article-editor-toolbar" aria-label="文章编辑器工具栏">
-                          <button type="button" onClick={() => insertArticleMarkup("## ", "", "小标题")}>H2</button>
-                          <button type="button" onClick={() => insertArticleMarkup("### ", "", "小标题")}>H3</button>
-                          <button type="button" onClick={() => insertArticleMarkup("**", "**", "加粗文字")}>B</button>
-                          <button type="button" onClick={() => insertArticleMarkup("*", "*", "斜体文字")}>I</button>
-                          <button type="button" onClick={() => insertArticleMarkup("[", "](https://example.com)", "链接文字")}>链接</button>
-                          <button type="button" onClick={() => insertArticleMarkup("> ", "", "引用内容")}>引用</button>
-                          <button type="button" onClick={() => insertArticleMarkup("- ", "", "列表项")}>列表</button>
-                          <button type="button" onClick={() => insertArticleMarkup("1. ", "", "编号项")}>编号</button>
-                          <button type="button" onClick={() => insertTextIntoArticleBody("\n\n---\n\n")}>分隔线</button>
-                          <label className="article-image-inline-upload">
-                            插入图片
+                          <select
+                            aria-label="段落格式"
+                            className="article-format-select"
+                            defaultValue=""
+                            onChange={(event) => {
+                              const value = event.currentTarget.value;
+                              if (value === "p") insertArticleParagraphTemplate();
+                              if (value === "h1") insertArticleMarkup("# ", "", "主标题");
+                              if (value === "h2") insertArticleMarkup("## ", "", "小标题");
+                              if (value === "h3") insertArticleMarkup("### ", "", "小标题");
+                              if (value === "h4") insertArticleMarkup("#### ", "", "段落标题");
+                              event.currentTarget.value = "";
+                            }}
+                          >
+                            <option value="">段落</option>
+                            <option value="p">段落模板</option>
+                            <option value="h1">标题 H1</option>
+                            <option value="h2">标题 H2</option>
+                            <option value="h3">标题 H3</option>
+                            <option value="h4">标题 H4</option>
+                          </select>
+                          <button title="标题 H1" type="button" onClick={() => insertArticleMarkup("# ", "", "主标题")}><Heading1 size={16} /></button>
+                          <button title="标题 H2" type="button" onClick={() => insertArticleMarkup("## ", "", "小标题")}><Heading2 size={16} /></button>
+                          <button title="标题 H3" type="button" onClick={() => insertArticleMarkup("### ", "", "小标题")}><Heading3 size={16} /></button>
+                          <span className="article-toolbar-separator" />
+                          <button title="加粗" type="button" onClick={() => insertArticleMarkup("**", "**", "加粗文字")}><Bold size={16} /></button>
+                          <button title="斜体" type="button" onClick={() => insertArticleMarkup("*", "*", "斜体文字")}><Italic size={16} /></button>
+                          <button title="删除线" type="button" onClick={() => insertArticleMarkup("~~", "~~", "删除线文字")}><Strikethrough size={16} /></button>
+                          <button title="下划线" type="button" onClick={() => insertArticleMarkup("<u>", "</u>", "下划线文字")}><Underline size={16} /></button>
+                          <button title="上标" type="button" onClick={() => insertArticleMarkup("<sup>", "</sup>", "上标")}><Superscript size={16} /></button>
+                          <button title="下标" type="button" onClick={() => insertArticleMarkup("<sub>", "</sub>", "下标")}><Subscript size={16} /></button>
+                          <span className="article-toolbar-separator" />
+                          <button title="项目列表" type="button" onClick={() => insertArticleMarkup("- ", "", "列表项")}><List size={16} /></button>
+                          <button title="编号列表" type="button" onClick={() => insertArticleMarkup("1. ", "", "编号项")}><ListOrdered size={16} /></button>
+                          <button title="引用" type="button" onClick={() => insertArticleMarkup("> ", "", "引用内容")}><Quote size={16} /></button>
+                          <button title="链接" type="button" onClick={() => insertArticleMarkup("[", "](https://example.com)", "链接文字")}><Link2 size={16} /></button>
+                          <button title="分隔线" type="button" onClick={() => insertTextIntoArticleBody("\n\n---\n\n")}><Minus size={16} /></button>
+                          <button title="表格" type="button" onClick={insertArticleTableTemplate}><Table2 size={16} /></button>
+                          <button title="提示块" type="button" onClick={insertArticleCalloutTemplate}><Pilcrow size={16} /></button>
+                          <button title="行内代码" type="button" onClick={() => insertArticleMarkup("`", "`", "代码")}><Code2 size={16} /></button>
+                          <button title="代码块" type="button" onClick={() => insertArticleMarkup("\n\n```text\n", "\n```\n\n", "代码块")}><Code2 size={16} /></button>
+                          <label className="article-image-inline-upload" title="插入图片">
+                            <ImageIcon size={16} />
                             <input
                               type="file"
                               accept="image/*"
@@ -1458,8 +2317,8 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
                               }}
                             />
                           </label>
-                          <label className="article-image-inline-upload">
-                            插入文件
+                          <label className="article-image-inline-upload" title="插入媒体">
+                            <Paperclip size={16} />
                             <input
                               type="file"
                               onChange={(event) => {
@@ -1468,15 +2327,32 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
                               }}
                             />
                           </label>
+                          <button title="待办列表" type="button" onClick={insertArticleChecklistTemplate}>待办</button>
+                          <button title="清除格式" type="button" onClick={clearArticleFormatting}>清除</button>
+                          <button title="清空正文" type="button" onClick={clearArticleBody}><Trash2 size={16} /></button>
                         </div>
-                        <label>正文
-                          <textarea
+                        {articleEditorView === "visual" ? (
+                          <div
+                            aria-label="正文可视化编辑"
+                            className="article-visual-editor detail-body article-editor-rendered-body"
+                            contentEditable
                             id="article-body-editor"
-                            className="wp-body"
-                            value={activeArticle.body?.zh ?? activeArticle.body?.en ?? ""}
-                            onChange={(event) => updateArticleBody(event.target.value)}
+                            ref={visualEditorRef}
+                            role="textbox"
+                            suppressContentEditableWarning
+                            onInput={syncVisualEditorBody}
                           />
-                        </label>
+                        ) : (
+                          <label>Markdown / HTML 代码
+                            <textarea
+                              id="article-body-editor"
+                              className="wp-body code-mode"
+                              rows={28}
+                              value={activeArticle.body?.zh ?? activeArticle.body?.en ?? ""}
+                              onChange={(event) => updateArticleBody(event.target.value)}
+                            />
+                          </label>
+                        )}
                       </div>
                     </article>
 
@@ -1491,14 +2367,14 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
                         <div className="wp-publish-box">
                           {activeArticle.status === "trash" ? (
                             <>
-                              <button type="button" onClick={restoreActiveArticle}>恢复文章</button>
-                              <button type="button" onClick={deleteActiveArticlePermanently}>永久删除</button>
+                              <button className="primary" type="button" onClick={restoreActiveArticle}>恢复文章</button>
+                              <button className="danger" type="button" onClick={deleteActiveArticlePermanently}>永久删除</button>
                             </>
                           ) : (
                             <>
                               <button type="button" onClick={() => save()}>保存草稿</button>
-                              <button type="button" onClick={() => commitArticle(activeArticleIndex, { status: "published", featuredOnHome: true, publishedAt: new Date().toISOString(), deletedAt: undefined })}>发布</button>
-                              <button type="button" onClick={moveActiveArticleToTrash}>移至回收站</button>
+                              <button className="primary" type="button" onClick={() => commitArticle(activeArticleIndex, { status: "published", featuredOnHome: true, publishedAt: new Date().toISOString(), deletedAt: undefined })}>发布</button>
+                              <button className="danger full" type="button" onClick={moveActiveArticleToTrash}>移至回收站</button>
                             </>
                           )}
                         </div>
@@ -1519,7 +2395,8 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
                         </label>
                         {activeArticle.coverImageUrl ? (
                           <div className="article-cover-preview">
-                            <Image src={activeArticle.coverImageUrl} alt={activeArticle.title.zh || activeArticle.title.en} width={240} height={140} unoptimized />
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            <img src={activeArticle.coverImageUrl} alt={activeArticle.title.zh || activeArticle.title.en || "文章图片"} />
                             <button type="button" onClick={() => updateActiveArticle({ coverImageUrl: undefined })}>移除图片</button>
                           </div>
                         ) : (
@@ -1528,26 +2405,26 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
                       </section>
 
                       <section className="wp-side-box">
-                        <h2>文件库</h2>
+                        <h2>媒体库</h2>
                         {state.uploadedFiles.length > 0 ? (
-                          <div className="article-file-picker">
-                            {state.uploadedFiles.slice(0, 6).map((file) => (
-                              <button type="button" key={file.id} onClick={() => insertExistingFileIntoArticle(file)}>
-                                {file.name}
-                                <small>{formatFileSize(file.size)}</small>
-                              </button>
-                            ))}
-                          </div>
+                          <>
+                            <button className="article-media-open-button" type="button" onClick={() => setArticleMediaPickerOpen(true)}>
+                              <Library size={16} />
+                              打开媒体库
+                            </button>
+                            <span>{state.uploadedFiles.length} 个媒体文件可选，图片会插入正文，其他文件会插入下载链接。</span>
+                          </>
                         ) : (
-                          <span>暂无文件。可在正文工具栏上传并插入文件。</span>
+                          <span>暂无媒体。可在正文工具栏上传并插入。</span>
                         )}
                       </section>
 
                       <section className="wp-side-box">
                         <h2>分类目录</h2>
                         <label>分类
-                          <select value={activeArticle.category} onChange={(event) => updateActiveArticle({ category: event.target.value as Article["category"] })}>
-                            {articleCategories.map((category) => <option key={category} value={category}>{category}</option>)}
+                          <select value={activeArticleCategoryIsProduct ? activeArticle.category : ""} onChange={(event) => updateActiveArticle({ category: event.target.value })}>
+                            <option value="" disabled>{articleProductCategoryOptions.length > 0 ? "选择产品分类" : "请先添加产品分类"}</option>
+                            {articleProductCategoryOptions.map((category) => <option key={category.value} value={category.value}>{category.label}</option>)}
                           </select>
                         </label>
                       </section>
@@ -1562,15 +2439,64 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
                   <div className="wp-editor empty">还没有文章，点击“写文章”开始。</div>
                 )
               ) : null}
+
+              {articleMediaPickerOpen ? (
+                <div className="media-picker-overlay" role="presentation" onMouseDown={(event) => {
+                  if (event.target === event.currentTarget) setArticleMediaPickerOpen(false);
+                }}>
+                  <section className="media-picker-modal" role="dialog" aria-modal="true" aria-label="选择媒体文件">
+                    <div className="media-picker-head">
+                      <div>
+                        <h2>选择媒体文件</h2>
+                        <span>从媒体库选择文件插入当前文章正文。</span>
+                      </div>
+                      <button type="button" aria-label="关闭媒体库" onClick={() => setArticleMediaPickerOpen(false)}>
+                        <X size={18} />
+                      </button>
+                    </div>
+                    <div className="media-picker-toolbar">
+                      <select value={mediaTypeFilter} onChange={(event) => setMediaTypeFilter(event.target.value as MediaTypeFilter)}>
+                        {mediaTypeOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
+                      </select>
+                      <select value={mediaTimeFilter} onChange={(event) => setMediaTimeFilter(event.target.value as MediaTimeFilter)}>
+                        {mediaTimeOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
+                      </select>
+                      <input placeholder="搜索文件名或类型" value={mediaQuery} onChange={(event) => setMediaQuery(event.target.value)} />
+                      <span>{filteredMediaFiles.length} / {state.uploadedFiles.length}</span>
+                    </div>
+                    <div className="media-picker-grid">
+                      {filteredMediaFiles.map((file) => {
+                        const isImage = getMediaType(file) === "image";
+
+                        return (
+                          <button type="button" className="media-picker-item" key={file.id} onClick={() => insertExistingFileIntoArticle(file)}>
+                            <span className="media-picker-thumb">
+                              {isImage ? (
+                                // eslint-disable-next-line @next/next/no-img-element
+                                <img src={file.url} alt={file.name} />
+                              ) : (
+                                <Paperclip size={24} />
+                              )}
+                            </span>
+                            <strong>{file.name}</strong>
+                            <small>{getMediaTypeLabel(file)} · {formatFileSize(file.size)}</small>
+                          </button>
+                        );
+                      })}
+                      {filteredMediaFiles.length === 0 ? <div className="media-picker-empty">没有找到匹配的媒体文件。</div> : null}
+                    </div>
+                  </section>
+                </div>
+              ) : null}
             </>
           ) : null}
 
           {tab === "files" ? (
             <>
               <div className="admin-section-title">
-                <h1>文件上传</h1>
+                <h1>媒体库</h1>
                 <label className="admin-upload-button">
-                  上传文件
+                  上传媒体
                   <input
                     type="file"
                     onChange={(event) => {
@@ -1581,15 +2507,33 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
                 </label>
               </div>
               <section className="file-upload-panel">
-                <strong>资料下载文件库</strong>
-                <span>支持 PDF、Word、Excel、图片、压缩包等文件。上传后会进入前台“资料下载”页面，也可以在文章编辑器中插入文件链接。</span>
+                <strong>站点媒体与资料库</strong>
+                <span>集中管理图片、PDF、Word、Excel、压缩包等媒体资源。上传后会进入前台“资料下载”页面，也可以在文章编辑器中插入链接或图片。</span>
               </section>
+              <div className="media-library-toolbar">
+                <select value={mediaTypeFilter} onChange={(event) => setMediaTypeFilter(event.target.value as MediaTypeFilter)}>
+                  {mediaTypeOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
+                </select>
+                <select value={mediaTimeFilter} onChange={(event) => setMediaTimeFilter(event.target.value as MediaTimeFilter)}>
+                  {mediaTimeOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
+                </select>
+                <input placeholder="搜索媒体名称或类型" value={mediaQuery} onChange={(event) => setMediaQuery(event.target.value)} />
+                <span>{filteredMediaFiles.length} / {state.uploadedFiles.length} 个资源</span>
+              </div>
               <div className="file-library-grid">
-                {state.uploadedFiles.map((file) => (
+                {filteredMediaFiles.map((file) => (
                   <article className="file-library-card" key={file.id}>
+                    <div className="file-library-thumb">
+                      {getMediaType(file) === "image" ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img src={file.url} alt={file.name} />
+                      ) : (
+                        <span>{getMediaTypeLabel(file).slice(0, 2)}</span>
+                      )}
+                    </div>
                     <div>
                       <strong>{file.name}</strong>
-                      <span>{file.mimeType || "application/octet-stream"} · {formatFileSize(file.size)}</span>
+                      <span>{getMediaTypeLabel(file)} · {file.mimeType || "application/octet-stream"} · {formatFileSize(file.size)}</span>
                       <small>{new Date(file.createdAt).toLocaleString()}</small>
                     </div>
                     <div className="file-card-actions">
@@ -1598,7 +2542,8 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
                     </div>
                   </article>
                 ))}
-                {state.uploadedFiles.length === 0 ? <div className="wp-empty-row">还没有上传文件。</div> : null}
+                {state.uploadedFiles.length === 0 ? <div className="wp-empty-row">还没有上传媒体。</div> : null}
+                {state.uploadedFiles.length > 0 && filteredMediaFiles.length === 0 ? <div className="wp-empty-row">没有匹配的媒体资源。</div> : null}
               </div>
             </>
           ) : null}
@@ -1638,7 +2583,8 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
                   保存联系方式
                 </button>
               </div>
-              <div className="admin-form-list">
+              <p className="settings-lock-note">启用的社媒链接会同步显示在前台页脚社媒图标中；带二维码的渠道仍会显示在右下角联系浮窗。</p>
+              <div className="admin-form-list contact-channel-list">
                 {state.contactChannels.map((channel, index) => (
                   <article className="admin-edit-card compact contact-card" key={channel.id}>
                     <label>显示名称<input value={channel.label.zh ?? channel.label.en} onChange={(event) => updateContact(index, { label: { ...channel.label, zh: event.target.value } })} /></label>
@@ -1653,14 +2599,14 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
                     <label>链接<input value={channel.href ?? ""} onChange={(event) => updateContact(index, { href: event.target.value })} /></label>
                     <label>颜色<input type="color" value={channel.color || contactTypePresets[channel.type].color} onChange={(event) => updateContact(index, { color: event.target.value })} /></label>
                     <label className="checkline"><input type="checkbox" checked={channel.enabled} onChange={(event) => updateContact(index, { enabled: event.target.checked })} />启用</label>
-                    <button className="contact-delete-button" type="button" onClick={() => removeContactChannel(channel.id)}>删除</button>
                     <div className="contact-qr-manager">
-                      <div>
-                        <strong>二维码图片</strong>
-                        <span>适合微信、WhatsApp、Zalo、Line、Facebook、Instagram、TikTok、Messenger 或任意扫码联系渠道。</span>
-                      </div>
+                      {channel.qrCodeUrl ? (
+                        <Image className="contact-qr-thumb" src={channel.qrCodeUrl} alt={`${channel.label.zh ?? channel.label.en} 二维码`} width={34} height={34} unoptimized />
+                      ) : (
+                        <span className="contact-qr-empty">无</span>
+                      )}
                       <label className="contact-qr-upload">
-                        上传二维码
+                        二维码
                         <input
                           type="file"
                           accept="image/*"
@@ -1671,14 +2617,10 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
                         />
                       </label>
                       {channel.qrCodeUrl ? (
-                        <div className="contact-qr-preview">
-                          <Image src={channel.qrCodeUrl} alt={`${channel.label.zh ?? channel.label.en} 二维码`} width={58} height={58} unoptimized />
-                          <button type="button" onClick={() => updateContact(index, { qrCodeUrl: undefined })}>移除二维码</button>
-                        </div>
-                      ) : (
-                        <span className="contact-qr-empty">未上传二维码</span>
-                      )}
+                        <button className="contact-qr-remove" type="button" onClick={() => updateContact(index, { qrCodeUrl: undefined })}>移除</button>
+                      ) : null}
                     </div>
+                    <button className="contact-delete-button" type="button" onClick={() => removeContactChannel(channel.id)}>删除</button>
                   </article>
                 ))}
               </div>
@@ -1718,25 +2660,92 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
 
           {tab === "users" ? (
             <>
-              <h1>多用户与权限</h1>
+              <div className="admin-section-title">
+                <h1>多用户与权限</h1>
+                <button type="button" onClick={() => void save()}>
+                  保存权限设置
+                </button>
+              </div>
+              <section className="contact-create-panel user-create-panel">
+                <div>
+                  <strong>新增用户</strong>
+                  <span>创建后台登录账号，并分配初始角色权限。初始密码至少 8 位。</span>
+                </div>
+                <div className="user-create-form">
+                  <label>姓名
+                    <input value={newUserForm.name} onChange={(event) => setNewUserForm({ ...newUserForm, name: event.target.value })} />
+                  </label>
+                  <label>邮箱
+                    <input type="email" value={newUserForm.email} onChange={(event) => setNewUserForm({ ...newUserForm, email: event.target.value })} />
+                  </label>
+                  <label>角色权限
+                    <select value={newUserForm.role} onChange={(event) => setNewUserForm({ ...newUserForm, role: event.target.value as RoleKey })}>
+                      {roleOptions.map((role) => <option key={role} value={role}>{role}</option>)}
+                    </select>
+                  </label>
+                  <label>初始密码
+                    <input type="password" value={newUserForm.password} onChange={(event) => setNewUserForm({ ...newUserForm, password: event.target.value })} />
+                  </label>
+                  <button type="button" onClick={createAdminUser}>新增用户</button>
+                </div>
+              </section>
               <div className="admin-table">
                 {state.users.map((user) => (
-                  <div className="admin-row" key={user.id}>
-                    <strong>{user.name}</strong>
-                    <span>{user.email}</span>
-                    <select
-                      value={user.role}
-                      onChange={(event) =>
-                        setState({
-                          ...state,
-                          users: state.users.map((item) => item.id === user.id ? { ...item, role: event.target.value as RoleKey } : item)
-                        })
-                      }
-                    >
-                      {roleOptions.map((role) => <option key={role}>{role}</option>)}
-                    </select>
-                    <label className="checkline"><input type="checkbox" checked={user.active} onChange={(event) => setState({ ...state, users: state.users.map((item) => item.id === user.id ? { ...item, active: event.target.checked } : item) })} />启用</label>
-                  </div>
+                  <article className="admin-user-card" key={user.id}>
+                    <div className="admin-row">
+                      <strong>{user.name}</strong>
+                      <span>{user.email}</span>
+                      <select
+                        value={user.role}
+                        onChange={(event) => {
+                          const nextRole = event.target.value as RoleKey;
+                          setState({
+                            ...state,
+                            users: state.users.map((item) => item.id === user.id ? { ...item, role: nextRole, allowedTabs: defaultAllowedTabsByRole[nextRole] } : item)
+                          });
+                        }}
+                      >
+                        {roleOptions.map((role) => <option key={role}>{role}</option>)}
+                      </select>
+                      <label className="checkline"><input type="checkbox" checked={user.active} onChange={(event) => setState({ ...state, users: state.users.map((item) => item.id === user.id ? { ...item, active: event.target.checked } : item) })} />启用</label>
+                      <button type="button" onClick={() => setExpandedUserPermissionsId(expandedUserPermissionsId === user.id ? null : user.id)}>
+                        编辑权限
+                      </button>
+                    </div>
+                    {expandedUserPermissionsId === user.id ? (
+                      <div className="user-permission-editor">
+                        <div>
+                          <strong>可访问页面</strong>
+                          <span>勾选后该用户侧栏只显示对应后台页面；账号设置始终可访问。</span>
+                        </div>
+                        <div className="user-permission-grid">
+                          {adminPageAccessOptions.map((item) => (
+                            <label className="checkline" key={item.key}>
+                              <input
+                                type="checkbox"
+                                checked={getAllowedTabsForUser(user).includes(item.key)}
+                                onChange={(event) => updateUserAllowedTab(user.id, item.key, event.target.checked)}
+                              />
+                              {item.label}
+                            </label>
+                          ))}
+                        </div>
+                        {canResetUserPasswords ? (
+                          <div className="user-password-reset">
+                            <label>重置密码
+                              <input
+                                type="password"
+                                placeholder="输入至少 8 位新密码"
+                                value={resetUserPasswords[user.id] ?? ""}
+                                onChange={(event) => setResetUserPasswords((current) => ({ ...current, [user.id]: event.target.value }))}
+                              />
+                            </label>
+                            <button type="button" onClick={() => resetAdminUserPassword(user.id)}>重置密码</button>
+                          </div>
+                        ) : null}
+                      </div>
+                    ) : null}
+                  </article>
                 ))}
               </div>
             </>
@@ -1745,106 +2754,223 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
           {tab === "settings" ? (
             <>
               <div className="admin-section-title">
-                <h1>前台设置</h1>
+                <h1>设置</h1>
                 <button type="button" disabled={!canManageFrontendSettings} onClick={() => {
                   if (guardFrontendSettingsAccess()) void save();
                 }}>
-                  保存前台设置
+                  保存设置
                 </button>
               </div>
 
-              <section className="settings-panel">
-                <div className="settings-panel-head with-action">
-                  <div>
-                    <h2>首页导航栏</h2>
-                    <span>可设置前台 Header 显示的导航名称、链接、排序和是否启用。</span>
-                  </div>
-                  <button type="button" disabled={!canManageFrontendSettings} onClick={addNavigationItem}>新增导航</button>
-                </div>
-                {!canManageFrontendSettings ? <p className="settings-lock-note">当前账号没有前台设置权限。请使用 Super Admin 或 Admin 账号修改导航和语言。</p> : null}
-                <div className="navigation-settings-list">
-                  {sortedNavigation.map((item) => (
-                    <article className="admin-edit-card compact nav-settings-card" key={item.id}>
-                      <label>中文名称
-                        <input disabled={!canManageFrontendSettings} value={item.label.zh ?? item.label.en} onChange={(event) => updateNavigationItem(item.id, { label: { ...item.label, zh: event.target.value } })} />
-                      </label>
-                      <label>英文名称
-                        <input disabled={!canManageFrontendSettings} value={item.label.en} onChange={(event) => updateNavigationItem(item.id, { label: { ...item.label, en: event.target.value } })} />
-                      </label>
-                      <label>选择链接
-                        <select
-                          disabled={!canManageFrontendSettings}
-                          value=""
-                          onChange={(event) => {
-                            if (event.target.value) updateNavigationItem(item.id, { href: event.target.value });
-                          }}
-                        >
-                          <option value="">手动输入或选择</option>
-                          <optgroup label="系统页面">
-                            {systemNavigationOptions.map((option) => (
-                              <option key={option.href} value={option.href}>{option.label} · {option.href}</option>
-                            ))}
-                          </optgroup>
-                          {navigationProductOptions.length > 0 ? (
-                            <optgroup label="产品分类">
-                              {navigationProductOptions.map((product) => (
-                                <option key={product.id ?? product.slug} value={`/products/${product.slug}`}>
-                                  {(product.name.zh || product.name.en)} · /products/{product.slug}
-                                </option>
-                              ))}
-                            </optgroup>
-                          ) : null}
-                          {navigationArticleOptions.length > 0 ? (
-                            <optgroup label="文章">
-                              {navigationArticleOptions.map((article) => (
-                                <option key={article.id ?? article.slug} value={`/articles/${article.slug}`}>
-                                  {(article.title.zh || article.title.en)} · /articles/{article.slug}
-                                </option>
-                              ))}
-                            </optgroup>
-                          ) : null}
-                        </select>
-                      </label>
-                      <label>链接
-                        <input disabled={!canManageFrontendSettings} value={item.href} onChange={(event) => updateNavigationItem(item.id, { href: event.target.value })} />
-                      </label>
-                      <label>排序
-                        <input disabled={!canManageFrontendSettings} type="number" value={item.order} onChange={(event) => updateNavigationItem(item.id, { order: Number(event.target.value) || 0 })} />
-                      </label>
-                      <label className="checkline"><input disabled={!canManageFrontendSettings} type="checkbox" checked={item.enabled} onChange={(event) => updateNavigationItem(item.id, { enabled: event.target.checked })} />显示</label>
-                      <label className="checkline"><input disabled={!canManageFrontendSettings} type="checkbox" checked={Boolean(item.openInNewTab)} onChange={(event) => updateNavigationItem(item.id, { openInNewTab: event.target.checked })} />新窗口</label>
-                      <button className="contact-delete-button" disabled={!canManageFrontendSettings} type="button" onClick={() => removeNavigationItem(item.id)}>删除</button>
-                    </article>
+              {!canManageFrontendSettings ? <p className="settings-lock-note">当前账号没有前台设置权限。请使用 Super Admin 或 Admin 账号修改设置。</p> : null}
+
+              <div className="wp-settings-screen">
+                <aside className="wp-settings-menu" aria-label="设置分组">
+                  {settingsSections.map((item) => (
+                    <button className={settingsSection === item.key ? "active" : ""} key={item.key} type="button" onClick={() => setSettingsSection(item.key)}>
+                      <strong>{item.label}</strong>
+                      <span>{item.description}</span>
+                    </button>
                   ))}
-                </div>
-              </section>
+                </aside>
 
-              <section className="settings-panel">
-                <div className="settings-panel-head">
-                  <h2>前台可显示语言</h2>
-                  <span>勾选后会出现在前台语言选择器中，URL 路由和 RTL 方向仍自动兼容。</span>
-                </div>
-                <div className="language-toggle-grid">
-                  {locales.map((item) => {
-                    const localeCode = item.code as LocaleCode;
+                <section className="settings-panel wp-settings-panel">
+                  {settingsSection === "general" ? (
+                    <>
+                      <div className="settings-panel-head"><h2>常规选项</h2><span>对应 WordPress 常规设置：标题、网址、管理员邮箱、语言和时区。</span></div>
+                      <div className="wp-settings-form">
+                        <label>站点标题<input disabled={!canManageFrontendSettings} value={state.siteSettings.title} onChange={(event) => updateSiteSettings({ title: event.target.value })} /></label>
+                        <label>副标题<input disabled={!canManageFrontendSettings} value={state.siteSettings.tagline} onChange={(event) => updateSiteSettings({ tagline: event.target.value })} /></label>
+                        <label>整站字体
+                          <select
+                            disabled={!canManageFrontendSettings}
+                            value={state.siteSettings.fontFamily || siteFontOptions[0].value}
+                            onChange={(event) => updateSiteSettings({ fontFamily: event.target.value })}
+                          >
+                            {siteFontOptions.map((font) => <option key={font.value} value={font.value}>{font.label}</option>)}
+                          </select>
+                        </label>
+                        <div className="settings-field site-icon-setting">
+                          <span>站点图标 URL</span>
+                          <div className="site-icon-field">
+                            <input
+                              disabled={!canManageFrontendSettings}
+                              placeholder="粘贴图片 URL，或使用右侧上传"
+                              value={state.siteSettings.siteIconUrl}
+                              onChange={(event) => updateSiteSettings({ siteIconUrl: event.target.value })}
+                            />
+                            <label className={canManageFrontendSettings ? "site-icon-upload" : "site-icon-upload disabled"}>
+                              上传
+                              <input
+                                accept="image/*,.ico"
+                                disabled={!canManageFrontendSettings}
+                                type="file"
+                                onChange={(event) => {
+                                  uploadSiteIcon(event.currentTarget.files?.[0] ?? null);
+                                  event.currentTarget.value = "";
+                                }}
+                              />
+                            </label>
+                            <button
+                              className="site-icon-clear"
+                              disabled={!canManageFrontendSettings || !state.siteSettings.siteIconUrl}
+                              type="button"
+                              onClick={() => updateSiteSettings({ siteIconUrl: "" })}
+                            >
+                              清空
+                            </button>
+                          </div>
+                          <span className="site-icon-helper">
+                            {state.siteSettings.siteIconUrl ? (
+                              <>
+                                <Image src={state.siteSettings.siteIconUrl} alt="站点图标预览" width={28} height={28} unoptimized />
+                                <span>已设置图标，可继续手动修改 URL 或上传替换。</span>
+                              </>
+                            ) : (
+                              <span>支持手动填写图片 URL，也支持上传 PNG、JPG、SVG、WebP 或 ICO。</span>
+                            )}
+                          </span>
+                        </div>
+                        <label>站点地址（URL）<input disabled={!canManageFrontendSettings} value={state.siteSettings.siteUrl} onChange={(event) => updateSiteSettings({ siteUrl: event.target.value })} /></label>
+                        <label>管理员邮箱地址<input disabled={!canManageFrontendSettings} type="email" value={state.siteSettings.adminEmail} onChange={(event) => updateSiteSettings({ adminEmail: event.target.value })} /></label>
+                        <label>站点语言
+                          <select disabled={!canManageFrontendSettings} value={state.siteSettings.siteLanguage} onChange={(event) => updateSiteSettings({ siteLanguage: event.target.value as LocaleCode })}>
+                            {locales.map((item) => <option key={item.code} value={item.code}>{item.nativeName}</option>)}
+                          </select>
+                        </label>
+                        <label>时区<input disabled={!canManageFrontendSettings} value={state.siteSettings.timezone} onChange={(event) => updateSiteSettings({ timezone: event.target.value })} /></label>
+                        <label className="checkline"><input disabled={!canManageFrontendSettings} type="checkbox" checked={state.siteSettings.allowRegistration} onChange={(event) => updateSiteSettings({ allowRegistration: event.target.checked })} />任何人都可以注册</label>
+                        <label>新用户默认角色
+                          <select disabled={!canManageFrontendSettings} value={state.siteSettings.defaultUserRole} onChange={(event) => updateSiteSettings({ defaultUserRole: event.target.value as RoleKey })}>
+                            {roleOptions.map((role) => <option key={role} value={role}>{role}</option>)}
+                          </select>
+                        </label>
+                      </div>
+                    </>
+                  ) : null}
 
-                    return (
-                      <label className="language-toggle" key={item.code}>
-                        <input
-                          disabled={!canManageFrontendSettings}
-                          type="checkbox"
-                          checked={state.enabledLocales.includes(localeCode)}
-                          onChange={(event) => toggleEnabledLocale(localeCode, event.target.checked)}
-                        />
-                        <span>
-                          <strong>{item.nativeName}</strong>
-                          <small>{item.label} · {item.region}</small>
-                        </span>
-                      </label>
-                    );
-                  })}
-                </div>
-              </section>
+                  {settingsSection === "writing" ? (
+                    <>
+                      <div className="settings-panel-head"><h2>撰写设置</h2><span>设置新文章的默认产品分类和默认保存状态。</span></div>
+                      <div className="wp-settings-form">
+                        <label>默认文章分类
+                          <select disabled={!canManageFrontendSettings} value={state.siteSettings.defaultArticleCategory} onChange={(event) => updateSiteSettings({ defaultArticleCategory: event.target.value })}>
+                            {articleProductCategoryOptions.map((category) => <option key={category.value} value={category.value}>{category.label}</option>)}
+                          </select>
+                        </label>
+                        <label>默认文章状态
+                          <select disabled={!canManageFrontendSettings} value={state.siteSettings.defaultArticleStatus} onChange={(event) => updateSiteSettings({ defaultArticleStatus: event.target.value as "draft" | "published" })}>
+                            <option value="draft">草稿</option>
+                            <option value="published">发布</option>
+                          </select>
+                        </label>
+                      </div>
+                    </>
+                  ) : null}
+
+                  {settingsSection === "reading" ? (
+                    <>
+                      <div className="settings-panel-head"><h2>阅读设置</h2><span>控制首页文章展示、列表数量和搜索引擎可见性。</span></div>
+                      <div className="wp-settings-form">
+                        <label>每页显示数量<input disabled={!canManageFrontendSettings} min={1} type="number" value={state.siteSettings.postsPerPage} onChange={(event) => updateSiteSettings({ postsPerPage: Number(event.target.value) || 1 })} /></label>
+                        <label className="checkline"><input disabled={!canManageFrontendSettings} type="checkbox" checked={state.siteSettings.showFeaturedArticles} onChange={(event) => updateSiteSettings({ showFeaturedArticles: event.target.checked })} />首页显示精选文章</label>
+                        <label className="checkline"><input disabled={!canManageFrontendSettings} type="checkbox" checked={state.siteSettings.searchEngineVisible} onChange={(event) => updateSiteSettings({ searchEngineVisible: event.target.checked })} />允许搜索引擎索引本站</label>
+                      </div>
+                    </>
+                  ) : null}
+
+                  {settingsSection === "media" ? (
+                    <>
+                      <div className="settings-panel-head"><h2>媒体设置</h2><span>管理上传图片尺寸和文件整理方式。</span></div>
+                      <div className="wp-settings-form media-size-form">
+                        <label>缩略图宽度<input disabled={!canManageFrontendSettings} min={0} type="number" value={state.siteSettings.thumbnailWidth} onChange={(event) => updateSiteSettings({ thumbnailWidth: Number(event.target.value) || 0 })} /></label>
+                        <label>缩略图高度<input disabled={!canManageFrontendSettings} min={0} type="number" value={state.siteSettings.thumbnailHeight} onChange={(event) => updateSiteSettings({ thumbnailHeight: Number(event.target.value) || 0 })} /></label>
+                        <label>中等尺寸宽度<input disabled={!canManageFrontendSettings} min={0} type="number" value={state.siteSettings.mediumWidth} onChange={(event) => updateSiteSettings({ mediumWidth: Number(event.target.value) || 0 })} /></label>
+                        <label>中等尺寸高度<input disabled={!canManageFrontendSettings} min={0} type="number" value={state.siteSettings.mediumHeight} onChange={(event) => updateSiteSettings({ mediumHeight: Number(event.target.value) || 0 })} /></label>
+                        <label>大尺寸宽度<input disabled={!canManageFrontendSettings} min={0} type="number" value={state.siteSettings.largeWidth} onChange={(event) => updateSiteSettings({ largeWidth: Number(event.target.value) || 0 })} /></label>
+                        <label>大尺寸高度<input disabled={!canManageFrontendSettings} min={0} type="number" value={state.siteSettings.largeHeight} onChange={(event) => updateSiteSettings({ largeHeight: Number(event.target.value) || 0 })} /></label>
+                        <label className="checkline"><input disabled={!canManageFrontendSettings} type="checkbox" checked={state.siteSettings.uploadsOrganizedByMonth} onChange={(event) => updateSiteSettings({ uploadsOrganizedByMonth: event.target.checked })} />按年月组织上传文件</label>
+                      </div>
+                    </>
+                  ) : null}
+
+                  {settingsSection === "permalinks" ? (
+                    <>
+                      <div className="settings-panel-head"><h2>固定链接设置</h2><span>设置前台产品、文章和资料下载路径的基础别名。</span></div>
+                      <div className="wp-settings-form">
+                        <label>产品 URL 基础<input disabled={!canManageFrontendSettings} value={state.siteSettings.productUrlBase} onChange={(event) => updateSiteSettings({ productUrlBase: slugify(event.target.value) })} /></label>
+                        <label>文章 URL 基础<input disabled={!canManageFrontendSettings} value={state.siteSettings.articleUrlBase} onChange={(event) => updateSiteSettings({ articleUrlBase: slugify(event.target.value) })} /></label>
+                        <label>资料 URL 基础<input disabled={!canManageFrontendSettings} value={state.siteSettings.fileUrlBase} onChange={(event) => updateSiteSettings({ fileUrlBase: slugify(event.target.value) })} /></label>
+                      </div>
+                    </>
+                  ) : null}
+
+                  {settingsSection === "privacy" ? (
+                    <>
+                      <div className="settings-panel-head"><h2>隐私设置</h2><span>设置隐私页面、Cookie 提示和询盘数据使用说明。</span></div>
+                      <div className="wp-settings-form">
+                        <label>隐私页面 URL<input disabled={!canManageFrontendSettings} value={state.siteSettings.privacyPageUrl} onChange={(event) => updateSiteSettings({ privacyPageUrl: event.target.value })} /></label>
+                        <label className="checkline"><input disabled={!canManageFrontendSettings} type="checkbox" checked={state.siteSettings.cookieNoticeEnabled} onChange={(event) => updateSiteSettings({ cookieNoticeEnabled: event.target.checked })} />启用 Cookie 提示</label>
+                        <label className="wide">隐私说明<textarea disabled={!canManageFrontendSettings} value={state.siteSettings.privacySummary} onChange={(event) => updateSiteSettings({ privacySummary: event.target.value })} /></label>
+                      </div>
+                    </>
+                  ) : null}
+
+                  {settingsSection === "navigation" ? (
+                    <>
+                      <div className="settings-panel-head with-action">
+                        <div>
+                          <h2>首页导航栏</h2>
+                          <span>可设置前台 Header 显示的导航名称、链接、排序和是否启用。</span>
+                        </div>
+                        <div className="settings-actions">
+                          <button type="button" disabled={!canManageFrontendSettings} onClick={addNavigationItem}>新增导航</button>
+                        </div>
+                      </div>
+                      <div className="navigation-settings-list">
+                        {sortedNavigation.map((item) => (
+                          <article className="admin-edit-card compact nav-settings-card" key={item.id}>
+                            <label>导航名称
+                              <input disabled={!canManageFrontendSettings} value={item.label.zh || item.label.en} onChange={(event) => updateNavigationItem(item.id, { label: { ...item.label, en: event.target.value, zh: event.target.value } })} />
+                            </label>
+                            <label>选择链接
+                              <select disabled={!canManageFrontendSettings} value="" onChange={(event) => {
+                                if (event.target.value) updateNavigationItem(item.id, { href: event.target.value });
+                              }}>
+                                <option value="">手动输入或选择</option>
+                                <optgroup label="系统页面">{systemNavigationOptions.map((option) => <option key={option.href} value={option.href}>{option.label}</option>)}</optgroup>
+                                {navigationProductOptions.length > 0 ? <optgroup label="产品分类">{navigationProductOptions.map((product) => <option key={product.id ?? product.slug} value={`/products/${product.slug}`}>{compactOptionLabel(product.name.zh || product.name.en, "产品分类")}</option>)}</optgroup> : null}
+                                {navigationArticleOptions.length > 0 ? <optgroup label="文章">{navigationArticleOptions.map((article) => <option key={article.id ?? article.slug} value={`/articles/${article.slug}`}>{compactOptionLabel(article.title.zh || article.title.en, "文章")}</option>)}</optgroup> : null}
+                              </select>
+                            </label>
+                            <label className="nav-link-field">链接<input disabled={!canManageFrontendSettings} value={item.href} onChange={(event) => updateNavigationItem(item.id, { href: event.target.value })} /></label>
+                            <label>排序<input disabled={!canManageFrontendSettings} type="number" value={item.order} onChange={(event) => updateNavigationItem(item.id, { order: Number(event.target.value) || 0 })} /></label>
+                            <label className="checkline"><input disabled={!canManageFrontendSettings} type="checkbox" checked={item.enabled} onChange={(event) => updateNavigationItem(item.id, { enabled: event.target.checked })} />显示</label>
+                            <label className="checkline"><input disabled={!canManageFrontendSettings} type="checkbox" checked={Boolean(item.openInNewTab)} onChange={(event) => updateNavigationItem(item.id, { openInNewTab: event.target.checked })} />新窗口</label>
+                            <button className="contact-delete-button" disabled={!canManageFrontendSettings} type="button" onClick={() => removeNavigationItem(item.id)}>删除</button>
+                          </article>
+                        ))}
+                      </div>
+                    </>
+                  ) : null}
+                </section>
+              </div>
+
+            </>
+          ) : null}
+
+          {tab === "languages" ? (
+            <>
+              <div className="admin-section-title">
+                <h1>语言设置</h1>
+                <button type="button" disabled={!canManageFrontendSettings || !frontendSettingsDirty} onClick={() => {
+                  if (guardFrontendSettingsAccess()) void save();
+                }}>
+                  {frontendSettingsDirty ? "保存语言" : "已保存"}
+                </button>
+              </div>
+              {!canManageFrontendSettings ? <p className="settings-lock-note">当前账号没有前台设置权限。请使用 Super Admin 或 Admin 账号修改语言。</p> : null}
+              {languageSettingsPanel}
             </>
           ) : null}
 
@@ -1924,7 +3050,7 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
                 <section className="account-security-card">
                   <h2>账号与密码</h2>
                   <div className="account-info-list">
-                    <div><span>后台名称</span><strong>ExportForge Admin</strong></div>
+                    <div><span>后台名称</span><strong>KeyproTools Admin</strong></div>
                     <div><span>登录邮箱</span><strong>{currentEmail}</strong></div>
                     <div><span>当前角色</span><strong>{currentUser?.role ?? "admin"}</strong></div>
                     <div><span>账号状态</span><strong>{currentUser?.active ? "启用" : "停用"}</strong></div>

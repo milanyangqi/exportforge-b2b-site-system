@@ -1,3 +1,4 @@
+/* eslint-disable @next/next/no-img-element */
 import { notFound } from "next/navigation";
 import { RfqForm } from "@/components/RfqForm";
 import { t } from "@/lib/i18n";
@@ -32,6 +33,11 @@ export default async function ProductCategoryPage({
             ))}
           </div>
         </div>
+        {product.imageUrl ? (
+          <figure className="product-detail-media">
+            <img src={product.imageUrl} alt={t(product.name, locale)} />
+          </figure>
+        ) : null}
         <div className="workflow-panel">
           <h3>Applications</h3>
           <ul className="detail-list">
@@ -44,8 +50,8 @@ export default async function ProductCategoryPage({
       <section className="section rfq-section" id="rfq">
         <div>
           <span className="eyebrow">Request category quote</span>
-          <h2>Send quantity, destination, tolerances, packaging, and application notes.</h2>
-          <p>This page can be extended with SKU tables, PDFs, certificates, and custom industry fields.</p>
+          <h2>Send diameter, quantity, coating, material, packaging, and destination.</h2>
+          <p>KeyproTools will match geometry, stock range, OEM marking, and export packing for your buying program.</p>
         </div>
         <RfqForm locale={locale} />
       </section>

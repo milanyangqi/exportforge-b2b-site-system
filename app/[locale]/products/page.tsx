@@ -12,9 +12,9 @@ export default async function ProductsPage({ params }: { params: Promise<{ local
     <main className="subpage">
       <section className="section">
         <div className="section-head">
-          <span className="eyebrow">Products</span>
-          <h1>Extensible category pages for export catalogs.</h1>
-          <p>Start category-first, then add SKU tables, downloads, certifications, and industry-specific fields as each client needs them.</p>
+          <span className="eyebrow">KeyproTools products</span>
+          <h1>Carbide end mills, drill bits, and OEM tooling for metalworking buyers.</h1>
+          <p>Browse the main tooling families, compare application fit, and send RFQ details for distributor pricing, coating, marking, and export packing.</p>
         </div>
         <ProductGrid locale={locale} products={state.products} />
       </section>

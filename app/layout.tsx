@@ -2,8 +2,8 @@ import type { Metadata } from "next";
 import "@/styles/globals.css";
 
 export const metadata: Metadata = {
-  title: "ExportForge | Multilingual B2B Export Site System",
-  description: "A customizable B2B export independent site system with multilingual SEO, RFQ leads, themes, RBAC, and AI content draft workflows."
+  title: "KeyproTools | Carbide End Mills, Drill Bits, and OEM Cutting Tools",
+  description: "KeyproTools supplies carbide end mills, drill bits, coatings, OEM laser marking, private-label packaging, and export-ready cutting tool programs."
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
