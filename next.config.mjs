@@ -1,4 +1,4 @@
-if (process.env.EXPORTFORGE_SELF_HOST !== "1") {
+if (process.env.NODE_ENV === "development" && process.env.EXPORTFORGE_SELF_HOST !== "1") {
   const { initOpenNextCloudflareForDev } = await import("@opennextjs/cloudflare");
   initOpenNextCloudflareForDev();
 }

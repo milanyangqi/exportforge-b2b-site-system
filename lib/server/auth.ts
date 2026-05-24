@@ -9,6 +9,19 @@ function getSecret() {
   return process.env.AUTH_SECRET ?? "dev-exportforge-secret-change-me";
 }
 
+function shouldUseSecureCookie() {
+  const override = process.env.AUTH_COOKIE_SECURE;
+
+  if (override === "true") return true;
+  if (override === "false") return false;
+
+  if (process.env.EXPORTFORGE_SELF_HOST === "1") {
+    return process.env.NEXT_PUBLIC_SITE_URL?.startsWith("https://") ?? false;
+  }
+
+  return process.env.NODE_ENV === "production";
+}
+
 function sign(value: string) {
   return createHmac("sha256", getSecret()).update(value).digest("hex");
 }
@@ -81,7 +94,7 @@ export async function setAdminSession(email: string) {
   cookieStore.set(cookieName, createSessionValue(email), {
     httpOnly: true,
     sameSite: "lax",
-    secure: process.env.NODE_ENV === "production",
+    secure: shouldUseSecureCookie(),
     maxAge: sessionMaxAge,
     path: "/"
   });

@@ -28,6 +28,7 @@ npm run dev
 - `INITIAL_ADMIN_EMAIL`
 - `INITIAL_ADMIN_PASSWORD`
 - `AUTH_SECRET`
+- `AUTH_COOKIE_SECURE`，HTTP 自部署保持 `false`；放到 HTTPS 反向代理后可改为 `true`
 
 后台当前已具备真实登录、HTTP-only session、受保护 API、产品分类管理、文章发布、回收站、询盘管理、联系渠道配置、用户角色、前台导航与可显示语言设置、主题切换、AI 内容设置。数据在本地开发时保存到 `.data/admin-state.json`，部署到 Cloudflare Workers/OpenNext 后自动使用 `EXPORTFORGE_KV` 持久化。
 
