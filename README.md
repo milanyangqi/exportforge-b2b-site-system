@@ -55,6 +55,7 @@ cp .env.example .env
 ```
 
 - `NEXT_PUBLIC_SITE_URL`
+- `APP_PORT`，宿主机端口，默认 `3000`
 - `INITIAL_ADMIN_EMAIL`
 - `INITIAL_ADMIN_PASSWORD`
 - `AUTH_SECRET`
