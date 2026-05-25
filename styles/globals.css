@@ -4652,12 +4652,25 @@ textarea:disabled {
   font-size: 13px;
   font-weight: 900;
   line-height: 1.45;
+  overflow-wrap: anywhere;
 }
 
 .ai-api-actions span.success {
   color: #047857;
   border-color: color-mix(in srgb, #059669, white 56%);
   background: #ecfdf5;
+}
+
+.ai-api-actions span.pending {
+  color: #0f766e;
+  border-color: color-mix(in srgb, var(--primary), white 62%);
+  background: color-mix(in srgb, var(--primary), white 92%);
+}
+
+.ai-api-actions span.error {
+  color: #b42318;
+  border-color: color-mix(in srgb, #d92d20, white 62%);
+  background: #fff4f3;
 }
 
 .ai-translate-grid {

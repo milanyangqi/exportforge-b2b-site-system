@@ -929,6 +929,20 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
   }, [initialTab]);
 
   useEffect(() => {
+    if (tab !== "ai" && aiTestStatus) setAiTestStatus("");
+  }, [tab, aiTestStatus]);
+
+  useEffect(() => {
+    if (!aiTestStatus || aiTestStatus.includes("正在测试")) return;
+
+    const timer = window.setTimeout(() => {
+      setAiTestStatus("");
+    }, 6500);
+
+    return () => window.clearTimeout(timer);
+  }, [aiTestStatus]);
+
+  useEffect(() => {
     fetch("/api/admin/state")
       .then((response) => {
         if (!response.ok) throw new Error("Unauthorized");
@@ -1079,7 +1093,6 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
   function testAiConnection() {
     if (!state) return;
     setAiTestStatus("正在测试 API 连接...");
-    setStatus("正在测试 AI API...");
 
     fetch("/api/admin/ai/test", {
       method: "POST",
@@ -1095,12 +1108,10 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
       })
       .then((payload) => {
         setAiTestStatus(payload.message || "API 连接测试通过。");
-        setStatus("AI API 测试通过");
       })
       .catch((error) => {
         const message = error instanceof Error ? error.message : "API 测试失败";
         setAiTestStatus(message);
-        setStatus(message);
       });
   }
 
@@ -2795,6 +2806,7 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
   const aiModelOptions = selectedAiProvider.models;
   const aiModelSelectValue = aiModelOptions.includes(state.aiSettings.model) ? state.aiSettings.model : customAiModelValue;
   const aiModelIsCustom = aiModelSelectValue === customAiModelValue;
+  const aiTestStatusTone = !aiTestStatus ? "" : aiTestStatus.includes("通过") ? "success" : aiTestStatus.includes("正在测试") ? "pending" : "error";
   const accountInitial = (currentUserName || email).slice(0, 1).toUpperCase();
   const canResetUserPasswords = currentUser?.role === "super-admin";
   const allowedTabsForCurrentUser = new Set(getAllowedTabsForUser(currentUser));
@@ -5105,7 +5117,7 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
                     <label className="checkline"><input type="checkbox" checked={state.aiSettings.enabled} onChange={(event) => updateAiSettings({ enabled: event.target.checked })} />启用 AI 草稿入口</label>
                     <div className="ai-api-actions">
                       <button type="button" onClick={testAiConnection}>测试 API</button>
-                      <span className={aiTestStatus.includes("通过") ? "success" : ""}>{aiTestStatus || "填写 API Key 后可测试供应商和模型是否可用。"}</span>
+                      <span className={aiTestStatusTone}>{aiTestStatus || "填写 API Key 后可测试供应商和模型是否可用。"}</span>
                     </div>
                   </div>
                 </section>
