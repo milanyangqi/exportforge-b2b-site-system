@@ -55,6 +55,7 @@ type MediaTimeFilter = "all" | "7d" | "30d" | "90d";
 type SettingsSection = "general" | "writing" | "reading" | "media" | "permalinks" | "privacy";
 type AiContentTarget = "article" | "page";
 type AiWriteMode = "new" | "replace" | "append";
+type TranslationScope = "all" | "article" | "page" | "products" | "templates" | "navigation";
 type TemplateEditorMode = "form" | "visual";
 type VisualTextElement = "span" | "strong" | "p" | "h1" | "h3" | "li";
 type VisualEditableTextOptions = {
@@ -157,7 +158,7 @@ const adminPageAccessOptions: { key: Tab; label: string }[] = [
 ];
 const defaultAllowedTabsByRole: Record<RoleKey, Tab[]> = {
   "super-admin": adminPageAccessOptions.map((item) => item.key),
-  admin: ["overview", "products", "pages", "articles", "files", "leads", "contacts", "navigation", "templates", "settings", "languages", "themes"],
+  admin: ["overview", "products", "pages", "articles", "files", "leads", "contacts", "navigation", "templates", "settings", "languages", "themes", "ai"],
   editor: ["overview", "products", "pages", "articles", "files", "ai"],
   sales: ["overview", "products", "leads", "contacts"],
   viewer: ["overview", "products", "articles", "files"]
@@ -355,6 +356,14 @@ const aiWriteModeOptions: { key: AiWriteMode; label: string; description: string
   { key: "new", label: "新建草稿", description: "创建新的文章或页面，保留现有内容。" },
   { key: "replace", label: "替换目标", description: "用生成内容覆盖所选文章或页面。" },
   { key: "append", label: "追加正文", description: "保留标题摘要，把生成正文追加到目标末尾。" }
+];
+const translationScopeOptions: { key: TranslationScope; label: string; description: string }[] = [
+  { key: "all", label: "全站内容", description: "文章、页面、产品、模板、导航和媒体说明。" },
+  { key: "article", label: "文章", description: "补齐所有文章，或从文章编辑器补齐当前文章。" },
+  { key: "page", label: "页面", description: "补齐所有页面，或从页面编辑器补齐当前页面。" },
+  { key: "products", label: "产品分类", description: "产品名称、摘要和应用列表。" },
+  { key: "templates", label: "前台模板", description: "首页模板、轮播替代文本和可视化文案。" },
+  { key: "navigation", label: "导航栏", description: "前台导航菜单文案。" }
 ];
 const siteFontOptions = [
   { label: "现代无衬线（默认）", value: "\"Manrope\", \"PingFang SC\", \"Microsoft YaHei\", sans-serif" },
@@ -844,7 +853,7 @@ function getAllowedTabsForUser(user?: AdminUser) {
     const nextTabs = [...allowedTabs];
     const settingsIndex = nextTabs.indexOf("settings");
 
-    (["navigation", "templates"] as Tab[]).forEach((requiredTab) => {
+    (["navigation", "templates", "ai"] as Tab[]).forEach((requiredTab) => {
       if (nextTabs.includes(requiredTab)) return;
       nextTabs.splice(Math.max(0, settingsIndex), 0, requiredTab);
     });
@@ -895,6 +904,10 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
   const [aiContentForm, setAiContentForm] = useState<AiContentFormState>(emptyAiContentForm);
   const [aiDraftPreview, setAiDraftPreview] = useState<AiContentDraft | null>(null);
   const [aiTestStatus, setAiTestStatus] = useState("");
+  const [translationScope, setTranslationScope] = useState<TranslationScope>("all");
+  const [translationSourceLocale, setTranslationSourceLocale] = useState<LocaleCode>("zh");
+  const [translationOverwrite, setTranslationOverwrite] = useState(false);
+  const [translationStatus, setTranslationStatus] = useState("");
   const [settingsSection, setSettingsSection] = useState<SettingsSection>("general");
   const [clockNow, setClockNow] = useState<Date | null>(null);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
@@ -1089,6 +1102,59 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
         setAiTestStatus(message);
         setStatus(message);
       });
+  }
+
+  async function runAutoTranslation(scopeOverride?: TranslationScope, targetId?: string) {
+    if (!state) return;
+    const user = getCurrentUser();
+
+    if (!user || !frontendManagerRoles.has(user.role)) {
+      const message = "只有 Super Admin 或 Admin 可以执行自动翻译";
+      setTranslationStatus(message);
+      setStatus(message);
+      return;
+    }
+
+    const nextScope = scopeOverride ?? translationScope;
+    setTranslationStatus("正在请求 AI 补齐其他语言...");
+    setStatus("正在自动翻译其他语言...");
+
+    try {
+      const response = await fetch("/api/admin/ai/translate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          state,
+          scope: nextScope,
+          targetId,
+          sourceLocale: translationSourceLocale,
+          overwrite: translationOverwrite
+        })
+      });
+      const payload = await response.json().catch(() => ({ error: "自动翻译失败" })) as {
+        ok?: boolean;
+        state?: AdminState;
+        translatedCount?: number;
+        skippedCount?: number;
+        message?: string;
+        error?: string;
+      };
+
+      if (!response.ok || !payload.state) {
+        throw new Error(payload.error || "自动翻译失败");
+      }
+
+      setState(payload.state);
+      setFrontendSettingsDirty(false);
+      const message = payload.message || `已补齐 ${payload.translatedCount ?? 0} 个翻译字段。`;
+      const skippedText = payload.skippedCount ? `保留 ${payload.skippedCount} 个已有翻译。` : "";
+      setTranslationStatus([message, skippedText].filter(Boolean).join(" "));
+      setStatus("自动翻译已保存");
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "自动翻译失败";
+      setTranslationStatus(message);
+      setStatus(message);
+    }
   }
 
   function updateTemplateSettings(patch: Partial<SiteTemplateSettings>) {
@@ -2734,6 +2800,8 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
   const allowedTabsForCurrentUser = new Set(getAllowedTabsForUser(currentUser));
   const visibleSidebarTabs = tabs.filter((item) => allowedTabsForCurrentUser.has(item.key));
   const canManageFrontendSettings = canManageFrontendState();
+  const canRunAutoTranslation = Boolean(currentUser && frontendManagerRoles.has(currentUser.role));
+  const translationRunning = translationStatus.startsWith("正在");
   const shouldShowAdminStatus = Boolean(status && status !== "已连接本地后台数据" && !hiddenAdminStatusMessages.has(status));
   const navigationProductOptions = [...state.products].sort((a, b) => (a.name.zh || a.name.en).localeCompare(b.name.zh || b.name.en));
   const navigationArticleOptions = state.articles
@@ -3754,6 +3822,7 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
                             <>
                               <button type="button" onClick={() => save()}>保存草稿</button>
                               <button className="primary" type="button" onClick={() => commitPage(activePageIndex, { status: "published", publishedAt: new Date().toISOString(), deletedAt: undefined })}>发布</button>
+                              <button className="full" type="button" disabled={!canRunAutoTranslation || translationRunning} onClick={() => runAutoTranslation("page", activePage.id ?? activePage.slug)}>自动翻译当前页面</button>
                               <button className="danger full" type="button" onClick={moveActivePageToTrash}>移至回收站</button>
                             </>
                           )}
@@ -4052,6 +4121,7 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
                             <>
                               <button type="button" onClick={() => save()}>保存草稿</button>
                               <button className="primary" type="button" onClick={() => commitArticle(activeArticleIndex, { status: "published", featuredOnHome: true, publishedAt: new Date().toISOString(), deletedAt: undefined })}>发布</button>
+                              <button className="full" type="button" disabled={!canRunAutoTranslation || translationRunning} onClick={() => runAutoTranslation("article", activeArticle.id ?? activeArticle.slug)}>自动翻译当前文章</button>
                               <button className="danger full" type="button" onClick={moveActiveArticleToTrash}>移至回收站</button>
                             </>
                           )}
@@ -5036,6 +5106,43 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
                     <div className="ai-api-actions">
                       <button type="button" onClick={testAiConnection}>测试 API</button>
                       <span className={aiTestStatus.includes("通过") ? "success" : ""}>{aiTestStatus || "填写 API Key 后可测试供应商和模型是否可用。"}</span>
+                    </div>
+                  </div>
+                </section>
+
+                <section className="settings-panel ai-translate-panel">
+                  <div className="settings-panel-head with-action">
+                    <div>
+                      <h2>多语言自动翻译</h2>
+                      <span>发布新内容后，一键补齐已启用语言里缺失的翻译字段。</span>
+                    </div>
+                    <button type="button" disabled={!canRunAutoTranslation || translationRunning} onClick={() => runAutoTranslation()}>
+                      <Languages size={16} />
+                      自动补齐翻译
+                    </button>
+                  </div>
+                  {!canRunAutoTranslation ? <p className="settings-lock-note">当前账号没有自动翻译权限。请使用 Super Admin 或 Admin 账号执行。</p> : null}
+                  <div className="ai-translate-grid">
+                    <label>翻译范围
+                      <select value={translationScope} onChange={(event) => setTranslationScope(event.target.value as TranslationScope)}>
+                        {translationScopeOptions.map((option) => <option key={option.key} value={option.key}>{option.label}</option>)}
+                      </select>
+                      <small>{translationScopeOptions.find((option) => option.key === translationScope)?.description}</small>
+                    </label>
+                    <label>源语言
+                      <select value={translationSourceLocale} onChange={(event) => setTranslationSourceLocale(event.target.value as LocaleCode)}>
+                        {locales
+                          .filter((localeOption) => state.enabledLocales.includes(localeOption.code) || localeOption.code === "zh" || localeOption.code === "en")
+                          .map((localeOption) => <option key={localeOption.code} value={localeOption.code}>{localeOption.flag} {localeOption.nativeName}</option>)}
+                      </select>
+                      <small>默认从中文内容翻译；如果中文为空，会自动回退到英文或已有语言。</small>
+                    </label>
+                    <label className="checkline ai-translate-overwrite">
+                      <input type="checkbox" checked={translationOverwrite} onChange={(event) => setTranslationOverwrite(event.target.checked)} />
+                      覆盖已有翻译
+                    </label>
+                    <div className="ai-translate-status">
+                      <span>{translationStatus || "默认只补空白字段，不会覆盖已经人工编辑过的翻译。"}</span>
                     </div>
                   </div>
                 </section>

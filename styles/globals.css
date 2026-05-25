@@ -4605,6 +4605,7 @@ textarea:disabled {
 }
 
 .ai-settings-panel,
+.ai-translate-panel,
 .ai-compose-panel,
 .ai-preview-panel {
   background: #fff;
@@ -4657,6 +4658,59 @@ textarea:disabled {
   color: #047857;
   border-color: color-mix(in srgb, #059669, white 56%);
   background: #ecfdf5;
+}
+
+.ai-translate-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.ai-translate-grid label {
+  display: grid;
+  gap: 7px;
+  color: var(--ink);
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.ai-translate-grid select {
+  width: 100%;
+  min-height: 42px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 0 10px;
+  color: var(--ink);
+  background: #fff;
+}
+
+.ai-translate-grid small {
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.ai-translate-overwrite {
+  min-height: 42px;
+  align-self: end;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 0 12px;
+  background: #fbfdfe;
+}
+
+.ai-translate-status {
+  display: grid;
+  align-self: end;
+  min-height: 42px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 10px 12px;
+  color: var(--muted);
+  background: #fbfdfe;
+  font-size: 13px;
+  font-weight: 900;
+  line-height: 1.45;
 }
 
 .ai-target-grid,
@@ -5932,6 +5986,7 @@ textarea:disabled {
   .hero-slide-fields,
   .ai-target-grid,
   .ai-write-mode-list,
+  .ai-translate-grid,
   .ai-compose-grid,
   .ai-api-actions,
   .wp-taxonomy-screen,
