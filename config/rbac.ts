@@ -21,6 +21,7 @@ const allPermissions: Permission[] = [
   "leads:status",
   "leads:export",
   "users:manage",
+  "templates:manage",
   "themes:manage",
   "settings:manage",
   "ai:configure",

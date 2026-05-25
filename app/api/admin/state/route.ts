@@ -26,7 +26,8 @@ export async function PUT(request: Request) {
   const frontendSettingsChanged =
     JSON.stringify(state.navigation ?? []) !== JSON.stringify(existingState.navigation ?? [])
     || JSON.stringify(state.enabledLocales ?? []) !== JSON.stringify(existingState.enabledLocales ?? [])
-    || JSON.stringify(state.siteSettings ?? {}) !== JSON.stringify(existingState.siteSettings ?? {});
+    || JSON.stringify(state.siteSettings ?? {}) !== JSON.stringify(existingState.siteSettings ?? {})
+    || JSON.stringify(state.templateSettings ?? {}) !== JSON.stringify(existingState.templateSettings ?? {});
 
   if (frontendSettingsChanged && !frontendManagerRoles.has(currentUser?.role ?? "viewer")) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });

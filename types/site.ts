@@ -55,6 +55,7 @@ export type Permission =
   | "leads:status"
   | "leads:export"
   | "users:manage"
+  | "templates:manage"
   | "themes:manage"
   | "settings:manage"
   | "ai:configure"
@@ -187,6 +188,8 @@ export type AiSettings = {
   provider: string;
   model: string;
   baseUrl: string;
+  apiKey?: string;
+  apiKeyConfigured?: boolean;
   defaultLocale: LocaleCode;
   brandVoice: string;
   targetMarkets: string[];
@@ -229,6 +232,37 @@ export type SiteSettings = {
   privacySummary: string;
 };
 
+export type HomeTemplateKey = "industrial-showcase" | "catalog-focus" | "rfq-focus";
+
+export type HomeSectionKey = "products" | "factory" | "markets" | "articles" | "rfq";
+
+export type SiteHeroSlide = {
+  id: string;
+  imageUrl: string;
+  alt: Translation;
+  enabled: boolean;
+  order: number;
+};
+
+export type SiteTemplateSettings = {
+  homeTemplate: HomeTemplateKey;
+  heroKicker: Translation;
+  heroTitle: Translation;
+  heroBody: Translation;
+  primaryCtaLabel: Translation;
+  secondaryCtaLabel: Translation;
+  heroCarouselEnabled: boolean;
+  heroCarouselAutoplay: boolean;
+  heroCarouselIntervalSeconds: number;
+  heroSlides: SiteHeroSlide[];
+  showHeroVisual: boolean;
+  showHeroMetrics: boolean;
+  homeProductCount: number;
+  homeArticleCount: number;
+  visibleSections: Record<HomeSectionKey, boolean>;
+  sectionOrder: Record<HomeSectionKey, number>;
+};
+
 export type AdminState = {
   products: ProductCategory[];
   pages: SitePage[];
@@ -241,6 +275,7 @@ export type AdminState = {
   enabledLocales: LocaleCode[];
   navigation: SiteNavigationItem[];
   siteSettings: SiteSettings;
+  templateSettings: SiteTemplateSettings;
   aiSettings: AiSettings;
   updatedAt: string;
 };

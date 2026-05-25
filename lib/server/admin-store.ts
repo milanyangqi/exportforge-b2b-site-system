@@ -1,6 +1,6 @@
 import { articles, contactChannels, defaultEnabledLocales, defaultNavigation, productCategories, siteSettings, uploadedFiles } from "@/data/site";
 import { isLocale } from "@/config/locales";
-import type { AdminState, LocaleCode, SiteNavigationItem, SiteSettings } from "@/types/site";
+import type { AdminState, HomeSectionKey, HomeTemplateKey, LocaleCode, SiteHeroSlide, SiteNavigationItem, SiteSettings, SiteTemplateSettings, Translation } from "@/types/site";
 
 type KvNamespace = {
   get(key: string): Promise<string | null>;
@@ -26,6 +26,31 @@ type CloudflareContext = {
 const stateKey = "admin-state";
 const uploadKeyPrefix = "upload:";
 const keyproContentVersion = "keyprotools-tools-v1";
+const homeTemplateKeys = new Set<HomeTemplateKey>(["industrial-showcase", "catalog-focus", "rfq-focus"]);
+const homeSectionKeys: HomeSectionKey[] = ["products", "factory", "markets", "articles", "rfq"];
+const defaultHeroSlides: SiteHeroSlide[] = [
+  {
+    id: "hero-tooling-range",
+    imageUrl: "/assets/tools/hero-tooling-range.jpg",
+    alt: { en: "Carbide end mills and drill bits hero poster", zh: "硬质合金铣刀与钻头首页海报" },
+    enabled: true,
+    order: 10
+  },
+  {
+    id: "hero-cnc-factory",
+    imageUrl: "/assets/tools/hero-cnc-factory.jpg",
+    alt: { en: "CNC factory tooling production hero poster", zh: "CNC 工厂刀具生产首页海报" },
+    enabled: true,
+    order: 20
+  },
+  {
+    id: "hero-export-packing",
+    imageUrl: "/assets/tools/hero-export-packing.jpg",
+    alt: { en: "Export packing and OEM tooling hero poster", zh: "出口包装与 OEM 刀具首页海报" },
+    enabled: true,
+    order: 30
+  }
+];
 
 const defaultSiteSettings: SiteSettings = {
   title: siteSettings.brand,
@@ -61,6 +86,40 @@ const defaultSiteSettings: SiteSettings = {
   privacySummary: "We use submitted RFQ details only for tooling quotation, sales follow-up, and service improvement."
 };
 
+const defaultTemplateSettings: SiteTemplateSettings = {
+  homeTemplate: "industrial-showcase",
+  heroKicker: { en: "CNC cutting tools for global buyers", zh: "面向全球买家的 CNC 刀具供应" },
+  heroTitle: { en: "Carbide end mills and drill bits ready for distributor programs.", zh: "面向经销商长期备货的硬质合金铣刀与钻头。" },
+  heroBody: {
+    en: "KeyproTools supplies end mills, drill bits, custom tooling, coating options, private-label packing, and export-ready QC support for hardware and machining buyers.",
+    zh: "KeyproTools 提供铣刀、钻头、定制刀具、涂层方案、私标包装和出口质检支持，服务五金工具与机加工采购商。"
+  },
+  primaryCtaLabel: { en: "Request Quote", zh: "获取报价" },
+  secondaryCtaLabel: { en: "Products", zh: "产品目录" },
+  heroCarouselEnabled: true,
+  heroCarouselAutoplay: true,
+  heroCarouselIntervalSeconds: 7,
+  heroSlides: defaultHeroSlides,
+  showHeroVisual: true,
+  showHeroMetrics: true,
+  homeProductCount: 6,
+  homeArticleCount: 6,
+  visibleSections: {
+    products: true,
+    factory: true,
+    markets: true,
+    articles: true,
+    rfq: true
+  },
+  sectionOrder: {
+    products: 10,
+    factory: 20,
+    markets: 30,
+    articles: 40,
+    rfq: 50
+  }
+};
+
 function sanitizeStoredFileId(id: string) {
   return id.replace(/[^a-zA-Z0-9._-]/g, "");
 }
@@ -81,6 +140,7 @@ export function createDefaultAdminState(): AdminState {
     enabledLocales: defaultEnabledLocales,
     navigation: defaultNavigation,
     siteSettings: defaultSiteSettings,
+    templateSettings: defaultTemplateSettings,
     users: [
       {
         id: "u-super-admin",
@@ -103,6 +163,7 @@ export function createDefaultAdminState(): AdminState {
       provider: process.env.AI_PROVIDER ?? "openai-compatible",
       model: process.env.AI_MODEL ?? "gpt-4.1-mini",
       baseUrl: process.env.AI_BASE_URL ?? "",
+      apiKey: process.env.AI_API_KEY ?? "",
       defaultLocale: "en",
       brandVoice: "Clear, technical, buyer-focused cutting tool copy for KeyproTools.",
       targetMarkets: ["Europe", "North America", "Southeast Asia", "MENA"],
@@ -128,6 +189,80 @@ function normalizeSiteSettings(settings?: Partial<SiteSettings>): SiteSettings {
     mediumHeight: Number.isFinite(next.mediumHeight) ? Math.max(0, Math.trunc(next.mediumHeight)) : defaultSiteSettings.mediumHeight,
     largeWidth: Number.isFinite(next.largeWidth) ? Math.max(0, Math.trunc(next.largeWidth)) : defaultSiteSettings.largeWidth,
     largeHeight: Number.isFinite(next.largeHeight) ? Math.max(0, Math.trunc(next.largeHeight)) : defaultSiteSettings.largeHeight
+  };
+}
+
+function normalizeAiSettings(settings?: Partial<AdminState["aiSettings"]>): AdminState["aiSettings"] {
+  const fallback = createDefaultAdminState().aiSettings;
+
+  return {
+    ...fallback,
+    ...(settings ?? {}),
+    provider: settings?.provider?.trim() || fallback.provider,
+    model: settings?.model?.trim() || fallback.model,
+    baseUrl: settings?.baseUrl?.trim() ?? fallback.baseUrl,
+    apiKey: settings?.apiKey?.trim() || fallback.apiKey,
+    targetMarkets: Array.isArray(settings?.targetMarkets) ? settings.targetMarkets.filter(Boolean) : fallback.targetMarkets,
+    requiredKeywords: Array.isArray(settings?.requiredKeywords) ? settings.requiredKeywords.filter(Boolean) : fallback.requiredKeywords,
+    blockedWords: Array.isArray(settings?.blockedWords) ? settings.blockedWords.filter(Boolean) : fallback.blockedWords,
+    enabled: settings?.enabled ?? Boolean(settings?.apiKey || fallback.apiKey)
+  };
+}
+
+function normalizeTranslation(value: Partial<Translation> | undefined, fallback: Translation): Translation {
+  const en = typeof value?.en === "string" && value.en.trim() ? value.en : fallback.en;
+
+  return {
+    ...fallback,
+    ...(value ?? {}),
+    en
+  };
+}
+
+function normalizeTemplateSettings(settings?: Partial<SiteTemplateSettings>): SiteTemplateSettings {
+  const visibleSections = homeSectionKeys.reduce<Record<HomeSectionKey, boolean>>((sections, key) => {
+    sections[key] = settings?.visibleSections?.[key] ?? defaultTemplateSettings.visibleSections[key];
+    return sections;
+  }, {} as Record<HomeSectionKey, boolean>);
+  const sectionOrder = homeSectionKeys.reduce<Record<HomeSectionKey, number>>((sections, key) => {
+    const rawOrder = settings?.sectionOrder?.[key];
+    sections[key] = Number.isFinite(rawOrder) ? Math.trunc(rawOrder as number) : defaultTemplateSettings.sectionOrder[key];
+    return sections;
+  }, {} as Record<HomeSectionKey, number>);
+  const productCount = settings?.homeProductCount;
+  const articleCount = settings?.homeArticleCount;
+  const intervalSeconds = settings?.heroCarouselIntervalSeconds;
+  const heroSlides = Array.isArray(settings?.heroSlides) ? settings.heroSlides : defaultHeroSlides;
+  const normalizedSlides = heroSlides
+    .map((slide, index) => ({
+      id: slide.id || `hero-slide-${index}`,
+      imageUrl: slide.imageUrl || "",
+      alt: normalizeTranslation(slide.alt, defaultHeroSlides[index]?.alt ?? { en: "Homepage hero slide", zh: "首页轮播图片" }),
+      enabled: slide.enabled ?? true,
+      order: Number.isFinite(slide.order) ? Math.trunc(slide.order) : (index + 1) * 10
+    }))
+    .filter((slide) => slide.imageUrl.trim())
+    .sort((a, b) => a.order - b.order);
+
+  return {
+    homeTemplate: settings?.homeTemplate && homeTemplateKeys.has(settings.homeTemplate) ? settings.homeTemplate : defaultTemplateSettings.homeTemplate,
+    heroKicker: normalizeTranslation(settings?.heroKicker, defaultTemplateSettings.heroKicker),
+    heroTitle: normalizeTranslation(settings?.heroTitle, defaultTemplateSettings.heroTitle),
+    heroBody: normalizeTranslation(settings?.heroBody, defaultTemplateSettings.heroBody),
+    primaryCtaLabel: normalizeTranslation(settings?.primaryCtaLabel, defaultTemplateSettings.primaryCtaLabel),
+    secondaryCtaLabel: normalizeTranslation(settings?.secondaryCtaLabel, defaultTemplateSettings.secondaryCtaLabel),
+    heroCarouselEnabled: settings?.heroCarouselEnabled ?? defaultTemplateSettings.heroCarouselEnabled,
+    heroCarouselAutoplay: settings?.heroCarouselAutoplay ?? defaultTemplateSettings.heroCarouselAutoplay,
+    heroCarouselIntervalSeconds: Number.isFinite(intervalSeconds)
+      ? Math.max(3, Math.min(15, Math.trunc(intervalSeconds as number)))
+      : defaultTemplateSettings.heroCarouselIntervalSeconds,
+    heroSlides: normalizedSlides.length > 0 ? normalizedSlides : defaultHeroSlides,
+    showHeroVisual: settings?.showHeroVisual ?? defaultTemplateSettings.showHeroVisual,
+    showHeroMetrics: settings?.showHeroMetrics ?? defaultTemplateSettings.showHeroMetrics,
+    homeProductCount: Number.isFinite(productCount) ? Math.max(1, Math.min(12, Math.trunc(productCount as number))) : defaultTemplateSettings.homeProductCount,
+    homeArticleCount: Number.isFinite(articleCount) ? Math.max(0, Math.min(12, Math.trunc(articleCount as number))) : defaultTemplateSettings.homeArticleCount,
+    visibleSections,
+    sectionOrder
   };
 }
 
@@ -341,7 +476,8 @@ function normalizeAdminState(parsed: AdminState): AdminState {
     enabledLocales: normalizeEnabledLocales(parsed.enabledLocales),
     navigation: normalizeNavigation(navigationSource),
     siteSettings: normalizeSiteSettings(siteSettingsSource),
-    aiSettings: parsed.aiSettings ?? createDefaultAdminState().aiSettings,
+    templateSettings: normalizeTemplateSettings(parsed.templateSettings),
+    aiSettings: normalizeAiSettings(parsed.aiSettings),
     updatedAt: parsed.updatedAt ?? new Date().toISOString()
   };
 }
@@ -363,13 +499,22 @@ export async function readAdminState(): Promise<AdminState> {
 export function sanitizeAdminState(state: AdminState): AdminState {
   return {
     ...state,
-    users: state.users.map(({ passwordHash: _passwordHash, ...user }) => user)
+    users: state.users.map(({ passwordHash: _passwordHash, ...user }) => user),
+    aiSettings: {
+      ...state.aiSettings,
+      apiKey: "",
+      apiKeyConfigured: Boolean(state.aiSettings.apiKey)
+    }
   };
 }
 
 export function preserveUserPasswordHashes(nextState: AdminState, existingState: AdminState): AdminState {
   return {
     ...nextState,
+    aiSettings: {
+      ...nextState.aiSettings,
+      apiKey: nextState.aiSettings.apiKey?.trim() || existingState.aiSettings.apiKey || ""
+    },
     users: nextState.users.map((user) => {
       const existing = existingState.users.find((item) => item.id === user.id || item.email.toLowerCase() === user.email.toLowerCase());
       return {

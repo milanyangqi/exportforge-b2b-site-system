@@ -27,7 +27,12 @@ import {
   Paperclip,
   Palette,
   Pilcrow,
+  PlusCircle,
   Quote,
+  RefreshCw,
+  Save,
+  SendToBack,
+  Sparkles,
   Share2,
   Strikethrough,
   Subscript,
@@ -40,14 +45,17 @@ import {
 } from "lucide-react";
 import { locales } from "@/config/locales";
 import { themes } from "@/config/themes";
-import type { AdminState, AdminUser, Article, ContactChannel, ContactChannelType, LeadStatus, LocaleCode, ProductCategory, RoleKey, SiteNavigationItem, SitePage, ThemeKey, UploadedFile } from "@/types/site";
+import type { AdminState, AdminUser, Article, ContactChannel, ContactChannelType, HomeSectionKey, HomeTemplateKey, LeadStatus, LocaleCode, ProductCategory, RoleKey, SiteHeroSlide, SiteNavigationItem, SitePage, SiteTemplateSettings, ThemeKey, UploadedFile } from "@/types/site";
 
-type Tab = "overview" | "products" | "pages" | "articles" | "files" | "leads" | "contacts" | "navigation" | "users" | "settings" | "languages" | "themes" | "account" | "ai";
+type Tab = "overview" | "products" | "pages" | "articles" | "files" | "leads" | "contacts" | "navigation" | "users" | "templates" | "settings" | "languages" | "themes" | "account" | "ai";
 type ArticleEditorView = "visual" | "code";
 type PageMode = "list" | "editor";
 type MediaTypeFilter = "all" | "image" | "document" | "spreadsheet" | "archive" | "other";
 type MediaTimeFilter = "all" | "7d" | "30d" | "90d";
 type SettingsSection = "general" | "writing" | "reading" | "media" | "permalinks" | "privacy";
+type AiContentTarget = "article" | "page";
+type AiWriteMode = "new" | "replace" | "append";
+type TemplateEditorMode = "form" | "visual";
 type ProductFormState = {
   zh: string;
   en: string;
@@ -79,6 +87,23 @@ type NewUserFormState = {
   role: RoleKey;
   password: string;
 };
+type AiContentFormState = {
+  target: AiContentTarget;
+  writeMode: AiWriteMode;
+  targetArticleId: string;
+  targetPageId: string;
+  topic: string;
+  category: string;
+};
+type AiContentDraft = {
+  target: AiContentTarget;
+  slug: string;
+  title: Article["title"];
+  excerpt: Article["excerpt"];
+  body: NonNullable<Article["body"]>;
+  category: string;
+  createdAt: string;
+};
 
 const tabs: { key: Tab; label: string; icon: typeof Gauge }[] = [
   { key: "overview", label: "仪表盘", icon: Gauge },
@@ -91,6 +116,7 @@ const tabs: { key: Tab; label: string; icon: typeof Gauge }[] = [
   { key: "navigation", label: "导航栏", icon: Menu },
   { key: "users", label: "用户权限", icon: Users },
   { key: "languages", label: "语言", icon: Languages },
+  { key: "templates", label: "模板", icon: LayoutPanelTop },
   { key: "themes", label: "主题", icon: Palette },
   { key: "ai", label: "AI内容", icon: Bot },
   { key: "settings", label: "设置", icon: LayoutPanelTop }
@@ -106,6 +132,7 @@ const adminPageAccessOptions: { key: Tab; label: string }[] = [
   { key: "contacts", label: "社媒及联系" },
   { key: "navigation", label: "导航栏" },
   { key: "users", label: "用户权限" },
+  { key: "templates", label: "模板" },
   { key: "settings", label: "设置" },
   { key: "languages", label: "语言" },
   { key: "themes", label: "主题" },
@@ -113,7 +140,7 @@ const adminPageAccessOptions: { key: Tab; label: string }[] = [
 ];
 const defaultAllowedTabsByRole: Record<RoleKey, Tab[]> = {
   "super-admin": adminPageAccessOptions.map((item) => item.key),
-  admin: ["overview", "products", "pages", "articles", "files", "leads", "contacts", "navigation", "settings", "languages", "themes"],
+  admin: ["overview", "products", "pages", "articles", "files", "leads", "contacts", "navigation", "templates", "settings", "languages", "themes"],
   editor: ["overview", "products", "pages", "articles", "files", "ai"],
   sales: ["overview", "products", "leads", "contacts"],
   viewer: ["overview", "products", "articles", "files"]
@@ -265,6 +292,42 @@ const settingsSections: { key: SettingsSection; label: string; description: stri
   { key: "permalinks", label: "固定链接", description: "产品、文章和资料的 URL 基础路径。" },
   { key: "privacy", label: "隐私", description: "隐私页面、Cookie 提示和数据说明。" }
 ];
+const templateOptions: { key: HomeTemplateKey; label: string; description: string }[] = [
+  { key: "industrial-showcase", label: "工业展示", description: "保留首屏海报、工厂能力和完整首页模块。" },
+  { key: "catalog-focus", label: "目录优先", description: "适合突出产品分类、目录检索和批量采购入口。" },
+  { key: "rfq-focus", label: "询盘优先", description: "适合把报价入口前置，压缩装饰视觉和阅读路径。" }
+];
+const homeSectionOptions: { key: HomeSectionKey; label: string; description: string }[] = [
+  { key: "products", label: "产品目录", description: "首页产品分类卡片模块。" },
+  { key: "factory", label: "工厂能力", description: "几何、涂层、包装等能力说明。" },
+  { key: "markets", label: "出口市场", description: "多语言与 RFQ 清单说明模块。" },
+  { key: "articles", label: "技术文章", description: "首页文章卡片模块。" },
+  { key: "rfq", label: "询盘表单", description: "首页底部报价表单模块。" }
+];
+const homeProductSlugs = [
+  "carbide-end-mills",
+  "drill-bits",
+  "custom-tooling",
+  "square-end-mills",
+  "solid-carbide-drills",
+  "coating-oem-packaging"
+];
+const aiTargetOptions: { key: AiContentTarget; label: string; description: string }[] = [
+  { key: "article", label: "文章", description: "生成技术文章、采购指南和 SEO 内容。" },
+  { key: "page", label: "页面", description: "生成关于我们、服务说明、资料页等独立页面。" }
+];
+const aiProviderOptions = [
+  { value: "openai-compatible", label: "OpenAI-compatible", baseUrl: "", models: ["gpt-4.1-mini", "qwen-plus", "deepseek-chat"] },
+  { value: "openai", label: "OpenAI", baseUrl: "https://api.openai.com/v1", models: ["gpt-4.1-mini", "gpt-4.1", "gpt-4o-mini"] },
+  { value: "deepseek", label: "DeepSeek", baseUrl: "https://api.deepseek.com/v1", models: ["deepseek-chat", "deepseek-reasoner"] },
+  { value: "anthropic", label: "Anthropic Claude", baseUrl: "https://api.anthropic.com/v1", models: ["claude-3-5-haiku-latest", "claude-sonnet-4-5"] },
+  { value: "custom", label: "自定义", baseUrl: "", models: [] }
+];
+const aiWriteModeOptions: { key: AiWriteMode; label: string; description: string }[] = [
+  { key: "new", label: "新建草稿", description: "创建新的文章或页面，保留现有内容。" },
+  { key: "replace", label: "替换目标", description: "用生成内容覆盖所选文章或页面。" },
+  { key: "append", label: "追加正文", description: "保留标题摘要，把生成正文追加到目标末尾。" }
+];
 const siteFontOptions = [
   { label: "现代无衬线（默认）", value: "\"Manrope\", \"PingFang SC\", \"Microsoft YaHei\", sans-serif" },
   { label: "工业清晰", value: "\"Archivo\", \"PingFang SC\", \"Microsoft YaHei\", sans-serif" },
@@ -293,6 +356,14 @@ const emptyNewUserForm: NewUserFormState = {
   role: "viewer",
   password: ""
 };
+const emptyAiContentForm: AiContentFormState = {
+  target: "article",
+  writeMode: "new",
+  targetArticleId: "",
+  targetPageId: "",
+  topic: "",
+  category: ""
+};
 
 function createContactForm(type: ContactChannelType = "custom"): ContactFormState {
   const preset = contactTypePresets[type];
@@ -314,6 +385,32 @@ function slugify(value: string) {
     .toLowerCase()
     .replace(/[^a-z0-9\u4e00-\u9fa5]+/g, "-")
     .replace(/^-+|-+$/g, "");
+}
+
+function uniqueSlug(value: string, existingSlugs: string[], fallback: string) {
+  const base = slugify(value) || `${fallback}-${Date.now()}`;
+  const used = new Set(existingSlugs);
+  let candidate = base;
+  let suffix = 2;
+
+  while (used.has(candidate)) {
+    candidate = `${base}-${suffix}`;
+    suffix += 1;
+  }
+
+  return candidate;
+}
+
+function titleCase(value: string) {
+  return value
+    .split(/\s+/)
+    .filter(Boolean)
+    .map((word) => (word.length <= 2 ? word.toUpperCase() : `${word.slice(0, 1).toUpperCase()}${word.slice(1)}`))
+    .join(" ");
+}
+
+function joinHumanList(items: string[], fallback: string) {
+  return items.length > 0 ? items.join(", ") : fallback;
 }
 
 function escapeCsvCell(value: string) {
@@ -715,13 +812,16 @@ function getAllowedTabsForUser(user?: AdminUser) {
   const allowedTabs = user?.allowedTabs?.filter((item): item is Tab => tabKeys.has(item as Tab) && item !== "account");
   if (!allowedTabs || allowedTabs.length === 0) return roleDefaults;
 
-  if ((user?.role === "super-admin" || user?.role === "admin") && allowedTabs.includes("settings") && !allowedTabs.includes("navigation")) {
-    const settingsIndex = allowedTabs.indexOf("settings");
-    return [
-      ...allowedTabs.slice(0, settingsIndex),
-      "navigation",
-      ...allowedTabs.slice(settingsIndex)
-    ];
+  if ((user?.role === "super-admin" || user?.role === "admin") && allowedTabs.includes("settings")) {
+    const nextTabs = [...allowedTabs];
+    const settingsIndex = nextTabs.indexOf("settings");
+
+    (["navigation", "templates"] as Tab[]).forEach((requiredTab) => {
+      if (nextTabs.includes(requiredTab)) return;
+      nextTabs.splice(Math.max(0, settingsIndex), 0, requiredTab);
+    });
+
+    return nextTabs;
   }
 
   return allowedTabs;
@@ -760,6 +860,11 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [accountPassword, setAccountPassword] = useState({ current: "", next: "", confirm: "" });
   const [frontendSettingsDirty, setFrontendSettingsDirty] = useState(false);
+  const [newHeroSlideUrl, setNewHeroSlideUrl] = useState("");
+  const [templateEditorMode, setTemplateEditorMode] = useState<TemplateEditorMode>("form");
+  const [aiContentForm, setAiContentForm] = useState<AiContentFormState>(emptyAiContentForm);
+  const [aiDraftPreview, setAiDraftPreview] = useState<AiContentDraft | null>(null);
+  const [aiTestStatus, setAiTestStatus] = useState("");
   const [settingsSection, setSettingsSection] = useState<SettingsSection>("general");
   const [clockNow, setClockNow] = useState<Date | null>(null);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
@@ -901,6 +1006,157 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
       }
     });
     setFrontendSettingsDirty(true);
+  }
+
+  function updateAiSettings(patch: Partial<AdminState["aiSettings"]>) {
+    if (!state) return;
+    setState({
+      ...state,
+      aiSettings: {
+        ...state.aiSettings,
+        ...patch
+      }
+    });
+  }
+
+  function selectAiProvider(provider: string) {
+    if (!state) return;
+    const option = aiProviderOptions.find((item) => item.value === provider);
+    const currentProviderOption = aiProviderOptions.find((item) => item.value === state.aiSettings.provider);
+    const shouldReplaceBaseUrl = !state.aiSettings.baseUrl || state.aiSettings.baseUrl === currentProviderOption?.baseUrl;
+
+    updateAiSettings({
+      provider,
+      baseUrl: shouldReplaceBaseUrl ? option?.baseUrl ?? "" : state.aiSettings.baseUrl,
+      model: option?.models[0] ?? state.aiSettings.model
+    });
+    setAiTestStatus("");
+  }
+
+  function testAiConnection() {
+    if (!state) return;
+    setAiTestStatus("正在测试 API 连接...");
+    setStatus("正在测试 AI API...");
+
+    fetch("/api/admin/ai/test", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(state.aiSettings)
+    })
+      .then(async (response) => {
+        const payload = await response.json().catch(() => ({ error: "API 测试失败" })) as { ok?: boolean; message?: string; error?: string; detail?: string };
+        if (!response.ok || !payload.ok) {
+          throw new Error([payload.error, payload.detail].filter(Boolean).join("：") || "API 测试失败");
+        }
+        return payload;
+      })
+      .then((payload) => {
+        setAiTestStatus(payload.message || "API 连接测试通过。");
+        setStatus("AI API 测试通过");
+      })
+      .catch((error) => {
+        const message = error instanceof Error ? error.message : "API 测试失败";
+        setAiTestStatus(message);
+        setStatus(message);
+      });
+  }
+
+  function updateTemplateSettings(patch: Partial<SiteTemplateSettings>) {
+    if (!state || !guardFrontendSettingsAccess()) return;
+    setState({
+      ...state,
+      templateSettings: {
+        ...state.templateSettings,
+        ...patch
+      }
+    });
+    setFrontendSettingsDirty(true);
+  }
+
+  function updateTemplateText(field: "heroKicker" | "heroTitle" | "heroBody" | "primaryCtaLabel" | "secondaryCtaLabel", localeCode: "zh" | "en", value: string) {
+    if (!state || !guardFrontendSettingsAccess()) return;
+    updateTemplateSettings({
+      [field]: {
+        ...state.templateSettings[field],
+        [localeCode]: value
+      }
+    } as Pick<SiteTemplateSettings, typeof field>);
+  }
+
+  function commitTemplateEditableText(field: "heroKicker" | "heroTitle" | "heroBody" | "primaryCtaLabel" | "secondaryCtaLabel", element: HTMLElement | null) {
+    if (!element) return;
+    const value = element.innerText.replace(/\s+\n/g, "\n").trim();
+    updateTemplateText(field, "zh", value);
+  }
+
+  function updateTemplateSectionVisibility(section: HomeSectionKey, visible: boolean) {
+    if (!state || !guardFrontendSettingsAccess()) return;
+    updateTemplateSettings({
+      visibleSections: {
+        ...state.templateSettings.visibleSections,
+        [section]: visible
+      }
+    });
+  }
+
+  function updateTemplateSectionOrder(section: HomeSectionKey, order: number) {
+    if (!state || !guardFrontendSettingsAccess()) return;
+    updateTemplateSettings({
+      sectionOrder: {
+        ...state.templateSettings.sectionOrder,
+        [section]: Number.isFinite(order) ? Math.trunc(order) : state.templateSettings.sectionOrder[section]
+      }
+    });
+  }
+
+  function createHeroSlide(imageUrl: string, label = "Homepage hero slide"): SiteHeroSlide {
+    const trimmedUrl = imageUrl.trim();
+    const currentOrders = state?.templateSettings.heroSlides.map((slide) => slide.order) ?? [];
+
+    return {
+      id: `hero-slide-${Date.now()}`,
+      imageUrl: trimmedUrl,
+      alt: { en: label, zh: label },
+      enabled: true,
+      order: Math.max(0, ...currentOrders) + 10
+    };
+  }
+
+  function updateHeroSlide(slideId: string, patch: Partial<SiteHeroSlide>) {
+    if (!state || !guardFrontendSettingsAccess()) return;
+    updateTemplateSettings({
+      heroSlides: state.templateSettings.heroSlides.map((slide) => (
+        slide.id === slideId ? { ...slide, ...patch } : slide
+      ))
+    });
+  }
+
+  function addHeroSlideFromUrl() {
+    if (!state || !guardFrontendSettingsAccess()) return;
+    const imageUrl = newHeroSlideUrl.trim();
+    if (!imageUrl) {
+      setStatus("请先填写轮播图片 URL");
+      return;
+    }
+
+    updateTemplateSettings({
+      heroSlides: [...state.templateSettings.heroSlides, createHeroSlide(imageUrl, "Custom homepage hero slide")]
+    });
+    setNewHeroSlideUrl("");
+  }
+
+  function addHeroSlideFromMedia(file: UploadedFile) {
+    if (!state || !guardFrontendSettingsAccess()) return;
+    updateTemplateSettings({
+      heroSlides: [...state.templateSettings.heroSlides, createHeroSlide(file.url, file.description?.zh ?? file.name)]
+    });
+  }
+
+  function removeHeroSlide(slideId: string) {
+    if (!state || !guardFrontendSettingsAccess()) return;
+    updateTemplateSettings({
+      heroSlides: state.templateSettings.heroSlides.filter((slide) => slide.id !== slideId)
+    });
   }
 
   function switchAdminTab(nextTab: Tab) {
@@ -1624,43 +1880,236 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
     reader.readAsText(file);
   }
 
-  function generateAiArticleDraft() {
-    if (!state) return;
-    const market = state.aiSettings.targetMarkets[0] ?? "Global";
-    const keyword = state.aiSettings.requiredKeywords[0] ?? "carbide end mills";
+  function buildAiContentDraft(target = aiContentForm.target): AiContentDraft {
+    const markets = joinHumanList(state?.aiSettings.targetMarkets ?? [], "Global buyers");
+    const keywords = state?.aiSettings.requiredKeywords ?? [];
+    const keyword = keywords[0] ?? (target === "article" ? "carbide end mills" : "cutting tools");
+    const topic = aiContentForm.topic.trim() || (target === "article" ? `${keyword} buying guide` : `${keyword} supplier page`);
+    const titleRoot = titleCase(topic);
+    const category = aiContentForm.category || state?.siteSettings.defaultArticleCategory || state?.products[0]?.slug || "uncategorized";
     const created = new Date();
-    const draft: Article = {
-      id: `ai-article-${created.getTime()}`,
-      slug: `ai-${market.toLowerCase().replace(/[^a-z0-9]+/g, "-")}-${created.getTime()}`,
+    const slug = uniqueSlug(
+      topic,
+      target === "article" ? state?.articles.map((article) => article.slug) ?? [] : state?.pages.map((page) => page.slug) ?? [],
+      target === "article" ? "ai-article" : "ai-page"
+    );
+    const keywordText = joinHumanList(keywords, keyword);
+    const brandVoice = state?.aiSettings.brandVoice || "Clear, technical, buyer-focused B2B export copy.";
+    const articleBodyEn = [
+      `## Buyer intent`,
+      `${markets} buyers comparing ${topic} usually need a fast answer on product fit, quality control, packaging, and repeat-order stability. The copy should stay aligned with this brand voice: ${brandVoice}`,
+      `## Product fit`,
+      `Explain where ${keyword} performs best, which materials or machining conditions matter, and what details should be confirmed before quotation.`,
+      `## RFQ checklist`,
+      `| Item | Why it matters |`,
+      `| --- | --- |`,
+      `| Tool size and geometry | Confirms diameter, flute length, shank, corner radius, and operation fit |`,
+      `| Workpiece material | Helps match coating, flute count, coolant condition, and cutting data |`,
+      `| Quantity and packing | Aligns MOQ, lead time, private label, and export carton planning |`,
+      `## Trust signals`,
+      `Mention inspection, sample confirmation, packaging consistency, and responsive engineering support. Include these keywords naturally: ${keywordText}.`
+    ].join("\n\n");
+    const articleBodyZh = [
+      `## 买家需求`,
+      `${markets} 买家在比较 ${topic} 时，通常希望快速确认产品匹配、质量控制、包装方式和长期复购稳定性。内容语气保持：${brandVoice}`,
+      `## 产品匹配`,
+      `说明 ${keyword} 适合的加工场景、材料条件、涂层选择，以及报价前需要确认的核心参数。`,
+      `## 询盘清单`,
+      `| 项目 | 为什么重要 |`,
+      `| --- | --- |`,
+      `| 刀具尺寸与几何 | 确认直径、刃长、柄径、圆角和加工方式 |`,
+      `| 工件材料 | 便于匹配涂层、刃数、冷却方式和切削条件 |`,
+      `| 数量与包装 | 影响 MOQ、交期、私标和出口箱规规划 |`,
+      `## 信任背书`,
+      `加入质检、样品确认、包装一致性和工程响应能力。关键词自然覆盖：${keywordText}。`
+    ].join("\n\n");
+    const pageBodyEn = [
+      `## What this page should communicate`,
+      `Use this page to explain how KeyproTools supports ${topic} for ${markets}. Keep the copy practical, technical, and buyer-focused.`,
+      `## Capabilities`,
+      `- Product matching for ${keyword}.`,
+      `- OEM marking, packaging, and export documentation.`,
+      `- Quality inspection and sample confirmation before repeat orders.`,
+      `## Buying process`,
+      `1. Send sizes, materials, coating preference, packing, and target quantity.`,
+      `2. Confirm available standards or custom grinding requirements.`,
+      `3. Review quotation, samples, lead time, and carton plan.`,
+      `## Call to action`,
+      `Ask buyers to share drawings, size lists, target market, and expected monthly demand for a clearer quotation. Required keyword focus: ${keywordText}.`
+    ].join("\n\n");
+    const pageBodyZh = [
+      `## 页面传达重点`,
+      `这个页面用于说明 KeyproTools 如何面向 ${markets} 支持 ${topic}，文案保持技术清晰、采购友好和行动明确。`,
+      `## 服务能力`,
+      `- 围绕 ${keyword} 做产品匹配和规格建议。`,
+      `- 支持 OEM 标识、私标包装和出口资料。`,
+      `- 支持样品确认、质量检测和复购订单稳定交付。`,
+      `## 采购流程`,
+      `1. 提供尺寸、材料、涂层偏好、包装和目标数量。`,
+      `2. 确认标准品供应或定制磨削要求。`,
+      `3. 核对报价、样品、交期和箱规方案。`,
+      `## 行动引导`,
+      `引导买家提交图纸、规格清单、目标市场和月度需求，以便获得更清晰的报价。关键词重点：${keywordText}。`
+    ].join("\n\n");
+
+    return {
+      target,
+      slug,
       title: {
-        en: `${market} buying guide for ${keyword}`,
-        zh: `${market} 市场 ${keyword} 采购指南`
+        en: target === "article" ? `${titleRoot} for Overseas Buyers` : titleRoot,
+        zh: target === "article" ? `${topic} 采购指南` : topic
       },
       excerpt: {
-        en: `AI draft for overseas buyers comparing supplier capability, product fit, RFQ details, and trust signals for ${market}.`,
-        zh: `面向 ${market} 买家的 AI 草稿，覆盖供应商能力、产品匹配、询盘信息和信任背书。`
+        en: target === "article"
+          ? `AI draft covering product fit, RFQ details, quality checks, and supplier trust signals for ${markets}.`
+          : `AI page draft explaining KeyproTools capabilities, buying process, and RFQ details for ${markets}.`,
+        zh: target === "article"
+          ? `AI 草稿，覆盖产品匹配、询盘信息、质量检查和供应商信任背书。`
+          : `AI 页面草稿，说明 KeyproTools 的服务能力、采购流程和询盘信息。`
       },
-      body: {
-        en: [
-          `This draft follows the brand voice: ${state.aiSettings.brandVoice}`,
-          `For ${market} buyers, the page should explain product fit, quality control, packaging, MOQ, delivery terms, and fast RFQ response.`,
-          `Recommended keywords: ${state.aiSettings.requiredKeywords.join(", ")}.`
-        ].join("\n\n"),
-        zh: [
-          `这是一篇按品牌语气生成的草稿：${state.aiSettings.brandVoice}`,
-          `面向 ${market} 买家，内容应说明产品匹配、质量控制、包装、MOQ、交付条款和快速报价响应。`,
-          `建议关键词：${state.aiSettings.requiredKeywords.join("，")}。`
-        ].join("\n\n")
-      },
-      category: state.siteSettings.defaultArticleCategory || state.products[0]?.slug || "uncategorized",
-      status: "draft",
-      featuredOnHome: true
+      body: target === "article" ? { en: articleBodyEn, zh: articleBodyZh } : { en: pageBodyEn, zh: pageBodyZh },
+      category,
+      createdAt: created.toISOString()
     };
-    setState({ ...state, articles: [draft, ...state.articles] });
-    setActiveArticleId(draft.id ?? draft.slug);
-    setArticleMode("editor");
-    setTab("articles");
-    setStatus("AI 草稿已生成，请审核后发布");
+  }
+
+  function generateAiContentPreview() {
+    if (!state) return;
+    const draft = buildAiContentDraft();
+
+    setAiDraftPreview(draft);
+    setStatus("AI 内容已生成，可选择写入文章或页面");
+  }
+
+  function applyAiContentDraft(draftOverride?: AiContentDraft) {
+    if (!state) return;
+    const draft = draftOverride ?? (aiDraftPreview?.target === aiContentForm.target ? aiDraftPreview : buildAiContentDraft());
+    const created = Date.now();
+    let nextState = state;
+    let nextTargetId = "";
+
+    if (draft.target === "article") {
+      const targetId = aiContentForm.targetArticleId || activeArticle?.id || activeArticle?.slug || "";
+
+      if (aiContentForm.writeMode !== "new" && !targetId) {
+        setStatus("请选择要填充的文章，或改为新建草稿");
+        return;
+      }
+
+      if (aiContentForm.writeMode === "new") {
+        const article: Article = {
+          id: `ai-article-${created}`,
+          slug: uniqueSlug(draft.slug, state.articles.map((articleItem) => articleItem.slug), "ai-article"),
+          title: draft.title,
+          excerpt: draft.excerpt,
+          body: draft.body,
+          category: draft.category,
+          status: "draft",
+          featuredOnHome: true
+        };
+
+        nextTargetId = article.id ?? article.slug;
+        nextState = { ...state, articles: [article, ...state.articles] };
+      } else {
+        nextTargetId = targetId;
+        nextState = {
+          ...state,
+          articles: state.articles.map((article) => {
+            if ((article.id ?? article.slug) !== targetId) return article;
+            if (aiContentForm.writeMode === "append") {
+              const currentBody = article.body ?? { en: "", zh: "" };
+              return {
+                ...article,
+                body: {
+                  en: [currentBody.en, draft.body.en].filter(Boolean).join("\n\n"),
+                  zh: [currentBody.zh ?? currentBody.en, draft.body.zh].filter(Boolean).join("\n\n")
+                }
+              };
+            }
+
+            return {
+              ...article,
+              slug: article.slug || draft.slug,
+              title: draft.title,
+              excerpt: draft.excerpt,
+              body: draft.body,
+              category: draft.category,
+              status: article.status === "trash" ? "draft" : article.status
+            };
+          })
+        };
+      }
+
+      setState(nextState);
+      setActiveArticleId(nextTargetId);
+      setArticleMode("editor");
+      switchAdminTab("articles");
+      setStatus("AI 内容已填充到文章，正在保存...");
+      void save(nextState);
+      return;
+    }
+
+    const targetId = aiContentForm.targetPageId || activePage?.id || activePage?.slug || "";
+
+    if (aiContentForm.writeMode !== "new" && !targetId) {
+      setStatus("请选择要填充的页面，或改为新建草稿");
+      return;
+    }
+
+    if (aiContentForm.writeMode === "new") {
+      const page: SitePage = {
+        id: `ai-page-${created}`,
+        slug: uniqueSlug(draft.slug, state.pages.map((pageItem) => pageItem.slug), "ai-page"),
+        title: draft.title,
+        excerpt: draft.excerpt,
+        body: draft.body,
+        status: "draft"
+      };
+
+      nextTargetId = page.id ?? page.slug;
+      nextState = { ...state, pages: [page, ...state.pages] };
+    } else {
+      nextTargetId = targetId;
+      nextState = {
+        ...state,
+        pages: state.pages.map((page) => {
+          if ((page.id ?? page.slug) !== targetId) return page;
+          if (aiContentForm.writeMode === "append") {
+            return {
+              ...page,
+              body: {
+                en: [page.body.en, draft.body.en].filter(Boolean).join("\n\n"),
+                zh: [page.body.zh ?? page.body.en, draft.body.zh].filter(Boolean).join("\n\n")
+              }
+            };
+          }
+
+          return {
+            ...page,
+            slug: page.slug || draft.slug,
+            title: draft.title,
+            excerpt: draft.excerpt,
+            body: draft.body,
+            status: page.status === "trash" ? "draft" : page.status
+          };
+        })
+      };
+    }
+
+    setState(nextState);
+    setActivePageId(nextTargetId);
+    setPageMode("editor");
+    switchAdminTab("pages");
+    setStatus("AI 内容已填充到页面，正在保存...");
+    void save(nextState);
+  }
+
+  function generateAndApplyAiContent() {
+    if (!state) return;
+    const draft = buildAiContentDraft();
+
+    setAiDraftPreview(draft);
+    applyAiContentDraft(draft);
   }
 
   if (!state) {
@@ -2072,6 +2521,39 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
       .catch((error) => setStatus(error instanceof Error ? error.message : "站点图标上传失败"));
   }
 
+  function uploadHeroSlideImage(file: File | null) {
+    if (!state || !file) return;
+    if (!guardFrontendSettingsAccess()) return;
+    if (!file.type.startsWith("image/")) {
+      setStatus("请选择轮播图片文件");
+      return;
+    }
+
+    const formData = new FormData();
+    formData.append("file", file);
+    setStatus("轮播图片上传中...");
+    fetch("/api/admin/upload", { method: "POST", body: formData })
+      .then(async (response) => {
+        if (!response.ok) {
+          const payload = await response.json().catch(() => ({ error: "轮播图片上传失败" }));
+          throw new Error(payload.error || "轮播图片上传失败");
+        }
+        return response.json() as Promise<{ file: UploadedFile; state: AdminState }>;
+      })
+      .then(({ file: uploadedFile, state: savedState }) => {
+        setState({
+          ...savedState,
+          templateSettings: {
+            ...state.templateSettings,
+            heroSlides: [...state.templateSettings.heroSlides, createHeroSlide(uploadedFile.url, uploadedFile.name)]
+          }
+        });
+        setFrontendSettingsDirty(true);
+        setStatus("轮播图片已上传并加入模板，点击保存模板后生效");
+      })
+      .catch((error) => setStatus(error instanceof Error ? error.message : "轮播图片上传失败"));
+  }
+
   function insertExistingFileIntoArticle(file: UploadedFile) {
     const nextState = appendFileToActiveArticle(file);
     if (!nextState) return;
@@ -2134,6 +2616,8 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
   const currentUser = state.users.find((user) => user.id === currentUserId) ?? state.users.find((user) => user.email.toLowerCase() === email.toLowerCase()) ?? state.users[0];
   const currentUserName = currentUser?.name || "Admin";
   const currentEmail = currentUser?.email || email;
+  const templateSettings = state.templateSettings;
+  const selectedAiProvider = aiProviderOptions.find((option) => option.value === state.aiSettings.provider) ?? aiProviderOptions[0];
   const accountInitial = (currentUserName || email).slice(0, 1).toUpperCase();
   const canResetUserPasswords = currentUser?.role === "super-admin";
   const allowedTabsForCurrentUser = new Set(getAllowedTabsForUser(currentUser));
@@ -2147,6 +2631,14 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
   const navigationPageOptions = state.pages
     .filter((page) => page.status !== "trash")
     .sort((a, b) => (a.title.zh || a.title.en).localeCompare(b.title.zh || b.title.en));
+  const aiArticleTargets = state.articles
+    .filter((article) => article.status !== "trash")
+    .sort((a, b) => (a.title.zh || a.title.en).localeCompare(b.title.zh || b.title.en));
+  const aiPageTargets = state.pages
+    .filter((page) => page.status !== "trash")
+    .sort((a, b) => (a.title.zh || a.title.en).localeCompare(b.title.zh || b.title.en));
+  const aiSelectedTargetId = aiContentForm.target === "article" ? aiContentForm.targetArticleId : aiContentForm.targetPageId;
+  const aiCanApply = aiContentForm.writeMode === "new" || Boolean(aiSelectedTargetId);
   const articleProductCategoryOptions = [...state.products]
     .sort((a, b) => (a.name.zh || a.name.en).localeCompare(b.name.zh || b.name.en))
     .map((product) => ({
@@ -2156,6 +2648,243 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
   const articleProductCategoryValues = new Set(articleProductCategoryOptions.map((item) => item.value));
   const articleProductCategoryLabelByValue = new Map(articleProductCategoryOptions.map((item) => [item.value, item.label]));
   const activeArticleCategoryIsProduct = activeArticle ? articleProductCategoryValues.has(activeArticle.category) : false;
+  const orderedTemplateSections = [...homeSectionOptions].sort((a, b) => templateSettings.sectionOrder[a.key] - templateSettings.sectionOrder[b.key]);
+  const orderedHeroSlides = [...templateSettings.heroSlides].sort((a, b) => a.order - b.order);
+  const activeVisualSlide = orderedHeroSlides.find((slide) => slide.enabled) ?? orderedHeroSlides[0];
+  const heroImageFiles = state.uploadedFiles
+    .filter((file) => getMediaType(file) === "image")
+    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+  const preferredVisualProducts = homeProductSlugs
+    .map((slug) => state.products.find((product) => product.slug === slug))
+    .filter((product): product is ProductCategory => Boolean(product));
+  const preferredVisualProductSlugs = new Set(preferredVisualProducts.map((product) => product.slug));
+  const visualProducts = [...preferredVisualProducts, ...state.products.filter((product) => !preferredVisualProductSlugs.has(product.slug))]
+    .slice(0, templateSettings.homeProductCount);
+  const visualArticles = state.articles
+    .filter((article) => article.status === "published" && article.featuredOnHome)
+    .slice(0, templateSettings.homeArticleCount);
+  const visualHeroImage = activeVisualSlide?.imageUrl || "/assets/tools/hero-tooling-range.jpg";
+  const visualHeroImageStyle = { "--visual-hero-image": `url(${visualHeroImage})` } as CSSProperties;
+  const visualSectionNodes = orderedTemplateSections
+    .filter((section) => templateSettings.visibleSections[section.key])
+    .map((section) => {
+      if (section.key === "products") {
+        return (
+          <section className="visual-front-section" key={section.key}>
+            <div className="visual-section-head">
+              <span className="eyebrow">Product catalog</span>
+              <h3>硬质合金刀具目录</h3>
+            </div>
+            <div className="visual-front-grid products">
+              {visualProducts.length > 0 ? visualProducts.map((product) => (
+                <article className="visual-front-card product" key={product.id ?? product.slug}>
+                  {product.imageUrl ? (
+                    <div className="visual-card-media">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={product.imageUrl} alt={product.name.zh || product.name.en} />
+                    </div>
+                  ) : null}
+                  <strong>{product.name.zh || product.name.en}</strong>
+                  <p>{product.summary.zh || product.summary.en}</p>
+                </article>
+              )) : <p className="visual-muted">暂无可展示产品分类。</p>}
+            </div>
+          </section>
+        );
+      }
+
+      if (section.key === "factory") {
+        return (
+          <section className="visual-front-section factory" key={section.key}>
+            <div className="visual-section-head">
+              <span className="eyebrow">Factory capability</span>
+              <h3>从几何、涂层到包装的供应能力</h3>
+            </div>
+            <div className="visual-front-grid factory">
+              {["OEM 图纸定制", "涂层与刃口处理", "私标包装交付"].map((item) => (
+                <article className="visual-front-card compact" key={item}>
+                  <strong>{item}</strong>
+                  <p>适合经销商长期备货、样品确认与批量订单。</p>
+                </article>
+              ))}
+            </div>
+          </section>
+        );
+      }
+
+      if (section.key === "markets") {
+        return (
+          <section className="visual-front-section markets" key={section.key}>
+            <div className="visual-section-head">
+              <span className="eyebrow">Global supply</span>
+              <h3>多语言市场与 RFQ 清单</h3>
+            </div>
+            <div className="visual-market-strip">
+              {state.enabledLocales.map((localeCode) => {
+                const item = locales.find((entry) => entry.code === localeCode);
+                return <span key={localeCode}>{item ? `${item.flag} ${item.nativeName}` : localeCode}</span>;
+              })}
+            </div>
+          </section>
+        );
+      }
+
+      if (section.key === "articles") {
+        return (
+          <section className="visual-front-section" key={section.key}>
+            <div className="visual-section-head">
+              <span className="eyebrow">Technical articles</span>
+              <h3>技术文章</h3>
+            </div>
+            <div className="visual-front-grid articles">
+              {visualArticles.length > 0 ? visualArticles.map((article) => (
+                <article className="visual-front-card article" key={article.id ?? article.slug}>
+                  {article.coverImageUrl ? (
+                    <div className="visual-card-media">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={article.coverImageUrl} alt={article.title.zh || article.title.en} />
+                    </div>
+                  ) : null}
+                  <strong>{article.title.zh || article.title.en}</strong>
+                  <p>{article.excerpt.zh || article.excerpt.en}</p>
+                </article>
+              )) : <p className="visual-muted">暂无首页技术文章。</p>}
+            </div>
+          </section>
+        );
+      }
+
+      return (
+        <section className="visual-front-section rfq" key={section.key}>
+          <div className="visual-rfq-panel">
+            <div>
+              <span className="eyebrow">RFQ</span>
+              <h3>把刀具清单发给 KeyproTools</h3>
+              <p>规格、数量、涂层、包装和交期信息会在前台询盘表单中收集。</p>
+            </div>
+            <span className="visual-rfq-button">Request Quote</span>
+          </div>
+        </section>
+      );
+    });
+  const templateVisualEditorPanel = (
+    <section className="template-visual-editor-shell">
+      <div className="visual-editor-topbar">
+        <div>
+          <span className="eyebrow">Advanced editor</span>
+          <h2>前台所见即所得编辑</h2>
+        </div>
+        <div className="visual-editor-actions">
+          <button type="button" onClick={() => setTemplateEditorMode("form")}>
+            <LayoutPanelTop size={16} />表单编辑
+          </button>
+          <button
+            disabled={!canManageFrontendSettings || !frontendSettingsDirty}
+            type="button"
+            onClick={() => {
+              if (guardFrontendSettingsAccess()) void save();
+            }}
+          >
+            <Save size={16} />{frontendSettingsDirty ? "保存模板" : "已保存"}
+          </button>
+          <Link href={`/${locale}`} target="_blank" rel="noopener noreferrer">打开前台</Link>
+        </div>
+      </div>
+
+      <div className="visual-editor-stage">
+        <aside className="visual-editor-sidebar" aria-label="首页模块控制">
+          <strong>页面模块</strong>
+          <div className="visual-module-list">
+            {orderedTemplateSections.map((section) => (
+              <button
+                className={templateSettings.visibleSections[section.key] ? "enabled" : ""}
+                disabled={!canManageFrontendSettings}
+                key={section.key}
+                type="button"
+                onClick={() => updateTemplateSectionVisibility(section.key, !templateSettings.visibleSections[section.key])}
+              >
+                <span>{section.label}</span>
+                <small>{templateSettings.visibleSections[section.key] ? "显示" : "隐藏"}</small>
+              </button>
+            ))}
+          </div>
+          <div className="visual-editor-counter">
+            <span>首页产品</span>
+            <button disabled={!canManageFrontendSettings || templateSettings.homeProductCount <= 1} type="button" onClick={() => updateTemplateSettings({ homeProductCount: Math.max(1, templateSettings.homeProductCount - 1) })}>-</button>
+            <strong>{templateSettings.homeProductCount}</strong>
+            <button disabled={!canManageFrontendSettings || templateSettings.homeProductCount >= 12} type="button" onClick={() => updateTemplateSettings({ homeProductCount: Math.min(12, templateSettings.homeProductCount + 1) })}>+</button>
+          </div>
+          <div className="visual-editor-counter">
+            <span>首页文章</span>
+            <button disabled={!canManageFrontendSettings || templateSettings.homeArticleCount <= 0} type="button" onClick={() => updateTemplateSettings({ homeArticleCount: Math.max(0, templateSettings.homeArticleCount - 1) })}>-</button>
+            <strong>{templateSettings.homeArticleCount}</strong>
+            <button disabled={!canManageFrontendSettings || templateSettings.homeArticleCount >= 12} type="button" onClick={() => updateTemplateSettings({ homeArticleCount: Math.min(12, templateSettings.homeArticleCount + 1) })}>+</button>
+          </div>
+          <label className="checkline">
+            <input disabled={!canManageFrontendSettings} type="checkbox" checked={templateSettings.heroCarouselEnabled} onChange={(event) => updateTemplateSettings({ heroCarouselEnabled: event.target.checked })} />
+            轮播背景
+          </label>
+          <label className="checkline">
+            <input disabled={!canManageFrontendSettings} type="checkbox" checked={templateSettings.showHeroMetrics} onChange={(event) => updateTemplateSettings({ showHeroMetrics: event.target.checked })} />
+            首屏指标
+          </label>
+        </aside>
+
+        <div className="visual-front-page" aria-label="首页可视化编辑预览">
+          <section className={`visual-front-hero ${templateSettings.homeTemplate}`} style={visualHeroImageStyle}>
+            <span
+              className="visual-editable visual-eyebrow"
+              contentEditable={canManageFrontendSettings}
+              suppressContentEditableWarning
+              onBlur={(event) => commitTemplateEditableText("heroKicker", event.currentTarget)}
+            >
+              {templateSettings.heroKicker.zh || templateSettings.heroKicker.en}
+            </span>
+            <h1
+              className="visual-editable"
+              contentEditable={canManageFrontendSettings}
+              suppressContentEditableWarning
+              onBlur={(event) => commitTemplateEditableText("heroTitle", event.currentTarget)}
+            >
+              {templateSettings.heroTitle.zh || templateSettings.heroTitle.en}
+            </h1>
+            <p
+              className="visual-editable visual-hero-copy"
+              contentEditable={canManageFrontendSettings}
+              suppressContentEditableWarning
+              onBlur={(event) => commitTemplateEditableText("heroBody", event.currentTarget)}
+            >
+              {templateSettings.heroBody.zh || templateSettings.heroBody.en}
+            </p>
+            <div className="visual-hero-actions">
+              <span
+                className="visual-cta primary visual-editable"
+                contentEditable={canManageFrontendSettings}
+                suppressContentEditableWarning
+                onBlur={(event) => commitTemplateEditableText("primaryCtaLabel", event.currentTarget)}
+              >
+                {templateSettings.primaryCtaLabel.zh || templateSettings.primaryCtaLabel.en}
+              </span>
+              <span
+                className="visual-cta secondary visual-editable"
+                contentEditable={canManageFrontendSettings}
+                suppressContentEditableWarning
+                onBlur={(event) => commitTemplateEditableText("secondaryCtaLabel", event.currentTarget)}
+              >
+                {templateSettings.secondaryCtaLabel.zh || templateSettings.secondaryCtaLabel.en}
+              </span>
+            </div>
+            {templateSettings.showHeroMetrics ? (
+              <div className="visual-metrics">
+                {["6 条产品线", "OEM 定制", "出口包装"].map((item) => <span key={item}>{item}</span>)}
+              </div>
+            ) : null}
+          </section>
+          {visualSectionNodes}
+        </div>
+      </div>
+    </section>
+  );
   const settingsSaveAction = (
     <div className="settings-actions">
       <button type="button" disabled={!canManageFrontendSettings} onClick={() => {
@@ -3315,6 +4044,227 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
             </>
           ) : null}
 
+          {tab === "templates" ? (
+            <>
+              {!canManageFrontendSettings ? <p className="settings-lock-note">当前账号没有前台模板权限。请使用 Super Admin 或 Admin 账号修改模板。</p> : null}
+
+              <section className="settings-panel template-builder-panel">
+                <div className="settings-panel-head with-action">
+                  <div>
+                    <h2>前台模板</h2>
+                    <span>控制首页模板预设、首屏文案、模块显示、排序和首页内容数量。</span>
+                  </div>
+                  <div className="settings-actions template-mode-actions">
+                    <div className="template-mode-toggle" aria-label="模板编辑模式">
+                      <button
+                        className={templateEditorMode === "form" ? "template-mode-button active" : "template-mode-button"}
+                        type="button"
+                        onClick={() => setTemplateEditorMode("form")}
+                      >
+                        <LayoutPanelTop size={15} />表单编辑
+                      </button>
+                      <button
+                        className={templateEditorMode === "visual" ? "template-mode-button active" : "template-mode-button"}
+                        type="button"
+                        onClick={() => setTemplateEditorMode("visual")}
+                      >
+                        <Sparkles size={15} />高级编辑
+                      </button>
+                    </div>
+                    <button className="template-save-button" type="button" disabled={!canManageFrontendSettings || !frontendSettingsDirty} onClick={() => {
+                      if (guardFrontendSettingsAccess()) void save();
+                    }}>
+                      <Save size={15} />{frontendSettingsDirty ? "保存模板" : "已保存"}
+                    </button>
+                  </div>
+                </div>
+
+                <div className="template-preset-grid" aria-label="首页模板预设">
+                  {templateOptions.map((option) => (
+                    <button
+                      className={templateSettings.homeTemplate === option.key ? "template-preset-button active" : "template-preset-button"}
+                      disabled={!canManageFrontendSettings}
+                      key={option.key}
+                      type="button"
+                      onClick={() => updateTemplateSettings({ homeTemplate: option.key })}
+                    >
+                      <strong>{option.label}</strong>
+                      <span>{option.description}</span>
+                    </button>
+                  ))}
+                </div>
+              </section>
+
+              {templateEditorMode === "visual" ? templateVisualEditorPanel : (
+                <>
+              <section className="settings-panel template-builder-panel hero-carousel-admin-panel">
+                <div className="settings-panel-head">
+                  <div>
+                    <h2>首页轮播图片</h2>
+                    <span>控制首屏背景海报、是否自动轮播、切换速度、图片排序和替换。</span>
+                  </div>
+                </div>
+                <div className="hero-carousel-controls">
+                  <label className="checkline"><input disabled={!canManageFrontendSettings} type="checkbox" checked={templateSettings.heroCarouselEnabled} onChange={(event) => updateTemplateSettings({ heroCarouselEnabled: event.target.checked })} />启用首屏轮播背景</label>
+                  <label className="checkline"><input disabled={!canManageFrontendSettings || !templateSettings.heroCarouselEnabled} type="checkbox" checked={templateSettings.heroCarouselAutoplay} onChange={(event) => updateTemplateSettings({ heroCarouselAutoplay: event.target.checked })} />自动播放</label>
+                  <label>切换间隔（秒）
+                    <input disabled={!canManageFrontendSettings || !templateSettings.heroCarouselEnabled} min={3} max={15} type="number" value={templateSettings.heroCarouselIntervalSeconds} onChange={(event) => updateTemplateSettings({ heroCarouselIntervalSeconds: Number(event.target.value) || 7 })} />
+                  </label>
+                </div>
+                <div className="hero-slide-add-row">
+                  <label>添加图片 URL
+                    <input disabled={!canManageFrontendSettings} placeholder="/assets/tools/hero-new.jpg 或 https://..." value={newHeroSlideUrl} onChange={(event) => setNewHeroSlideUrl(event.target.value)} />
+                  </label>
+                  <button disabled={!canManageFrontendSettings} type="button" onClick={addHeroSlideFromUrl}>添加 URL</button>
+                  <label>从媒体库选择
+                    <select disabled={!canManageFrontendSettings || heroImageFiles.length === 0} value="" onChange={(event) => {
+                      const selectedFile = heroImageFiles.find((file) => file.id === event.target.value);
+                      if (selectedFile) addHeroSlideFromMedia(selectedFile);
+                    }}>
+                      <option value="">{heroImageFiles.length > 0 ? "选择图片" : "媒体库暂无图片"}</option>
+                      {heroImageFiles.map((file) => <option key={file.id} value={file.id}>{file.name}</option>)}
+                    </select>
+                  </label>
+                  <label className={canManageFrontendSettings ? "hero-slide-upload" : "hero-slide-upload disabled"}>
+                    上传图片
+                    <input
+                      accept="image/*"
+                      disabled={!canManageFrontendSettings}
+                      type="file"
+                      onChange={(event) => {
+                        uploadHeroSlideImage(event.currentTarget.files?.[0] ?? null);
+                        event.currentTarget.value = "";
+                      }}
+                    />
+                  </label>
+                </div>
+                <div className="hero-slide-list">
+                  {orderedHeroSlides.map((slide) => (
+                    <article className="hero-slide-card" key={slide.id}>
+                      <div className="hero-slide-thumb">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img src={slide.imageUrl} alt={slide.alt.zh ?? slide.alt.en} />
+                      </div>
+                      <div className="hero-slide-fields">
+                        <label>中文描述
+                          <input disabled={!canManageFrontendSettings} value={slide.alt.zh ?? slide.alt.en} onChange={(event) => updateHeroSlide(slide.id, { alt: { ...slide.alt, zh: event.target.value } })} />
+                        </label>
+                        <label>英文描述
+                          <input disabled={!canManageFrontendSettings} value={slide.alt.en} onChange={(event) => updateHeroSlide(slide.id, { alt: { ...slide.alt, en: event.target.value } })} />
+                        </label>
+                        <label className="wide">图片 URL
+                          <input disabled={!canManageFrontendSettings} value={slide.imageUrl} onChange={(event) => updateHeroSlide(slide.id, { imageUrl: event.target.value })} />
+                        </label>
+                      </div>
+                      <div className="hero-slide-actions">
+                        <label className="checkline"><input disabled={!canManageFrontendSettings} type="checkbox" checked={slide.enabled} onChange={(event) => updateHeroSlide(slide.id, { enabled: event.target.checked })} />启用</label>
+                        <label>排序
+                          <input disabled={!canManageFrontendSettings} type="number" value={slide.order} onChange={(event) => updateHeroSlide(slide.id, { order: Number(event.target.value) || 0 })} />
+                        </label>
+                        <button className="contact-delete-button" disabled={!canManageFrontendSettings || orderedHeroSlides.length <= 1} type="button" onClick={() => removeHeroSlide(slide.id)}>删除</button>
+                      </div>
+                    </article>
+                  ))}
+                </div>
+              </section>
+
+              <section className="settings-panel template-builder-panel">
+                <div className="template-builder-grid">
+                  <div className="template-copy-form">
+                    <div className="settings-panel-head">
+                      <div>
+                        <h2>首屏内容</h2>
+                        <span>这些文案会直接替换前台首页首屏。</span>
+                      </div>
+                    </div>
+                    <label>眉标（中文）
+                      <input disabled={!canManageFrontendSettings} value={templateSettings.heroKicker.zh ?? templateSettings.heroKicker.en} onChange={(event) => updateTemplateText("heroKicker", "zh", event.target.value)} />
+                    </label>
+                    <label>眉标（英文）
+                      <input disabled={!canManageFrontendSettings} value={templateSettings.heroKicker.en} onChange={(event) => updateTemplateText("heroKicker", "en", event.target.value)} />
+                    </label>
+                    <label className="wide">主标题（中文）
+                      <textarea disabled={!canManageFrontendSettings} value={templateSettings.heroTitle.zh ?? templateSettings.heroTitle.en} onChange={(event) => updateTemplateText("heroTitle", "zh", event.target.value)} />
+                    </label>
+                    <label className="wide">主标题（英文）
+                      <textarea disabled={!canManageFrontendSettings} value={templateSettings.heroTitle.en} onChange={(event) => updateTemplateText("heroTitle", "en", event.target.value)} />
+                    </label>
+                    <label className="wide">说明文案（中文）
+                      <textarea disabled={!canManageFrontendSettings} value={templateSettings.heroBody.zh ?? templateSettings.heroBody.en} onChange={(event) => updateTemplateText("heroBody", "zh", event.target.value)} />
+                    </label>
+                    <label className="wide">说明文案（英文）
+                      <textarea disabled={!canManageFrontendSettings} value={templateSettings.heroBody.en} onChange={(event) => updateTemplateText("heroBody", "en", event.target.value)} />
+                    </label>
+                    <label>主按钮（中文）
+                      <input disabled={!canManageFrontendSettings} value={templateSettings.primaryCtaLabel.zh ?? templateSettings.primaryCtaLabel.en} onChange={(event) => updateTemplateText("primaryCtaLabel", "zh", event.target.value)} />
+                    </label>
+                    <label>主按钮（英文）
+                      <input disabled={!canManageFrontendSettings} value={templateSettings.primaryCtaLabel.en} onChange={(event) => updateTemplateText("primaryCtaLabel", "en", event.target.value)} />
+                    </label>
+                    <label>次按钮（中文）
+                      <input disabled={!canManageFrontendSettings} value={templateSettings.secondaryCtaLabel.zh ?? templateSettings.secondaryCtaLabel.en} onChange={(event) => updateTemplateText("secondaryCtaLabel", "zh", event.target.value)} />
+                    </label>
+                    <label>次按钮（英文）
+                      <input disabled={!canManageFrontendSettings} value={templateSettings.secondaryCtaLabel.en} onChange={(event) => updateTemplateText("secondaryCtaLabel", "en", event.target.value)} />
+                    </label>
+                    <label className="checkline"><input disabled={!canManageFrontendSettings} type="checkbox" checked={templateSettings.showHeroVisual} onChange={(event) => updateTemplateSettings({ showHeroVisual: event.target.checked })} />显示右侧工业视觉</label>
+                    <label className="checkline"><input disabled={!canManageFrontendSettings} type="checkbox" checked={templateSettings.showHeroMetrics} onChange={(event) => updateTemplateSettings({ showHeroMetrics: event.target.checked })} />显示首屏指标</label>
+                    <label>首页产品数量
+                      <input disabled={!canManageFrontendSettings} min={1} max={12} type="number" value={templateSettings.homeProductCount} onChange={(event) => updateTemplateSettings({ homeProductCount: Number(event.target.value) || 1 })} />
+                    </label>
+                    <label>首页文章数量
+                      <input disabled={!canManageFrontendSettings} min={0} max={12} type="number" value={templateSettings.homeArticleCount} onChange={(event) => updateTemplateSettings({ homeArticleCount: Number(event.target.value) || 0 })} />
+                    </label>
+                  </div>
+
+                  <aside className={`template-preview-panel ${templateSettings.homeTemplate}`}>
+                    <span className="eyebrow">{templateSettings.heroKicker.zh ?? templateSettings.heroKicker.en}</span>
+                    <h3>{templateSettings.heroTitle.zh ?? templateSettings.heroTitle.en}</h3>
+                    <p>{templateSettings.heroBody.zh ?? templateSettings.heroBody.en}</p>
+                    <div className="template-preview-actions">
+                      <span>{templateSettings.primaryCtaLabel.zh ?? templateSettings.primaryCtaLabel.en}</span>
+                      <span>{templateSettings.secondaryCtaLabel.zh ?? templateSettings.secondaryCtaLabel.en}</span>
+                    </div>
+                    <div className="template-preview-grid">
+                      {orderedTemplateSections.map((section) => (
+                        <span className={templateSettings.visibleSections[section.key] ? "enabled" : ""} key={section.key}>
+                          {section.label}
+                        </span>
+                      ))}
+                    </div>
+                  </aside>
+                </div>
+              </section>
+
+              <section className="settings-panel template-builder-panel">
+                <div className="settings-panel-head">
+                  <div>
+                    <h2>首页模块</h2>
+                    <span>模块排序数字越小越靠前；关闭后前台不渲染该模块。</span>
+                  </div>
+                </div>
+                <div className="template-section-list">
+                  {orderedTemplateSections.map((section) => (
+                    <article className="template-section-row" key={section.key}>
+                      <label className="checkline">
+                        <input disabled={!canManageFrontendSettings} type="checkbox" checked={templateSettings.visibleSections[section.key]} onChange={(event) => updateTemplateSectionVisibility(section.key, event.target.checked)} />
+                        <span>
+                          <strong>{section.label}</strong>
+                          <small>{section.description}</small>
+                        </span>
+                      </label>
+                      <label>排序
+                        <input disabled={!canManageFrontendSettings} type="number" value={templateSettings.sectionOrder[section.key]} onChange={(event) => updateTemplateSectionOrder(section.key, Number(event.target.value))} />
+                      </label>
+                    </article>
+                  ))}
+                </div>
+              </section>
+                </>
+              )}
+            </>
+          ) : null}
+
           {tab === "settings" ? (
             <>
               {!canManageFrontendSettings ? <p className="settings-lock-note">当前账号没有前台设置权限。请使用 Super Admin 或 Admin 账号修改设置。</p> : null}
@@ -3620,14 +4570,187 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
 
           {tab === "ai" ? (
             <>
-              <div className="admin-edit-card">
-                <label>供应商<input value={state.aiSettings.provider} onChange={(event) => setState({ ...state, aiSettings: { ...state.aiSettings, provider: event.target.value } })} /></label>
-                <label>模型<input value={state.aiSettings.model} onChange={(event) => setState({ ...state, aiSettings: { ...state.aiSettings, model: event.target.value } })} /></label>
-                <label className="wide">品牌语气<textarea value={state.aiSettings.brandVoice} onChange={(event) => setState({ ...state, aiSettings: { ...state.aiSettings, brandVoice: event.target.value } })} /></label>
-                <label className="wide">目标市场<input value={state.aiSettings.targetMarkets.join(", ")} onChange={(event) => setState({ ...state, aiSettings: { ...state.aiSettings, targetMarkets: event.target.value.split(",").map((item) => item.trim()).filter(Boolean) } })} /></label>
-                <label className="wide">必须包含关键词<input value={state.aiSettings.requiredKeywords.join(", ")} onChange={(event) => setState({ ...state, aiSettings: { ...state.aiSettings, requiredKeywords: event.target.value.split(",").map((item) => item.trim()).filter(Boolean) } })} /></label>
-                <label className="checkline"><input type="checkbox" checked={state.aiSettings.enabled} onChange={(event) => setState({ ...state, aiSettings: { ...state.aiSettings, enabled: event.target.checked } })} />启用 AI 草稿入口</label>
-                <button type="button" onClick={generateAiArticleDraft}>一键生成文章草稿</button>
+              <div className="ai-workbench">
+                <section className="settings-panel ai-settings-panel">
+                  <div className="settings-panel-head with-action">
+                    <div>
+                      <h2>AI 内容设置</h2>
+                      <span>这里定义生成时使用的模型、品牌语气、目标市场和关键词。</span>
+                    </div>
+                    <button type="button" onClick={() => save()}>
+                      <Save size={16} />
+                      保存 AI 设置
+                    </button>
+                  </div>
+                  <div className="admin-edit-card ai-settings-card">
+                    <label>模型供应商
+                      <select value={state.aiSettings.provider} onChange={(event) => selectAiProvider(event.target.value)}>
+                        {aiProviderOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
+                      </select>
+                    </label>
+                    <label>模型
+                      <input list="ai-model-options" value={state.aiSettings.model} onChange={(event) => updateAiSettings({ model: event.target.value })} />
+                      <datalist id="ai-model-options">
+                        {selectedAiProvider.models.map((model) => <option key={model} value={model} />)}
+                      </datalist>
+                    </label>
+                    <label className="wide">Base URL
+                      <input
+                        placeholder={selectedAiProvider.baseUrl || "https://your-provider.example.com/v1"}
+                        value={state.aiSettings.baseUrl}
+                        onChange={(event) => updateAiSettings({ baseUrl: event.target.value })}
+                      />
+                      <small>{state.aiSettings.provider === "openai-compatible" || state.aiSettings.provider === "custom" ? "OpenAI-compatible / 自定义供应商必须填写 Base URL。" : "留空时使用该供应商默认接口地址。"}</small>
+                    </label>
+                    <label className="wide">API Key
+                      <input
+                        placeholder={state.aiSettings.apiKeyConfigured ? "已保存密钥；留空保存时会继续沿用" : "sk-..."}
+                        type="password"
+                        value={state.aiSettings.apiKey ?? ""}
+                        onChange={(event) => updateAiSettings({ apiKey: event.target.value })}
+                      />
+                      <small>{state.aiSettings.apiKeyConfigured ? "后台已有密钥。输入新密钥并保存可替换。" : "API Key 会保存到后台状态，列表读取时不会明文返回。"}</small>
+                    </label>
+                    <label className="wide">品牌语气<textarea value={state.aiSettings.brandVoice} onChange={(event) => updateAiSettings({ brandVoice: event.target.value })} /></label>
+                    <label className="wide">目标市场<input value={state.aiSettings.targetMarkets.join(", ")} onChange={(event) => updateAiSettings({ targetMarkets: event.target.value.split(",").map((item) => item.trim()).filter(Boolean) })} /></label>
+                    <label className="wide">必须包含关键词<input value={state.aiSettings.requiredKeywords.join(", ")} onChange={(event) => updateAiSettings({ requiredKeywords: event.target.value.split(",").map((item) => item.trim()).filter(Boolean) })} /></label>
+                    <label className="checkline"><input type="checkbox" checked={state.aiSettings.enabled} onChange={(event) => updateAiSettings({ enabled: event.target.checked })} />启用 AI 草稿入口</label>
+                    <div className="ai-api-actions">
+                      <button type="button" onClick={testAiConnection}>测试 API</button>
+                      <span className={aiTestStatus.includes("通过") ? "success" : ""}>{aiTestStatus || "填写 API Key 后可测试供应商和模型是否可用。"}</span>
+                    </div>
+                  </div>
+                </section>
+
+                <section className="settings-panel ai-compose-panel">
+                  <div className="settings-panel-head">
+                    <div>
+                      <h2>生成并填充</h2>
+                      <span>先选择要生成的内容类型和写入方式，再把 AI 内容写入文章或页面编辑器。</span>
+                    </div>
+                  </div>
+
+                  <div className="ai-target-grid">
+                    {aiTargetOptions.map((option) => (
+                      <button
+                        className={aiContentForm.target === option.key ? "active" : ""}
+                        key={option.key}
+                        type="button"
+                        onClick={() => {
+                          setAiContentForm((current) => ({ ...current, target: option.key }));
+                          setAiDraftPreview(null);
+                        }}
+                      >
+                        <strong>{option.label}</strong>
+                        <span>{option.description}</span>
+                      </button>
+                    ))}
+                  </div>
+
+                  <div className="ai-compose-grid">
+                    <label>内容主题
+                      <input
+                        placeholder={aiContentForm.target === "article" ? "例如：carbide end mills for stainless steel" : "例如：custom tooling service"}
+                        value={aiContentForm.topic}
+                        onChange={(event) => setAiContentForm({ ...aiContentForm, topic: event.target.value })}
+                      />
+                    </label>
+                    {aiContentForm.target === "article" ? (
+                      <label>文章分类
+                        <select value={aiContentForm.category || state.siteSettings.defaultArticleCategory || state.products[0]?.slug || ""} onChange={(event) => setAiContentForm({ ...aiContentForm, category: event.target.value })}>
+                          {articleProductCategoryOptions.map((category) => <option key={category.value} value={category.value}>{category.label}</option>)}
+                        </select>
+                      </label>
+                    ) : (
+                      <label>页面类型
+                        <input value="独立页面草稿" readOnly />
+                      </label>
+                    )}
+                    <label>写入方式
+                      <select value={aiContentForm.writeMode} onChange={(event) => setAiContentForm({ ...aiContentForm, writeMode: event.target.value as AiWriteMode })}>
+                        {aiWriteModeOptions.map((option) => <option key={option.key} value={option.key}>{option.label}</option>)}
+                      </select>
+                    </label>
+                    <label>写入目标
+                      <select
+                        disabled={aiContentForm.writeMode === "new"}
+                        value={aiContentForm.target === "article" ? aiContentForm.targetArticleId : aiContentForm.targetPageId}
+                        onChange={(event) => {
+                          if (aiContentForm.target === "article") {
+                            setAiContentForm({ ...aiContentForm, targetArticleId: event.target.value });
+                            return;
+                          }
+                          setAiContentForm({ ...aiContentForm, targetPageId: event.target.value });
+                        }}
+                      >
+                        <option value="">{aiContentForm.writeMode === "new" ? "新建时不需要选择目标" : "选择要填充的内容"}</option>
+                        {(aiContentForm.target === "article" ? aiArticleTargets : aiPageTargets).map((item) => (
+                          <option key={item.id ?? item.slug} value={item.id ?? item.slug}>{item.title.zh || item.title.en || item.slug}</option>
+                        ))}
+                      </select>
+                    </label>
+                  </div>
+
+                  <div className="ai-write-mode-list">
+                    {aiWriteModeOptions.map((option) => (
+                      <button
+                        className={aiContentForm.writeMode === option.key ? "active" : ""}
+                        key={option.key}
+                        type="button"
+                        onClick={() => setAiContentForm({ ...aiContentForm, writeMode: option.key })}
+                      >
+                        <strong>{option.label}</strong>
+                        <span>{option.description}</span>
+                      </button>
+                    ))}
+                  </div>
+
+                  <div className="ai-action-row">
+                    <button type="button" onClick={generateAiContentPreview}>
+                      <Sparkles size={16} />
+                      生成预览
+                    </button>
+                    <button type="button" disabled={!aiCanApply} onClick={generateAndApplyAiContent}>
+                      <SendToBack size={16} />
+                      生成并填充
+                    </button>
+                    <button type="button" disabled={!aiDraftPreview || !aiCanApply} onClick={() => applyAiContentDraft()}>
+                      <PlusCircle size={16} />
+                      填充当前预览
+                    </button>
+                    <button type="button" onClick={() => setAiDraftPreview(buildAiContentDraft())}>
+                      <RefreshCw size={16} />
+                      重写预览
+                    </button>
+                  </div>
+                </section>
+
+                <section className="settings-panel ai-preview-panel">
+                  <div className="settings-panel-head">
+                    <div>
+                      <h2>生成内容预览</h2>
+                      <span>{aiDraftPreview ? `将写入${aiDraftPreview.target === "article" ? "文章" : "页面"}：${aiDraftPreview.title.zh || aiDraftPreview.title.en}` : "生成后可在这里检查标题、摘要和正文。"}</span>
+                    </div>
+                  </div>
+                  {aiDraftPreview ? (
+                    <article className="ai-draft-preview">
+                      <div className="ai-draft-meta">
+                        <span>{aiDraftPreview.target === "article" ? "文章草稿" : "页面草稿"}</span>
+                        <span>{aiWriteModeOptions.find((option) => option.key === aiContentForm.writeMode)?.label}</span>
+                        <span>/{aiDraftPreview.target === "article" ? "articles" : "pages"}/{aiDraftPreview.slug}</span>
+                      </div>
+                      <h3>{aiDraftPreview.title.zh || aiDraftPreview.title.en}</h3>
+                      <p>{aiDraftPreview.excerpt.zh || aiDraftPreview.excerpt.en}</p>
+                      <pre>{aiDraftPreview.body.zh || aiDraftPreview.body.en}</pre>
+                    </article>
+                  ) : (
+                    <div className="ai-empty-preview">
+                      <Bot size={24} />
+                      <strong>还没有生成内容</strong>
+                      <span>填写主题后点击“生成预览”，再填充到新文章、现有文章、新页面或现有页面。</span>
+                    </div>
+                  )}
+                </section>
               </div>
             </>
           ) : null}
