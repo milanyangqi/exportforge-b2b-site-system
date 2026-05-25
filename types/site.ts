@@ -261,6 +261,7 @@ export type SiteTemplateSettings = {
   homeArticleCount: number;
   visibleSections: Record<HomeSectionKey, boolean>;
   sectionOrder: Record<HomeSectionKey, number>;
+  textBlocks: Record<string, Translation>;
 };
 
 export type AdminState = {

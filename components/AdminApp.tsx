@@ -1,6 +1,6 @@
 "use client";
 
-import { type CSSProperties, useEffect, useMemo, useRef, useState } from "react";
+import { type CSSProperties, type KeyboardEvent, type MouseEvent, useEffect, useMemo, useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import {
@@ -56,6 +56,23 @@ type SettingsSection = "general" | "writing" | "reading" | "media" | "permalinks
 type AiContentTarget = "article" | "page";
 type AiWriteMode = "new" | "replace" | "append";
 type TemplateEditorMode = "form" | "visual";
+type VisualTextElement = "span" | "strong" | "p" | "h1" | "h3" | "li";
+type VisualEditableTextOptions = {
+  editorKey: string;
+  value: string;
+  element: VisualTextElement;
+  className?: string;
+  multiline?: boolean;
+  allowEmpty?: boolean;
+  onCommit: (value: string) => void;
+};
+type VisualEditableImageOptions = {
+  editorKey: string;
+  value: string;
+  alt: string;
+  className?: string;
+  onCommit: (value: string) => void;
+};
 type ProductFormState = {
   zh: string;
   en: string;
@@ -317,12 +334,23 @@ const aiTargetOptions: { key: AiContentTarget; label: string; description: strin
   { key: "page", label: "页面", description: "生成关于我们、服务说明、资料页等独立页面。" }
 ];
 const aiProviderOptions = [
-  { value: "openai-compatible", label: "OpenAI-compatible", baseUrl: "", models: ["gpt-4.1-mini", "qwen-plus", "deepseek-chat"] },
-  { value: "openai", label: "OpenAI", baseUrl: "https://api.openai.com/v1", models: ["gpt-4.1-mini", "gpt-4.1", "gpt-4o-mini"] },
-  { value: "deepseek", label: "DeepSeek", baseUrl: "https://api.deepseek.com/v1", models: ["deepseek-chat", "deepseek-reasoner"] },
-  { value: "anthropic", label: "Anthropic Claude", baseUrl: "https://api.anthropic.com/v1", models: ["claude-3-5-haiku-latest", "claude-sonnet-4-5"] },
+  { value: "openai-compatible", label: "OpenAI-compatible / 通用兼容", baseUrl: "", models: ["gpt-4.1-mini", "qwen-plus", "deepseek-v4-flash", "glm-4.5", "kimi-k2.6"] },
+  { value: "openai", label: "OpenAI", baseUrl: "https://api.openai.com/v1", models: ["gpt-4.1-mini", "gpt-4.1", "gpt-4.1-nano", "gpt-4o-mini", "gpt-4o"] },
+  { value: "deepseek", label: "DeepSeek 深度求索", baseUrl: "https://api.deepseek.com", models: ["deepseek-v4-flash", "deepseek-v4-pro", "deepseek-chat", "deepseek-reasoner"] },
+  { value: "qwen-cn", label: "阿里云百炼 Qwen（中国北京）", baseUrl: "https://dashscope.aliyuncs.com/compatible-mode/v1", models: ["qwen3-max-2026-01-23", "qwen3-max", "qwen3.5-plus", "qwen-plus", "qwen-max", "qwen-turbo", "qwen-coder-plus", "qwen-vl-plus"] },
+  { value: "qwen-intl", label: "阿里云百炼 Qwen（国际站）", baseUrl: "https://dashscope-intl.aliyuncs.com/compatible-mode/v1", models: ["qwen3-max-2026-01-23", "qwen3-max", "qwen3.5-plus", "qwen-plus", "qwen-max", "qwen-turbo", "qwen-coder-plus", "qwen-vl-plus"] },
+  { value: "kimi", label: "Moonshot / Kimi", baseUrl: "https://api.moonshot.ai/v1", models: ["kimi-k2.6", "kimi-k2.5", "kimi-for-coding", "moonshot-v1-8k", "moonshot-v1-32k", "moonshot-v1-128k"] },
+  { value: "zhipu", label: "智谱 / Z.ai GLM", baseUrl: "https://open.bigmodel.cn/api/paas/v4", models: ["glm-5.1", "glm-5", "glm-4.7", "glm-4.6", "glm-4.5", "glm-4.5-air", "glm-4.5-flash", "glm-4.5v", "glm-4.6v", "glm-4.6v-flash"] },
+  { value: "baidu-qianfan", label: "百度千帆 / ERNIE", baseUrl: "https://api.baiduqianfan.ai/v1", models: ["ernie-5.0", "ernie-4.0-turbo-8k", "ernie-4.0-turbo-128k", "ernie-speed-128k", "ernie-lite-8k"] },
+  { value: "tencent-hunyuan", label: "腾讯混元", baseUrl: "https://api.hunyuan.cloud.tencent.com/v1", models: ["hunyuan-pro", "hunyuan-standard", "hunyuan-lite", "hunyuan-2.0-instruct"] },
+  { value: "volcengine-ark", label: "火山方舟 / 豆包", baseUrl: "https://ark.cn-beijing.volces.com/api/v3", models: ["doubao-seed-1-6-251015", "doubao-seed-1-6-250615", "doubao-seed-1-6-vision-250815", "doubao-seed-code"] },
+  { value: "minimax", label: "MiniMax", baseUrl: "https://api.minimax.io/v1", models: ["MiniMax-M2.7", "MiniMax-M2.7-highspeed", "MiniMax-M2.5", "MiniMax-M1", "abab6.5s-chat"] },
+  { value: "iflytek-spark", label: "讯飞星火", baseUrl: "https://spark-api-open.xf-yun.com/x2", models: ["spark-x", "spark-x1", "4.0Ultra", "generalv3.5", "lite"] },
+  { value: "siliconflow", label: "硅基流动 SiliconFlow", baseUrl: "https://api.siliconflow.cn/v1", models: ["Pro/zai-org/GLM-4.7", "Pro/deepseek-ai/DeepSeek-V3.2", "deepseek-ai/DeepSeek-V3.2", "Qwen/Qwen3.5-122B-A10B", "Qwen/Qwen3-32B", "tencent/Hunyuan-A13B-Instruct"] },
+  { value: "anthropic", label: "Anthropic Claude", baseUrl: "https://api.anthropic.com/v1", models: ["claude-sonnet-4-5", "claude-3-5-haiku-latest"] },
   { value: "custom", label: "自定义", baseUrl: "", models: [] }
 ];
+const customAiModelValue = "__custom_ai_model__";
 const aiWriteModeOptions: { key: AiWriteMode; label: string; description: string }[] = [
   { key: "new", label: "新建草稿", description: "创建新的文章或页面，保留现有内容。" },
   { key: "replace", label: "替换目标", description: "用生成内容覆盖所选文章或页面。" },
@@ -862,6 +890,8 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
   const [frontendSettingsDirty, setFrontendSettingsDirty] = useState(false);
   const [newHeroSlideUrl, setNewHeroSlideUrl] = useState("");
   const [templateEditorMode, setTemplateEditorMode] = useState<TemplateEditorMode>("form");
+  const [visualEditingKey, setVisualEditingKey] = useState<string | null>(null);
+  const [visualDraftValue, setVisualDraftValue] = useState("");
   const [aiContentForm, setAiContentForm] = useState<AiContentFormState>(emptyAiContentForm);
   const [aiDraftPreview, setAiDraftPreview] = useState<AiContentDraft | null>(null);
   const [aiTestStatus, setAiTestStatus] = useState("");
@@ -1087,6 +1117,84 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
     if (!element) return;
     const value = element.innerText.replace(/\s+\n/g, "\n").trim();
     updateTemplateText(field, "zh", value);
+  }
+
+  function updateTemplateTextBlock(blockKey: string, localeCode: "zh" | "en", value: string) {
+    if (!state || !guardFrontendSettingsAccess()) return;
+    const currentBlock = state.templateSettings.textBlocks[blockKey] ?? { en: value };
+
+    updateTemplateSettings({
+      textBlocks: {
+        ...state.templateSettings.textBlocks,
+        [blockKey]: {
+          ...currentBlock,
+          [localeCode]: value,
+          en: currentBlock.en || value
+        }
+      }
+    });
+  }
+
+  function markVisualContentDirty(message = "可视化内容已修改，点击保存模板后生效") {
+    setFrontendSettingsDirty(true);
+    setStatus(message);
+  }
+
+  function startVisualInlineEdit(editorKey: string, currentValue: string, event?: MouseEvent<HTMLElement>) {
+    event?.stopPropagation();
+    if (!guardFrontendSettingsAccess()) return;
+    setVisualEditingKey(editorKey);
+    setVisualDraftValue(currentValue);
+  }
+
+  function cancelVisualInlineEdit() {
+    setVisualEditingKey(null);
+    setVisualDraftValue("");
+  }
+
+  function commitVisualInlineEdit(onCommit: (value: string) => void, allowEmpty = false) {
+    const nextValue = visualDraftValue.trim();
+
+    if (!allowEmpty && !nextValue) {
+      setStatus("编辑内容不能为空");
+      return;
+    }
+
+    onCommit(nextValue);
+    cancelVisualInlineEdit();
+  }
+
+  function handleVisualInlineKeyDown(event: KeyboardEvent<HTMLInputElement | HTMLTextAreaElement>, onCommit: (value: string) => void, allowEmpty = false) {
+    if (event.key === "Escape") {
+      event.preventDefault();
+      cancelVisualInlineEdit();
+      return;
+    }
+
+    if (event.key === "Enter" && (event.currentTarget.tagName !== "TEXTAREA" || event.metaKey || event.ctrlKey)) {
+      event.preventDefault();
+      commitVisualInlineEdit(onCommit, allowEmpty);
+    }
+  }
+
+  function updateVisualProduct(productId: string, updater: (product: ProductCategory) => ProductCategory) {
+    if (!state || !guardFrontendSettingsAccess()) return;
+
+    setState({
+      ...state,
+      products: state.products.map((product) => getProductId(product) === productId ? updater(product) : product)
+    });
+    markVisualContentDirty();
+  }
+
+  function updateVisualArticle(articleId: string, updater: (article: Article) => Article) {
+    if (!state || !guardFrontendSettingsAccess()) return;
+
+    setState({
+      ...state,
+      articles: state.articles.map((article) => (article.id ?? article.slug) === articleId ? updater(article) : article)
+    });
+    markVisualContentDirty();
   }
 
   function updateTemplateSectionVisibility(section: HomeSectionKey, visible: boolean) {
@@ -2618,6 +2726,9 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
   const currentEmail = currentUser?.email || email;
   const templateSettings = state.templateSettings;
   const selectedAiProvider = aiProviderOptions.find((option) => option.value === state.aiSettings.provider) ?? aiProviderOptions[0];
+  const aiModelOptions = selectedAiProvider.models;
+  const aiModelSelectValue = aiModelOptions.includes(state.aiSettings.model) ? state.aiSettings.model : customAiModelValue;
+  const aiModelIsCustom = aiModelSelectValue === customAiModelValue;
   const accountInitial = (currentUserName || email).slice(0, 1).toUpperCase();
   const canResetUserPasswords = currentUser?.role === "super-admin";
   const allowedTabsForCurrentUser = new Set(getAllowedTabsForUser(currentUser));
@@ -2665,6 +2776,137 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
     .slice(0, templateSettings.homeArticleCount);
   const visualHeroImage = activeVisualSlide?.imageUrl || "/assets/tools/hero-tooling-range.jpg";
   const visualHeroImageStyle = { "--visual-hero-image": `url(${visualHeroImage})` } as CSSProperties;
+  const visualText = (blockKey: string, fallback: string) => templateSettings.textBlocks[blockKey]?.zh || templateSettings.textBlocks[blockKey]?.en || fallback;
+  const visualFactoryCards = [1, 2, 3].map((index) => ({
+    titleKey: `factoryCard${index}Title`,
+    bodyKey: `factoryCard${index}Body`
+  }));
+  const visualMetrics = [1, 2, 3].map((index) => ({
+    valueKey: `heroMetric${index}Value`,
+    labelKey: `heroMetric${index}Label`
+  }));
+  const visualChecklistKeys = ["marketsChecklist1", "marketsChecklist2", "marketsChecklist3"];
+
+  function renderVisualTextTarget(options: VisualEditableTextOptions) {
+    const targetClassName = ["visual-edit-target", options.className].filter(Boolean).join(" ");
+    const textValue = options.value || (options.allowEmpty ? "" : "双击输入内容");
+    const openEditor = (event: MouseEvent<HTMLElement>) => startVisualInlineEdit(options.editorKey, options.value, event);
+
+    if (visualEditingKey === options.editorKey) {
+      const inputControl = options.multiline ? (
+        <textarea
+          autoFocus
+          value={visualDraftValue}
+          onChange={(event) => setVisualDraftValue(event.target.value)}
+          onKeyDown={(event) => handleVisualInlineKeyDown(event, options.onCommit, options.allowEmpty)}
+        />
+      ) : (
+        <input
+          autoFocus
+          value={visualDraftValue}
+          onChange={(event) => setVisualDraftValue(event.target.value)}
+          onKeyDown={(event) => handleVisualInlineKeyDown(event, options.onCommit, options.allowEmpty)}
+        />
+      );
+
+      return (
+        <div className="visual-inline-editor" onDoubleClick={(event) => event.stopPropagation()}>
+          {inputControl}
+          <div className="visual-inline-actions">
+            <button type="button" onClick={() => commitVisualInlineEdit(options.onCommit, options.allowEmpty)}>确定</button>
+            <button type="button" onClick={cancelVisualInlineEdit}>取消</button>
+          </div>
+        </div>
+      );
+    }
+
+    if (options.element === "h1") return <h1 className={targetClassName} title="双击编辑" onDoubleClick={openEditor}>{textValue}</h1>;
+    if (options.element === "h3") return <h3 className={targetClassName} title="双击编辑" onDoubleClick={openEditor}>{textValue}</h3>;
+    if (options.element === "p") return <p className={targetClassName} title="双击编辑" onDoubleClick={openEditor}>{textValue}</p>;
+    if (options.element === "strong") return <strong className={targetClassName} title="双击编辑" onDoubleClick={openEditor}>{textValue}</strong>;
+    if (options.element === "li") return <li className={targetClassName} title="双击编辑" onDoubleClick={openEditor}>{textValue}</li>;
+    return <span className={targetClassName} title="双击编辑" onDoubleClick={openEditor}>{textValue}</span>;
+  }
+
+  function renderVisualImageTarget(options: VisualEditableImageOptions) {
+    const imageValue = options.value || "/assets/tools/hero-tooling-range.jpg";
+
+    return (
+      <div
+        className={["visual-image-target", options.className, visualEditingKey === options.editorKey ? "editing" : ""].filter(Boolean).join(" ")}
+        title="双击修改图片"
+        onDoubleClick={(event) => startVisualInlineEdit(options.editorKey, options.value, event)}
+      >
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src={imageValue} alt={options.alt} />
+        <span className="visual-image-badge"><ImageIcon size={14} />图片</span>
+        {visualEditingKey === options.editorKey ? (
+          <div className="visual-image-editor" onDoubleClick={(event) => event.stopPropagation()}>
+            <input
+              autoFocus
+              placeholder="粘贴图片 URL"
+              value={visualDraftValue}
+              onChange={(event) => setVisualDraftValue(event.target.value)}
+              onKeyDown={(event) => handleVisualInlineKeyDown(event, options.onCommit, true)}
+            />
+            {heroImageFiles.length > 0 ? (
+              <select value="" onChange={(event) => {
+                const selectedFile = heroImageFiles.find((file) => file.id === event.target.value);
+                if (!selectedFile) return;
+                options.onCommit(selectedFile.url);
+                cancelVisualInlineEdit();
+              }}>
+                <option value="">从媒体库选择</option>
+                {heroImageFiles.map((file) => <option key={file.id} value={file.id}>{file.name}</option>)}
+              </select>
+            ) : null}
+            <div className="visual-inline-actions">
+              <button type="button" onClick={() => commitVisualInlineEdit(options.onCommit, true)}>确定</button>
+              <button type="button" onClick={cancelVisualInlineEdit}>取消</button>
+            </div>
+          </div>
+        ) : null}
+      </div>
+    );
+  }
+
+  function renderVisualHeroBackgroundEditor() {
+    if (visualEditingKey !== "hero-background") {
+      return <span className="visual-hero-image-badge" onDoubleClick={(event) => startVisualInlineEdit("hero-background", visualHeroImage, event)}><ImageIcon size={14} />背景图</span>;
+    }
+
+    return (
+      <div className="visual-hero-image-editor" onDoubleClick={(event) => event.stopPropagation()}>
+        <input
+          autoFocus
+          placeholder="粘贴首屏背景图 URL"
+          value={visualDraftValue}
+          onChange={(event) => setVisualDraftValue(event.target.value)}
+          onKeyDown={(event) => handleVisualInlineKeyDown(event, (value) => {
+            if (activeVisualSlide) updateHeroSlide(activeVisualSlide.id, { imageUrl: value });
+          }, true)}
+        />
+        {heroImageFiles.length > 0 ? (
+          <select value="" onChange={(event) => {
+            const selectedFile = heroImageFiles.find((file) => file.id === event.target.value);
+            if (!selectedFile || !activeVisualSlide) return;
+            updateHeroSlide(activeVisualSlide.id, { imageUrl: selectedFile.url });
+            cancelVisualInlineEdit();
+          }}>
+            <option value="">从媒体库选择</option>
+            {heroImageFiles.map((file) => <option key={file.id} value={file.id}>{file.name}</option>)}
+          </select>
+        ) : null}
+        <div className="visual-inline-actions">
+          <button type="button" onClick={() => commitVisualInlineEdit((value) => {
+            if (activeVisualSlide) updateHeroSlide(activeVisualSlide.id, { imageUrl: value });
+          }, true)}>确定</button>
+          <button type="button" onClick={cancelVisualInlineEdit}>取消</button>
+        </div>
+      </div>
+    );
+  }
+
   const visualSectionNodes = orderedTemplateSections
     .filter((section) => templateSettings.visibleSections[section.key])
     .map((section) => {
@@ -2672,22 +2914,58 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
         return (
           <section className="visual-front-section" key={section.key}>
             <div className="visual-section-head">
-              <span className="eyebrow">Product catalog</span>
-              <h3>硬质合金刀具目录</h3>
+              <div>
+                {renderVisualTextTarget({
+                  editorKey: "text-productsEyebrow",
+                  value: visualText("productsEyebrow", "PRODUCT CATALOG"),
+                  element: "span",
+                  className: "eyebrow",
+                  onCommit: (value) => updateTemplateTextBlock("productsEyebrow", "zh", value)
+                })}
+                {renderVisualTextTarget({
+                  editorKey: "text-productsTitle",
+                  value: visualText("productsTitle", "硬质合金刀具目录"),
+                  element: "h3",
+                  onCommit: (value) => updateTemplateTextBlock("productsTitle", "zh", value)
+                })}
+              </div>
+              {renderVisualTextTarget({
+                editorKey: "text-productsBody",
+                value: visualText("productsBody", "覆盖经销商备货、工厂加工与定制刀具需求。"),
+                element: "p",
+                className: "visual-section-summary",
+                multiline: true,
+                onCommit: (value) => updateTemplateTextBlock("productsBody", "zh", value)
+              })}
             </div>
             <div className="visual-front-grid products">
-              {visualProducts.length > 0 ? visualProducts.map((product) => (
-                <article className="visual-front-card product" key={product.id ?? product.slug}>
-                  {product.imageUrl ? (
-                    <div className="visual-card-media">
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img src={product.imageUrl} alt={product.name.zh || product.name.en} />
-                    </div>
-                  ) : null}
-                  <strong>{product.name.zh || product.name.en}</strong>
-                  <p>{product.summary.zh || product.summary.en}</p>
-                </article>
-              )) : <p className="visual-muted">暂无可展示产品分类。</p>}
+              {visualProducts.length > 0 ? visualProducts.map((product) => {
+                const productId = getProductId(product);
+                return (
+                  <article className="visual-front-card product" key={productId}>
+                    {renderVisualImageTarget({
+                      editorKey: `product-image-${productId}`,
+                      value: product.imageUrl ?? "",
+                      alt: product.name.zh || product.name.en,
+                      className: "visual-card-media",
+                      onCommit: (value) => updateVisualProduct(productId, (currentProduct) => ({ ...currentProduct, imageUrl: value || undefined }))
+                    })}
+                    {renderVisualTextTarget({
+                      editorKey: `product-title-${productId}`,
+                      value: product.name.zh || product.name.en,
+                      element: "strong",
+                      onCommit: (value) => updateVisualProduct(productId, (currentProduct) => ({ ...currentProduct, name: { ...currentProduct.name, zh: value } }))
+                    })}
+                    {renderVisualTextTarget({
+                      editorKey: `product-summary-${productId}`,
+                      value: product.summary.zh || product.summary.en,
+                      element: "p",
+                      multiline: true,
+                      onCommit: (value) => updateVisualProduct(productId, (currentProduct) => ({ ...currentProduct, summary: { ...currentProduct.summary, zh: value } }))
+                    })}
+                  </article>
+                );
+              }) : <p className="visual-muted">暂无可展示产品分类。</p>}
             </div>
           </section>
         );
@@ -2697,14 +2975,39 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
         return (
           <section className="visual-front-section factory" key={section.key}>
             <div className="visual-section-head">
-              <span className="eyebrow">Factory capability</span>
-              <h3>从几何、涂层到包装的供应能力</h3>
+              <div>
+                {renderVisualTextTarget({
+                  editorKey: "text-factoryEyebrow",
+                  value: visualText("factoryEyebrow", "工厂能力"),
+                  element: "span",
+                  className: "eyebrow",
+                  onCommit: (value) => updateTemplateTextBlock("factoryEyebrow", "zh", value)
+                })}
+                {renderVisualTextTarget({
+                  editorKey: "text-factoryTitle",
+                  value: visualText("factoryTitle", "从几何、涂层到包装的供应能力"),
+                  element: "h3",
+                  multiline: true,
+                  onCommit: (value) => updateTemplateTextBlock("factoryTitle", "zh", value)
+                })}
+              </div>
             </div>
             <div className="visual-front-grid factory">
-              {["OEM 图纸定制", "涂层与刃口处理", "私标包装交付"].map((item) => (
-                <article className="visual-front-card compact" key={item}>
-                  <strong>{item}</strong>
-                  <p>适合经销商长期备货、样品确认与批量订单。</p>
+              {visualFactoryCards.map((item) => (
+                <article className="visual-front-card compact" key={item.titleKey}>
+                  {renderVisualTextTarget({
+                    editorKey: `text-${item.titleKey}`,
+                    value: visualText(item.titleKey, "工厂能力"),
+                    element: "strong",
+                    onCommit: (value) => updateTemplateTextBlock(item.titleKey, "zh", value)
+                  })}
+                  {renderVisualTextTarget({
+                    editorKey: `text-${item.bodyKey}`,
+                    value: visualText(item.bodyKey, "适合经销商长期备货、样品确认与批量订单。"),
+                    element: "p",
+                    multiline: true,
+                    onCommit: (value) => updateTemplateTextBlock(item.bodyKey, "zh", value)
+                  })}
                 </article>
               ))}
             </div>
@@ -2716,8 +3019,30 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
         return (
           <section className="visual-front-section markets" key={section.key}>
             <div className="visual-section-head">
-              <span className="eyebrow">Global supply</span>
-              <h3>多语言市场与 RFQ 清单</h3>
+              <div>
+                {renderVisualTextTarget({
+                  editorKey: "text-marketsEyebrow",
+                  value: visualText("marketsEyebrow", "出口市场"),
+                  element: "span",
+                  className: "eyebrow",
+                  onCommit: (value) => updateTemplateTextBlock("marketsEyebrow", "zh", value)
+                })}
+                {renderVisualTextTarget({
+                  editorKey: "text-marketsTitle",
+                  value: visualText("marketsTitle", "多语言市场与 RFQ 清单"),
+                  element: "h3",
+                  multiline: true,
+                  onCommit: (value) => updateTemplateTextBlock("marketsTitle", "zh", value)
+                })}
+              </div>
+              {renderVisualTextTarget({
+                editorKey: "text-marketsBody",
+                value: visualText("marketsBody", "支持多语言产品页、快速 RFQ 信息和出口文件，适合铣刀、钻头与 OEM 组合采购。"),
+                element: "p",
+                className: "visual-section-summary",
+                multiline: true,
+                onCommit: (value) => updateTemplateTextBlock("marketsBody", "zh", value)
+              })}
             </div>
             <div className="visual-market-strip">
               {state.enabledLocales.map((localeCode) => {
@@ -2733,22 +3058,59 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
         return (
           <section className="visual-front-section" key={section.key}>
             <div className="visual-section-head">
-              <span className="eyebrow">Technical articles</span>
-              <h3>技术文章</h3>
+              <div>
+                {renderVisualTextTarget({
+                  editorKey: "text-articlesEyebrow",
+                  value: visualText("articlesEyebrow", "技术文章"),
+                  element: "span",
+                  className: "eyebrow",
+                  onCommit: (value) => updateTemplateTextBlock("articlesEyebrow", "zh", value)
+                })}
+                {renderVisualTextTarget({
+                  editorKey: "text-articlesTitle",
+                  value: visualText("articlesTitle", "技术文章"),
+                  element: "h3",
+                  multiline: true,
+                  onCommit: (value) => updateTemplateTextBlock("articlesTitle", "zh", value)
+                })}
+              </div>
             </div>
             <div className="visual-front-grid articles">
-              {visualArticles.length > 0 ? visualArticles.map((article) => (
-                <article className="visual-front-card article" key={article.id ?? article.slug}>
-                  {article.coverImageUrl ? (
-                    <div className="visual-card-media">
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img src={article.coverImageUrl} alt={article.title.zh || article.title.en} />
-                    </div>
-                  ) : null}
-                  <strong>{article.title.zh || article.title.en}</strong>
-                  <p>{article.excerpt.zh || article.excerpt.en}</p>
-                </article>
-              )) : <p className="visual-muted">暂无首页技术文章。</p>}
+              {visualArticles.length > 0 ? visualArticles.map((article) => {
+                const articleId = article.id ?? article.slug;
+                return (
+                  <article className="visual-front-card article" key={articleId}>
+                    {renderVisualImageTarget({
+                      editorKey: `article-image-${articleId}`,
+                      value: article.coverImageUrl ?? "",
+                      alt: article.title.zh || article.title.en,
+                      className: "visual-card-media",
+                      onCommit: (value) => updateVisualArticle(articleId, (currentArticle) => ({ ...currentArticle, coverImageUrl: value || undefined }))
+                    })}
+                    {renderVisualTextTarget({
+                      editorKey: `article-category-${articleId}`,
+                      value: article.category,
+                      element: "span",
+                      className: "visual-article-category",
+                      onCommit: (value) => updateVisualArticle(articleId, (currentArticle) => ({ ...currentArticle, category: value }))
+                    })}
+                    {renderVisualTextTarget({
+                      editorKey: `article-title-${articleId}`,
+                      value: article.title.zh || article.title.en,
+                      element: "strong",
+                      multiline: true,
+                      onCommit: (value) => updateVisualArticle(articleId, (currentArticle) => ({ ...currentArticle, title: { ...currentArticle.title, zh: value } }))
+                    })}
+                    {renderVisualTextTarget({
+                      editorKey: `article-excerpt-${articleId}`,
+                      value: article.excerpt.zh || article.excerpt.en,
+                      element: "p",
+                      multiline: true,
+                      onCommit: (value) => updateVisualArticle(articleId, (currentArticle) => ({ ...currentArticle, excerpt: { ...currentArticle.excerpt, zh: value } }))
+                    })}
+                  </article>
+                );
+              }) : <p className="visual-muted">暂无首页技术文章。</p>}
             </div>
           </section>
         );
@@ -2758,11 +3120,35 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
         <section className="visual-front-section rfq" key={section.key}>
           <div className="visual-rfq-panel">
             <div>
-              <span className="eyebrow">RFQ</span>
-              <h3>把刀具清单发给 KeyproTools</h3>
-              <p>规格、数量、涂层、包装和交期信息会在前台询盘表单中收集。</p>
+              {renderVisualTextTarget({
+                editorKey: "text-rfqEyebrow",
+                value: visualText("rfqEyebrow", "询盘表单"),
+                element: "span",
+                className: "eyebrow",
+                onCommit: (value) => updateTemplateTextBlock("rfqEyebrow", "zh", value)
+              })}
+              {renderVisualTextTarget({
+                editorKey: "text-rfqTitle",
+                value: visualText("rfqTitle", "把刀具清单发给 KeyproTools"),
+                element: "h3",
+                multiline: true,
+                onCommit: (value) => updateTemplateTextBlock("rfqTitle", "zh", value)
+              })}
+              {renderVisualTextTarget({
+                editorKey: "text-rfqBody",
+                value: visualText("rfqBody", "规格、数量、涂层、包装和交期信息会在前台询盘表单中收集。"),
+                element: "p",
+                multiline: true,
+                onCommit: (value) => updateTemplateTextBlock("rfqBody", "zh", value)
+              })}
             </div>
-            <span className="visual-rfq-button">Request Quote</span>
+            {renderVisualTextTarget({
+              editorKey: "text-primaryCtaLabel-rfq",
+              value: templateSettings.primaryCtaLabel.zh || templateSettings.primaryCtaLabel.en,
+              element: "span",
+              className: "visual-rfq-button",
+              onCommit: (value) => updateTemplateText("primaryCtaLabel", "zh", value)
+            })}
           </div>
         </section>
       );
@@ -2831,52 +3217,68 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
         </aside>
 
         <div className="visual-front-page" aria-label="首页可视化编辑预览">
-          <section className={`visual-front-hero ${templateSettings.homeTemplate}`} style={visualHeroImageStyle}>
-            <span
-              className="visual-editable visual-eyebrow"
-              contentEditable={canManageFrontendSettings}
-              suppressContentEditableWarning
-              onBlur={(event) => commitTemplateEditableText("heroKicker", event.currentTarget)}
-            >
-              {templateSettings.heroKicker.zh || templateSettings.heroKicker.en}
-            </span>
-            <h1
-              className="visual-editable"
-              contentEditable={canManageFrontendSettings}
-              suppressContentEditableWarning
-              onBlur={(event) => commitTemplateEditableText("heroTitle", event.currentTarget)}
-            >
-              {templateSettings.heroTitle.zh || templateSettings.heroTitle.en}
-            </h1>
-            <p
-              className="visual-editable visual-hero-copy"
-              contentEditable={canManageFrontendSettings}
-              suppressContentEditableWarning
-              onBlur={(event) => commitTemplateEditableText("heroBody", event.currentTarget)}
-            >
-              {templateSettings.heroBody.zh || templateSettings.heroBody.en}
-            </p>
+          <section
+            className={`visual-front-hero ${templateSettings.homeTemplate}`}
+            style={visualHeroImageStyle}
+            onDoubleClick={(event) => startVisualInlineEdit("hero-background", visualHeroImage, event)}
+          >
+            {renderVisualHeroBackgroundEditor()}
+            {renderVisualTextTarget({
+              editorKey: "hero-kicker",
+              value: templateSettings.heroKicker.zh || templateSettings.heroKicker.en,
+              element: "span",
+              className: "visual-eyebrow",
+              onCommit: (value) => updateTemplateText("heroKicker", "zh", value)
+            })}
+            {renderVisualTextTarget({
+              editorKey: "hero-title",
+              value: templateSettings.heroTitle.zh || templateSettings.heroTitle.en,
+              element: "h1",
+              multiline: true,
+              onCommit: (value) => updateTemplateText("heroTitle", "zh", value)
+            })}
+            {renderVisualTextTarget({
+              editorKey: "hero-body",
+              value: templateSettings.heroBody.zh || templateSettings.heroBody.en,
+              element: "p",
+              className: "visual-hero-copy",
+              multiline: true,
+              onCommit: (value) => updateTemplateText("heroBody", "zh", value)
+            })}
             <div className="visual-hero-actions">
-              <span
-                className="visual-cta primary visual-editable"
-                contentEditable={canManageFrontendSettings}
-                suppressContentEditableWarning
-                onBlur={(event) => commitTemplateEditableText("primaryCtaLabel", event.currentTarget)}
-              >
-                {templateSettings.primaryCtaLabel.zh || templateSettings.primaryCtaLabel.en}
-              </span>
-              <span
-                className="visual-cta secondary visual-editable"
-                contentEditable={canManageFrontendSettings}
-                suppressContentEditableWarning
-                onBlur={(event) => commitTemplateEditableText("secondaryCtaLabel", event.currentTarget)}
-              >
-                {templateSettings.secondaryCtaLabel.zh || templateSettings.secondaryCtaLabel.en}
-              </span>
+              {renderVisualTextTarget({
+                editorKey: "hero-primary-cta",
+                value: templateSettings.primaryCtaLabel.zh || templateSettings.primaryCtaLabel.en,
+                element: "span",
+                className: "visual-cta primary",
+                onCommit: (value) => updateTemplateText("primaryCtaLabel", "zh", value)
+              })}
+              {renderVisualTextTarget({
+                editorKey: "hero-secondary-cta",
+                value: templateSettings.secondaryCtaLabel.zh || templateSettings.secondaryCtaLabel.en,
+                element: "span",
+                className: "visual-cta secondary",
+                onCommit: (value) => updateTemplateText("secondaryCtaLabel", "zh", value)
+              })}
             </div>
             {templateSettings.showHeroMetrics ? (
               <div className="visual-metrics">
-                {["6 条产品线", "OEM 定制", "出口包装"].map((item) => <span key={item}>{item}</span>)}
+                {visualMetrics.map((item) => (
+                  <div className="visual-metric-card" key={item.valueKey}>
+                    {renderVisualTextTarget({
+                      editorKey: `text-${item.valueKey}`,
+                      value: visualText(item.valueKey, "指标"),
+                      element: "strong",
+                      onCommit: (value) => updateTemplateTextBlock(item.valueKey, "zh", value)
+                    })}
+                    {renderVisualTextTarget({
+                      editorKey: `text-${item.labelKey}`,
+                      value: visualText(item.labelKey, "说明"),
+                      element: "span",
+                      onCommit: (value) => updateTemplateTextBlock(item.labelKey, "zh", value)
+                    })}
+                  </div>
+                ))}
               </div>
             ) : null}
           </section>
@@ -4589,11 +4991,27 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
                       </select>
                     </label>
                     <label>模型
-                      <input list="ai-model-options" value={state.aiSettings.model} onChange={(event) => updateAiSettings({ model: event.target.value })} />
-                      <datalist id="ai-model-options">
-                        {selectedAiProvider.models.map((model) => <option key={model} value={model} />)}
-                      </datalist>
+                      <select value={aiModelSelectValue} onChange={(event) => {
+                        const nextModel = event.target.value;
+                        updateAiSettings({ model: nextModel === customAiModelValue ? "" : nextModel });
+                        setAiTestStatus("");
+                      }}>
+                        {aiModelOptions.map((model) => <option key={model} value={model}>{model}</option>)}
+                        <option value={customAiModelValue}>自定义模型...</option>
+                      </select>
                     </label>
+                    {aiModelIsCustom ? (
+                      <label className="wide">自定义模型
+                        <input
+                          placeholder="输入供应商控制台里的模型 ID"
+                          value={state.aiSettings.model}
+                          onChange={(event) => {
+                            updateAiSettings({ model: event.target.value });
+                            setAiTestStatus("");
+                          }}
+                        />
+                      </label>
+                    ) : null}
                     <label className="wide">Base URL
                       <input
                         placeholder={selectedAiProvider.baseUrl || "https://your-provider.example.com/v1"}

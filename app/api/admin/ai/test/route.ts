@@ -10,10 +10,23 @@ function trimTrailingSlash(value: string) {
 }
 
 function defaultBaseUrl(provider: string) {
-  if (provider === "openai") return "https://api.openai.com/v1";
-  if (provider === "deepseek") return "https://api.deepseek.com/v1";
-  if (provider === "anthropic") return "https://api.anthropic.com/v1";
-  return "";
+  const defaultBaseUrls: Record<string, string> = {
+    openai: "https://api.openai.com/v1",
+    deepseek: "https://api.deepseek.com",
+    "qwen-cn": "https://dashscope.aliyuncs.com/compatible-mode/v1",
+    "qwen-intl": "https://dashscope-intl.aliyuncs.com/compatible-mode/v1",
+    kimi: "https://api.moonshot.ai/v1",
+    zhipu: "https://open.bigmodel.cn/api/paas/v4",
+    "baidu-qianfan": "https://api.baiduqianfan.ai/v1",
+    "tencent-hunyuan": "https://api.hunyuan.cloud.tencent.com/v1",
+    "volcengine-ark": "https://ark.cn-beijing.volces.com/api/v3",
+    minimax: "https://api.minimax.io/v1",
+    "iflytek-spark": "https://spark-api-open.xf-yun.com/x2",
+    siliconflow: "https://api.siliconflow.cn/v1",
+    anthropic: "https://api.anthropic.com/v1"
+  };
+
+  return defaultBaseUrls[provider] ?? "";
 }
 
 function endpointUrl(provider: string, baseUrl: string) {

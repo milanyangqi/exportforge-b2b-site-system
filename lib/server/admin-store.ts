@@ -86,6 +86,56 @@ const defaultSiteSettings: SiteSettings = {
   privacySummary: "We use submitted RFQ details only for tooling quotation, sales follow-up, and service improvement."
 };
 
+const defaultTemplateTextBlocks: Record<string, Translation> = {
+  productsEyebrow: { en: "Product catalog", zh: "PRODUCT CATALOG" },
+  productsTitle: { en: "End mills, drill bits, and OEM tooling built for repeat purchasing.", zh: "硬质合金刀具目录" },
+  productsBody: {
+    en: "Browse core categories for CNC shops, hardware distributors, maintenance suppliers, and private-label tool programs.",
+    zh: "覆盖经销商备货、工厂加工与定制刀具需求。"
+  },
+  factoryEyebrow: { en: "Factory capability", zh: "工厂能力" },
+  factoryTitle: { en: "Geometry, coating, inspection, and packing are aligned before every export order.", zh: "从几何、涂层到包装的供应能力" },
+  factoryCard1Title: { en: "Tool geometry", zh: "OEM 图纸定制" },
+  factoryCard1Body: { en: "Square, ball nose, corner radius, long-neck, micro, step, and coolant-through options.", zh: "适合经销商长期备货、样品确认与批量订单。" },
+  factoryCard2Title: { en: "Coating choice", zh: "涂层与刃口处理" },
+  factoryCard2Body: { en: "AlTiN, TiSiN, DLC, bright finish, and buyer-specific series positioning.", zh: "适合经销商长期备货、样品确认与批量订单。" },
+  factoryCard3Title: { en: "Export packing", zh: "私标包装交付" },
+  factoryCard3Body: { en: "Plastic tubes, foam trays, barcode labels, carton marks, and distributor-ready assortments.", zh: "适合经销商长期备货、样品确认与批量订单。" },
+  marketsEyebrow: { en: "Global supply", zh: "出口市场" },
+  marketsTitle: { en: "Buyer-ready communication for distributors across major tooling markets.", zh: "多语言市场与 RFQ 清单" },
+  marketsBody: {
+    en: "KeyproTools supports multilingual product pages, quick RFQ details, and export documentation for buyers comparing end mills, drill bits, and OEM assortments.",
+    zh: "支持多语言产品页、快速 RFQ 信息和出口文件，适合铣刀、钻头与 OEM 组合采购。"
+  },
+  marketsChecklistTitle: { en: "RFQ checklist", zh: "RFQ 清单" },
+  marketsChecklist1: { en: "Tool type, diameter, flute length, overall length, and shank.", zh: "刀具类型、直径、刃长、总长和柄径。" },
+  marketsChecklist2: { en: "Workpiece material, hardness, coating, and cutting condition.", zh: "工件材料、硬度、涂层和切削条件。" },
+  marketsChecklist3: { en: "Quantity, packaging, laser marking, destination, and delivery target.", zh: "数量、包装、激光打标、目的地和交付目标。" },
+  marketsNote: { en: siteSettings.aiDraftPolicy, zh: siteSettings.aiDraftPolicy },
+  articlesEyebrow: { en: "Technical articles", zh: "技术文章" },
+  articlesTitle: { en: "Selection guides for buyers comparing tool geometry, coating, and packaging.", zh: "技术文章" },
+  rfqEyebrow: { en: "Request a quote", zh: "询盘表单" },
+  rfqTitle: { en: "Share your tool list and export requirements.", zh: "把刀具清单发给 KeyproTools" },
+  rfqBody: {
+    en: "Send product type, size range, quantity, coating, destination, and packing needs. The sales team will turn it into a clear quotation.",
+    zh: "规格、数量、涂层、包装和交期信息会在前台询盘表单中收集。"
+  },
+  rfqGuidanceTitle: { en: "For a faster reply, include:", zh: "为了更快回复，请包含：" },
+  rfqGuidance1: { en: "Tool diameter, flute length, shank size, and tolerance.", zh: "刀具直径、刃长、柄径和公差。" },
+  rfqGuidance2: { en: "Workpiece material, coating preference, and application details.", zh: "工件材料、涂层偏好和应用细节。" },
+  rfqGuidance3: { en: "Packaging, private label, target quantity, and delivery market.", zh: "包装、私标、目标数量和交付市场。" },
+  rfqNote: {
+    en: "KeyproTools usually reviews RFQ details by product family so the quotation can match stock, OEM marking, and export packing requirements.",
+    zh: "KeyproTools 会按产品系列审核 RFQ 信息，让报价匹配库存、OEM 打标和出口包装要求。"
+  },
+  heroMetric1Value: { en: "0.2-25mm", zh: "6 条产品线" },
+  heroMetric1Label: { en: "End mill diameter range", zh: "产品目录" },
+  heroMetric2Value: { en: "HSS / M35 / Carbide", zh: "OEM 定制" },
+  heroMetric2Label: { en: "Drill bit supply", zh: "图纸与私标" },
+  heroMetric3Value: { en: "OEM", zh: "出口包装" },
+  heroMetric3Label: { en: "Laser marking and packing", zh: "经销商备货" }
+};
+
 const defaultTemplateSettings: SiteTemplateSettings = {
   homeTemplate: "industrial-showcase",
   heroKicker: { en: "CNC cutting tools for global buyers", zh: "面向全球买家的 CNC 刀具供应" },
@@ -117,7 +167,8 @@ const defaultTemplateSettings: SiteTemplateSettings = {
     markets: 30,
     articles: 40,
     rfq: 50
-  }
+  },
+  textBlocks: defaultTemplateTextBlocks
 };
 
 function sanitizeStoredFileId(id: string) {
@@ -219,6 +270,16 @@ function normalizeTranslation(value: Partial<Translation> | undefined, fallback:
   };
 }
 
+function normalizeTemplateTextBlocks(settings?: Partial<Record<string, Partial<Translation>>>): Record<string, Translation> {
+  const keys = new Set([...Object.keys(defaultTemplateTextBlocks), ...Object.keys(settings ?? {})]);
+
+  return Array.from(keys).reduce<Record<string, Translation>>((blocks, key) => {
+    const fallback = defaultTemplateTextBlocks[key] ?? { en: settings?.[key]?.en ?? "" };
+    blocks[key] = normalizeTranslation(settings?.[key], fallback);
+    return blocks;
+  }, {});
+}
+
 function normalizeTemplateSettings(settings?: Partial<SiteTemplateSettings>): SiteTemplateSettings {
   const visibleSections = homeSectionKeys.reduce<Record<HomeSectionKey, boolean>>((sections, key) => {
     sections[key] = settings?.visibleSections?.[key] ?? defaultTemplateSettings.visibleSections[key];
@@ -262,7 +323,8 @@ function normalizeTemplateSettings(settings?: Partial<SiteTemplateSettings>): Si
     homeProductCount: Number.isFinite(productCount) ? Math.max(1, Math.min(12, Math.trunc(productCount as number))) : defaultTemplateSettings.homeProductCount,
     homeArticleCount: Number.isFinite(articleCount) ? Math.max(0, Math.min(12, Math.trunc(articleCount as number))) : defaultTemplateSettings.homeArticleCount,
     visibleSections,
-    sectionOrder
+    sectionOrder,
+    textBlocks: normalizeTemplateTextBlocks(settings?.textBlocks)
   };
 }
 
