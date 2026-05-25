@@ -5,6 +5,15 @@ import type { AdminState, RoleKey } from "@/types/site";
 
 const frontendManagerRoles = new Set<RoleKey>(["super-admin", "admin"]);
 
+function creditControlChanged(nextState: AdminState, existingState: AdminState) {
+  const nextBalances = (nextState.users ?? []).map((user) => ({ id: user.id, email: user.email, aiCredits: user.aiCredits ?? 0 }));
+  const existingBalances = (existingState.users ?? []).map((user) => ({ id: user.id, email: user.email, aiCredits: user.aiCredits ?? 0 }));
+
+  return JSON.stringify(nextState.aiCreditSettings ?? {}) !== JSON.stringify(existingState.aiCreditSettings ?? {})
+    || JSON.stringify(nextBalances) !== JSON.stringify(existingBalances)
+    || JSON.stringify(nextState.aiUsageRecords ?? []) !== JSON.stringify(existingState.aiUsageRecords ?? []);
+}
+
 export async function GET() {
   if (!await getAdminSessionEmail()) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -31,6 +40,10 @@ export async function PUT(request: Request) {
 
   if (frontendSettingsChanged && !frontendManagerRoles.has(currentUser?.role ?? "viewer")) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
+  if (creditControlChanged(state, existingState) && currentUser?.role !== "super-admin") {
+    return NextResponse.json({ error: "只有最高管理员可以设置 AI 积分。" }, { status: 403 });
   }
 
   const nextState = preserveUserPasswordHashes(state, existingState);

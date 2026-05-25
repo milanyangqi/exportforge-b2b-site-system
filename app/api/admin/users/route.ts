@@ -12,6 +12,7 @@ type CreateUserPayload = {
   role?: RoleKey;
   password?: string;
   allowedTabs?: string[];
+  aiCredits?: number;
 };
 
 type ResetPasswordPayload = {
@@ -36,6 +37,7 @@ export async function POST(request: Request) {
   const email = body.email?.trim().toLowerCase() ?? "";
   const password = body.password ?? "";
   const role = body.role && roleOptions.has(body.role) ? body.role : "viewer";
+  const aiCredits = Number(body.aiCredits ?? 0);
 
   if (!name || !email || !password) {
     return NextResponse.json({ error: "请填写姓名、邮箱和初始密码。" }, { status: 400 });
@@ -56,6 +58,7 @@ export async function POST(request: Request) {
     email,
     role,
     active: true,
+    aiCredits: Number.isFinite(aiCredits) && aiCredits > 0 ? aiCredits : 0,
     allowedTabs: Array.isArray(body.allowedTabs) ? body.allowedTabs : undefined,
     passwordHash: hashPassword(password)
   };

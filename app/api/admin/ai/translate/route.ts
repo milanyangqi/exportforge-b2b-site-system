@@ -24,6 +24,11 @@ type TranslationJob = {
 
 type TranslationResponse = {
   translations?: Record<string, string>;
+  usage?: {
+    promptTokens: number;
+    completionTokens: number;
+    totalTokens: number;
+  };
 };
 
 const managerRoles = new Set(["super-admin", "admin"]);
@@ -298,6 +303,13 @@ async function requestAiTranslations(settings: AiSettings, jobs: TranslationJob[
     const parsed = JSON.parse(text) as {
       choices?: { message?: { content?: string } }[];
       content?: { type?: string; text?: string }[];
+      usage?: {
+        prompt_tokens?: number;
+        completion_tokens?: number;
+        total_tokens?: number;
+        input_tokens?: number;
+        output_tokens?: number;
+      };
     };
     const content = provider === "anthropic"
       ? parsed.content?.find((item) => item.type === "text" || item.text)?.text
@@ -309,7 +321,18 @@ async function requestAiTranslations(settings: AiSettings, jobs: TranslationJob[
       .replace(/^```(?:json)?/i, "")
       .replace(/```$/i, "")
       .trim();
-    return JSON.parse(jsonText) as TranslationResponse;
+    const translationResponse = JSON.parse(jsonText) as TranslationResponse;
+    const promptTokens = parsed.usage?.prompt_tokens ?? parsed.usage?.input_tokens ?? 0;
+    const completionTokens = parsed.usage?.completion_tokens ?? parsed.usage?.output_tokens ?? 0;
+
+    return {
+      ...translationResponse,
+      usage: {
+        promptTokens,
+        completionTokens,
+        totalTokens: parsed.usage?.total_tokens ?? promptTokens + completionTokens
+      }
+    } satisfies TranslationResponse;
   } catch (error) {
     if (error instanceof Error && error.name === "AbortError") {
       throw new Error("翻译 API 请求超时，请检查网络、模型或供应商配置。");
@@ -318,6 +341,50 @@ async function requestAiTranslations(settings: AiSettings, jobs: TranslationJob[
   } finally {
     clearTimeout(timeout);
   }
+}
+
+function estimateTokens(jobs: TranslationJob[]) {
+  const characters = jobs.reduce((sum, job) => sum + job.sourceText.length + job.label.length + job.targetLanguage.length, 0);
+  return Math.max(1, Math.ceil(characters / 3.5));
+}
+
+function chargeAiCredits(state: AdminState, userId: string, userEmail: string, action: string, usage: TranslationResponse["usage"], estimatedTokens: number) {
+  if (!state.aiCreditSettings.enabled) return state;
+
+  const promptTokens = Math.max(0, Math.trunc(usage?.promptTokens ?? estimatedTokens));
+  const completionTokens = Math.max(0, Math.trunc(usage?.completionTokens ?? estimatedTokens));
+  const totalTokens = Math.max(1, Math.trunc(usage?.totalTokens ?? promptTokens + completionTokens));
+  const pointsUsed = Math.max(1, Math.ceil((totalTokens / 1000) * state.aiCreditSettings.pointsPerThousandTokens));
+  const currentUser = state.users.find((user) => user.id === userId || user.email.toLowerCase() === userEmail.toLowerCase());
+  const currentBalance = currentUser?.aiCredits ?? 0;
+  const balanceAfter = Math.max(0, currentBalance - pointsUsed);
+  const createdAt = new Date().toISOString();
+
+  return {
+    ...state,
+    users: state.users.map((user) => (
+      user.id === userId || user.email.toLowerCase() === userEmail.toLowerCase()
+        ? { ...user, aiCredits: balanceAfter }
+        : user
+    )),
+    aiUsageRecords: [
+      {
+        id: `ai-usage-${Date.now()}`,
+        userId,
+        userEmail,
+        action,
+        provider: state.aiSettings.provider,
+        model: state.aiSettings.model,
+        promptTokens,
+        completionTokens,
+        totalTokens,
+        pointsUsed,
+        balanceAfter,
+        createdAt
+      },
+      ...(state.aiUsageRecords ?? [])
+    ].slice(0, 500)
+  };
 }
 
 export async function POST(request: Request) {
@@ -340,6 +407,11 @@ export async function POST(request: Request) {
   const scope = payload.scope ?? "all";
   const nextState = cloneState(payload.state ?? existingState);
   const stateForSave = preserveUserPasswordHashes(nextState, existingState);
+  const creditUser = stateForSave.users.find((user) => user.id === sessionUser.id || user.email.toLowerCase() === sessionUser.email.toLowerCase());
+
+  if (stateForSave.aiCreditSettings.enabled && (creditUser?.aiCredits ?? 0) <= 0) {
+    return NextResponse.json({ error: "AI 积分不足，请联系最高管理员充值后再使用。" }, { status: 402 });
+  }
   const { jobs, appliers, skippedCount } = collectTranslationJobs(
     stateForSave,
     scope,
@@ -374,12 +446,21 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "翻译 API 返回内容为空，未写入任何字段。" }, { status: 502 });
     }
 
-    const savedState = await writeAdminState(stateForSave);
+    const chargedState = chargeAiCredits(
+      stateForSave,
+      sessionUser.id,
+      sessionUser.email,
+      `自动翻译：${scope}`,
+      aiResult.usage,
+      estimateTokens(jobs)
+    );
+    const savedState = await writeAdminState(chargedState);
     return NextResponse.json({
       ok: true,
       state: sanitizeAdminState(savedState),
       translatedCount,
       skippedCount,
+      pointsUsed: chargedState.aiUsageRecords?.[0]?.pointsUsed ?? 0,
       message: `已补齐 ${translatedCount} 个翻译字段。`
     });
   } catch (error) {

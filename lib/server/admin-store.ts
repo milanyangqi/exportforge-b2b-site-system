@@ -199,6 +199,7 @@ export function createDefaultAdminState(): AdminState {
         email: process.env.INITIAL_ADMIN_EMAIL ?? "admin@example.com",
         role: "super-admin",
         active: true,
+        aiCredits: 100000,
         jobTitle: "Owner"
       },
       {
@@ -207,6 +208,7 @@ export function createDefaultAdminState(): AdminState {
         email: "sales@example.com",
         role: "sales",
         active: true,
+        aiCredits: 20000,
         jobTitle: "Sales"
       }
     ],
@@ -222,6 +224,12 @@ export function createDefaultAdminState(): AdminState {
       blockedWords: [],
       enabled: Boolean(process.env.AI_API_KEY)
     },
+    aiCreditSettings: {
+      enabled: true,
+      pointsPerThousandTokens: 1,
+      pointPriceCny: 0.01
+    },
+    aiUsageRecords: [],
     updatedAt: new Date().toISOString()
   };
 }
@@ -258,6 +266,29 @@ function normalizeAiSettings(settings?: Partial<AdminState["aiSettings"]>): Admi
     blockedWords: Array.isArray(settings?.blockedWords) ? settings.blockedWords.filter(Boolean) : fallback.blockedWords,
     enabled: settings?.enabled ?? Boolean(settings?.apiKey || fallback.apiKey)
   };
+}
+
+function normalizeAiCreditSettings(settings?: Partial<AdminState["aiCreditSettings"]>): AdminState["aiCreditSettings"] {
+  const fallback = createDefaultAdminState().aiCreditSettings;
+  const pointsPerThousandTokens = Number(settings?.pointsPerThousandTokens);
+  const pointPriceCny = Number(settings?.pointPriceCny);
+
+  return {
+    enabled: settings?.enabled ?? fallback.enabled,
+    pointsPerThousandTokens: Number.isFinite(pointsPerThousandTokens) && pointsPerThousandTokens >= 0 ? pointsPerThousandTokens : fallback.pointsPerThousandTokens,
+    pointPriceCny: Number.isFinite(pointPriceCny) && pointPriceCny >= 0 ? pointPriceCny : fallback.pointPriceCny
+  };
+}
+
+function normalizeAdminUsers(users?: AdminState["users"]): AdminState["users"] {
+  const fallbackUsers = createDefaultAdminState().users;
+
+  return (users && users.length > 0 ? users : fallbackUsers).map((user) => ({
+    ...user,
+    aiCredits: Number.isFinite(Number(user.aiCredits))
+      ? Math.max(0, Number(user.aiCredits))
+      : user.role === "super-admin" ? 100000 : 0
+  }));
 }
 
 function normalizeTranslation(value: Partial<Translation> | undefined, fallback: Translation): Translation {
@@ -533,13 +564,15 @@ function normalizeAdminState(parsed: AdminState): AdminState {
     leads: parsed.leads ?? [],
     contactChannels: refreshKeyproContent ? normalizeKeyproContactChannels(parsed.contactChannels) : mergeContactChannels(parsed.contactChannels),
     uploadedFiles: uploadedFilesSource,
-    users: parsed.users ?? createDefaultAdminState().users,
+    users: normalizeAdminUsers(parsed.users),
     activeTheme: parsed.activeTheme ?? "industrial",
     enabledLocales: normalizeEnabledLocales(parsed.enabledLocales),
     navigation: normalizeNavigation(navigationSource),
     siteSettings: normalizeSiteSettings(siteSettingsSource),
     templateSettings: normalizeTemplateSettings(parsed.templateSettings),
     aiSettings: normalizeAiSettings(parsed.aiSettings),
+    aiCreditSettings: normalizeAiCreditSettings(parsed.aiCreditSettings),
+    aiUsageRecords: Array.isArray(parsed.aiUsageRecords) ? parsed.aiUsageRecords.slice(0, 500) : [],
     updatedAt: parsed.updatedAt ?? new Date().toISOString()
   };
 }

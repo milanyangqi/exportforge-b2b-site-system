@@ -7,6 +7,7 @@ import {
   Bot,
   Bold,
   Code2,
+  Coins,
   FileText,
   FolderTree,
   Gauge,
@@ -31,6 +32,7 @@ import {
   Quote,
   RefreshCw,
   Save,
+  Search,
   SendToBack,
   Sparkles,
   Share2,
@@ -47,14 +49,15 @@ import { locales } from "@/config/locales";
 import { themes } from "@/config/themes";
 import type { AdminState, AdminUser, Article, ContactChannel, ContactChannelType, HomeSectionKey, HomeTemplateKey, LeadStatus, LocaleCode, ProductCategory, RoleKey, SiteHeroSlide, SiteNavigationItem, SitePage, SiteTemplateSettings, ThemeKey, UploadedFile } from "@/types/site";
 
-type Tab = "overview" | "products" | "pages" | "articles" | "files" | "leads" | "contacts" | "navigation" | "users" | "templates" | "settings" | "languages" | "themes" | "account" | "ai";
+type Tab = "overview" | "products" | "pages" | "articles" | "files" | "leads" | "contacts" | "navigation" | "users" | "collect" | "templates" | "settings" | "languages" | "themes" | "account" | "ai";
 type ArticleEditorView = "visual" | "code";
 type PageMode = "list" | "editor";
 type MediaTypeFilter = "all" | "image" | "document" | "spreadsheet" | "archive" | "other";
 type MediaTimeFilter = "all" | "7d" | "30d" | "90d";
-type SettingsSection = "general" | "writing" | "reading" | "media" | "permalinks" | "privacy";
+type SettingsSection = "general" | "writing" | "reading" | "media" | "permalinks" | "privacy" | "ai" | "translation";
 type AiContentTarget = "article" | "page";
 type AiWriteMode = "new" | "replace" | "append";
+type AiWorkbenchSection = "generate";
 type TranslationScope = "all" | "article" | "page" | "products" | "templates" | "navigation";
 type TemplateEditorMode = "form" | "visual";
 type VisualTextElement = "span" | "strong" | "p" | "h1" | "h3" | "li";
@@ -104,6 +107,7 @@ type NewUserFormState = {
   email: string;
   role: RoleKey;
   password: string;
+  aiCredits: number;
 };
 type AiContentFormState = {
   target: AiContentTarget;
@@ -122,6 +126,17 @@ type AiContentDraft = {
   category: string;
   createdAt: string;
 };
+type AiGeneratedImage = {
+  id: string;
+  name: string;
+  url: string;
+};
+type CollectorFormState = {
+  sourceUrl: string;
+  sourceText: string;
+  target: AiContentTarget;
+  category: string;
+};
 
 const tabs: { key: Tab; label: string; icon: typeof Gauge }[] = [
   { key: "overview", label: "仪表盘", icon: Gauge },
@@ -133,6 +148,7 @@ const tabs: { key: Tab; label: string; icon: typeof Gauge }[] = [
   { key: "contacts", label: "社媒及联系", icon: Share2 },
   { key: "navigation", label: "导航栏", icon: Menu },
   { key: "users", label: "用户权限", icon: Users },
+  { key: "collect", label: "采集", icon: Search },
   { key: "languages", label: "语言", icon: Languages },
   { key: "templates", label: "模板", icon: LayoutPanelTop },
   { key: "themes", label: "主题", icon: Palette },
@@ -150,6 +166,7 @@ const adminPageAccessOptions: { key: Tab; label: string }[] = [
   { key: "contacts", label: "社媒及联系" },
   { key: "navigation", label: "导航栏" },
   { key: "users", label: "用户权限" },
+  { key: "collect", label: "采集" },
   { key: "templates", label: "模板" },
   { key: "settings", label: "设置" },
   { key: "languages", label: "语言" },
@@ -158,8 +175,8 @@ const adminPageAccessOptions: { key: Tab; label: string }[] = [
 ];
 const defaultAllowedTabsByRole: Record<RoleKey, Tab[]> = {
   "super-admin": adminPageAccessOptions.map((item) => item.key),
-  admin: ["overview", "products", "pages", "articles", "files", "leads", "contacts", "navigation", "templates", "settings", "languages", "themes", "ai"],
-  editor: ["overview", "products", "pages", "articles", "files", "ai"],
+  admin: ["overview", "products", "pages", "articles", "files", "leads", "contacts", "navigation", "collect", "templates", "settings", "languages", "themes", "ai"],
+  editor: ["overview", "products", "pages", "articles", "files", "collect", "ai"],
   sales: ["overview", "products", "leads", "contacts"],
   viewer: ["overview", "products", "articles", "files"]
 };
@@ -308,7 +325,9 @@ const settingsSections: { key: SettingsSection; label: string; description: stri
   { key: "reading", label: "阅读", description: "首页内容、列表数量和搜索可见性。" },
   { key: "media", label: "媒体", description: "图片尺寸和媒体整理方式。" },
   { key: "permalinks", label: "固定链接", description: "产品、文章和资料的 URL 基础路径。" },
-  { key: "privacy", label: "隐私", description: "隐私页面、Cookie 提示和数据说明。" }
+  { key: "privacy", label: "隐私", description: "隐私页面、Cookie 提示和数据说明。" },
+  { key: "ai", label: "AI", description: "模型、API 和积分。" },
+  { key: "translation", label: "翻译设置", description: "多语言自动翻译。" }
 ];
 const templateOptions: { key: HomeTemplateKey; label: string; description: string }[] = [
   { key: "industrial-showcase", label: "工业展示", description: "保留首屏海报、工厂能力和完整首页模块。" },
@@ -357,6 +376,9 @@ const aiWriteModeOptions: { key: AiWriteMode; label: string; description: string
   { key: "replace", label: "替换目标", description: "用生成内容覆盖所选文章或页面。" },
   { key: "append", label: "追加正文", description: "保留标题摘要，把生成正文追加到目标末尾。" }
 ];
+const aiWorkbenchSections: { key: AiWorkbenchSection; label: string; description: string }[] = [
+  { key: "generate", label: "生成", description: "生成文章或页面内容。" }
+];
 const translationScopeOptions: { key: TranslationScope; label: string; description: string }[] = [
   { key: "all", label: "全站内容", description: "文章、页面、产品、模板、导航和媒体说明。" },
   { key: "article", label: "文章", description: "补齐所有文章，或从文章编辑器补齐当前文章。" },
@@ -391,7 +413,8 @@ const emptyNewUserForm: NewUserFormState = {
   name: "",
   email: "",
   role: "viewer",
-  password: ""
+  password: "",
+  aiCredits: 0
 };
 const emptyAiContentForm: AiContentFormState = {
   target: "article",
@@ -399,6 +422,12 @@ const emptyAiContentForm: AiContentFormState = {
   targetArticleId: "",
   targetPageId: "",
   topic: "",
+  category: ""
+};
+const emptyCollectorForm: CollectorFormState = {
+  sourceUrl: "",
+  sourceText: "",
+  target: "article",
   category: ""
 };
 
@@ -452,6 +481,10 @@ function joinHumanList(items: string[], fallback: string) {
 
 function escapeCsvCell(value: string) {
   return `"${value.replace(/"/g, '""')}"`;
+}
+
+function formatNumber(value: number) {
+  return new Intl.NumberFormat("zh-CN", { maximumFractionDigits: 2 }).format(value);
 }
 
 function buildCsv(rows: string[][]) {
@@ -902,7 +935,13 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
   const [visualEditingKey, setVisualEditingKey] = useState<string | null>(null);
   const [visualDraftValue, setVisualDraftValue] = useState("");
   const [aiContentForm, setAiContentForm] = useState<AiContentFormState>(emptyAiContentForm);
+  const [aiWorkbenchSection, setAiWorkbenchSection] = useState<AiWorkbenchSection>("generate");
   const [aiDraftPreview, setAiDraftPreview] = useState<AiContentDraft | null>(null);
+  const [aiGeneratedImage, setAiGeneratedImage] = useState<AiGeneratedImage | null>(null);
+  const [aiImageStatus, setAiImageStatus] = useState("");
+  const [collectorForm, setCollectorForm] = useState<CollectorFormState>(emptyCollectorForm);
+  const [collectorDraft, setCollectorDraft] = useState<AiContentDraft | null>(null);
+  const [collectorStatus, setCollectorStatus] = useState("");
   const [aiTestStatus, setAiTestStatus] = useState("");
   const [translationScope, setTranslationScope] = useState<TranslationScope>("all");
   const [translationSourceLocale, setTranslationSourceLocale] = useState<LocaleCode>("zh");
@@ -1076,6 +1115,33 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
     });
   }
 
+  function updateAiCreditSettings(patch: Partial<AdminState["aiCreditSettings"]>) {
+    if (!state || getCurrentUser()?.role !== "super-admin") {
+      setStatus("只有最高管理员可以设置 AI 积分");
+      return;
+    }
+    setState({
+      ...state,
+      aiCreditSettings: {
+        ...state.aiCreditSettings,
+        ...patch
+      }
+    });
+  }
+
+  function updateUserAiCredits(userId: string, value: number) {
+    if (!state || getCurrentUser()?.role !== "super-admin") {
+      setStatus("只有最高管理员可以设置用户积分");
+      return;
+    }
+    setState({
+      ...state,
+      users: state.users.map((user) => (
+        user.id === userId ? { ...user, aiCredits: Number.isFinite(value) ? Math.max(0, value) : 0 } : user
+      ))
+    });
+  }
+
   function selectAiProvider(provider: string) {
     if (!state) return;
     const option = aiProviderOptions.find((item) => item.value === provider);
@@ -1147,6 +1213,7 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
         state?: AdminState;
         translatedCount?: number;
         skippedCount?: number;
+        pointsUsed?: number;
         message?: string;
         error?: string;
       };
@@ -1157,7 +1224,8 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
 
       setState(payload.state);
       setFrontendSettingsDirty(false);
-      const message = payload.message || `已补齐 ${payload.translatedCount ?? 0} 个翻译字段。`;
+      const pointsText = payload.pointsUsed ? `，消耗 ${payload.pointsUsed} 积分` : "";
+      const message = payload.message ? `${payload.message}${pointsText}` : `已补齐 ${payload.translatedCount ?? 0} 个翻译字段${pointsText}。`;
       const skippedText = payload.skippedCount ? `保留 ${payload.skippedCount} 个已有翻译。` : "";
       setTranslationStatus([message, skippedText].filter(Boolean).join(" "));
       setStatus("自动翻译已保存");
@@ -1483,6 +1551,7 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
         email: nextEmail,
         role: newUserForm.role,
         allowedTabs: defaultAllowedTabsByRole[newUserForm.role],
+        aiCredits: newUserForm.aiCredits,
         password
       })
     })
@@ -2163,7 +2232,55 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
     const draft = buildAiContentDraft();
 
     setAiDraftPreview(draft);
+    setAiGeneratedImage(null);
+    setAiImageStatus("");
     setStatus("AI 内容已生成，可选择写入文章或页面");
+  }
+
+  async function generateAiArticleImage() {
+    if (!state || !aiDraftPreview) return;
+    if (aiDraftPreview.target !== "article") {
+      setAiImageStatus("配图生成功能仅用于文章内容。");
+      return;
+    }
+
+    setAiImageStatus("正在根据文章内容生成配图...");
+    setStatus("正在生成文章配图...");
+
+    try {
+      const response = await fetch("/api/admin/ai/image", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title: aiDraftPreview.title.zh || aiDraftPreview.title.en,
+          excerpt: aiDraftPreview.excerpt.zh || aiDraftPreview.excerpt.en,
+          body: aiDraftPreview.body.zh || aiDraftPreview.body.en
+        })
+      });
+      const payload = await response.json().catch(() => ({ error: "图片生成失败" })) as {
+        file?: UploadedFile;
+        state?: AdminState;
+        message?: string;
+        error?: string;
+      };
+
+      if (!response.ok || !payload.file || !payload.state) {
+        throw new Error(payload.error || "图片生成失败");
+      }
+
+      setState(payload.state);
+      setAiGeneratedImage({
+        id: payload.file.id,
+        name: payload.file.name,
+        url: payload.file.url
+      });
+      setAiImageStatus(payload.message || "文章配图已生成。");
+      setStatus("文章配图已生成并保存到媒体库");
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "图片生成失败";
+      setAiImageStatus(message);
+      setStatus(message);
+    }
   }
 
   function applyAiContentDraft(draftOverride?: AiContentDraft) {
@@ -2190,6 +2307,7 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
           body: draft.body,
           category: draft.category,
           status: "draft",
+          coverImageUrl: aiGeneratedImage?.url,
           featuredOnHome: true
         };
 
@@ -2205,6 +2323,7 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
               const currentBody = article.body ?? { en: "", zh: "" };
               return {
                 ...article,
+                coverImageUrl: aiGeneratedImage?.url ?? article.coverImageUrl,
                 body: {
                   en: [currentBody.en, draft.body.en].filter(Boolean).join("\n\n"),
                   zh: [currentBody.zh ?? currentBody.en, draft.body.zh].filter(Boolean).join("\n\n")
@@ -2219,6 +2338,7 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
               excerpt: draft.excerpt,
               body: draft.body,
               category: draft.category,
+              coverImageUrl: aiGeneratedImage?.url ?? article.coverImageUrl,
               status: article.status === "trash" ? "draft" : article.status
             };
           })
@@ -2295,6 +2415,68 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
 
     setAiDraftPreview(draft);
     applyAiContentDraft(draft);
+  }
+
+  async function runCollector() {
+    if (!state) return;
+    if (!collectorForm.sourceUrl.trim() && !collectorForm.sourceText.trim()) {
+      setCollectorStatus("请填写网页链接，或粘贴要采集的内容。");
+      return;
+    }
+
+    setCollectorStatus("正在采集并二次创作...");
+    setStatus("正在采集内容...");
+
+    try {
+      const response = await fetch("/api/admin/ai/collect", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          sourceUrl: collectorForm.sourceUrl,
+          sourceText: collectorForm.sourceText,
+          target: collectorForm.target,
+          category: collectorForm.category || state.siteSettings.defaultArticleCategory || state.products[0]?.slug || ""
+        })
+      });
+      const payload = await response.json().catch(() => ({ error: "采集失败" })) as {
+        draft?: AiContentDraft;
+        error?: string;
+      };
+
+      if (!response.ok || !payload.draft) {
+        throw new Error(payload.error || "采集失败");
+      }
+
+      setCollectorDraft(payload.draft);
+      setCollectorStatus("已完成采集和二次创作，可导入文章或页面。");
+      setStatus("采集内容已生成");
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "采集失败";
+      setCollectorStatus(message);
+      setStatus(message);
+    }
+  }
+
+  function importCollectorDraft() {
+    if (!collectorDraft) {
+      setCollectorStatus("请先采集生成内容。");
+      return;
+    }
+
+    setAiContentForm({
+      target: collectorDraft.target,
+      writeMode: "new",
+      targetArticleId: "",
+      targetPageId: "",
+      topic: collectorDraft.title.zh || collectorDraft.title.en,
+      category: collectorDraft.category
+    });
+    setAiDraftPreview(collectorDraft);
+    setAiGeneratedImage(null);
+    setAiImageStatus("");
+    setAiWorkbenchSection("generate");
+    switchAdminTab("ai");
+    setStatus("采集内容已导入 AI 生成页，可继续填充。");
   }
 
   if (!state) {
@@ -2814,6 +2996,9 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
   const canManageFrontendSettings = canManageFrontendState();
   const canRunAutoTranslation = Boolean(currentUser && frontendManagerRoles.has(currentUser.role));
   const translationRunning = translationStatus.startsWith("正在");
+  const visibleAiUsageRecords = canResetUserPasswords
+    ? state.aiUsageRecords
+    : state.aiUsageRecords.filter((record) => record.userEmail.toLowerCase() === currentEmail.toLowerCase());
   const shouldShowAdminStatus = Boolean(status && status !== "已连接本地后台数据" && !hiddenAdminStatusMessages.has(status));
   const navigationProductOptions = [...state.products].sort((a, b) => (a.name.zh || a.name.en).localeCompare(b.name.zh || b.name.en));
   const navigationArticleOptions = state.articles
@@ -4456,6 +4641,17 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
                   <label>初始密码
                     <input type="password" value={newUserForm.password} onChange={(event) => setNewUserForm({ ...newUserForm, password: event.target.value })} />
                   </label>
+                  {canResetUserPasswords ? (
+                    <label>初始积分
+                      <input
+                        type="number"
+                        min="0"
+                        step="1"
+                        value={newUserForm.aiCredits}
+                        onChange={(event) => setNewUserForm({ ...newUserForm, aiCredits: Math.max(0, Number(event.target.value) || 0) })}
+                      />
+                    </label>
+                  ) : null}
                   <button type="button" onClick={createAdminUser}>新增用户</button>
                 </div>
               </section>
@@ -4465,6 +4661,7 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
                     <div className="admin-row">
                       <strong>{user.name}</strong>
                       <span>{user.email}</span>
+                      <span className="user-credit-badge">{formatNumber(user.aiCredits ?? 0)} 积分</span>
                       <select
                         value={user.role}
                         onChange={(event) => {
@@ -4487,6 +4684,22 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
                         <div>
                           <strong>可访问页面</strong>
                           <span>勾选后该用户侧栏只显示对应后台页面；账号设置始终可访问。</span>
+                        </div>
+                        <div className="user-credit-editor">
+                          <div>
+                            <strong>AI 积分</strong>
+                            <span>AI 自动翻译会按 Token 消耗积分。只有最高管理员可以调整余额。</span>
+                          </div>
+                          <label>当前余额
+                            <input
+                              disabled={!canResetUserPasswords}
+                              type="number"
+                              min="0"
+                              step="1"
+                              value={user.aiCredits ?? 0}
+                              onChange={(event) => updateUserAiCredits(user.id, Number(event.target.value))}
+                            />
+                          </label>
                         </div>
                         <div className="user-permission-grid">
                           {adminPageAccessOptions.map((item) => (
@@ -4923,9 +5136,224 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
                     </>
                   ) : null}
 
+                  {settingsSection === "ai" ? (
+                    <div className="ai-settings-in-settings">
+                      <section className="settings-panel ai-settings-panel">
+                        <div className="settings-panel-head with-action">
+                          <div>
+                            <h2>AI 内容设置</h2>
+                            <span>这里定义生成时使用的模型、品牌语气、目标市场和关键词。</span>
+                          </div>
+                          <button type="button" onClick={() => save()}>
+                            <Save size={16} />
+                            保存 AI 设置
+                          </button>
+                        </div>
+                        <div className="admin-edit-card ai-settings-card">
+                          <label>模型供应商
+                            <select value={state.aiSettings.provider} onChange={(event) => selectAiProvider(event.target.value)}>
+                              {aiProviderOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
+                            </select>
+                          </label>
+                          <label>模型
+                            <select value={aiModelSelectValue} onChange={(event) => {
+                              const nextModel = event.target.value;
+                              updateAiSettings({ model: nextModel === customAiModelValue ? "" : nextModel });
+                              setAiTestStatus("");
+                            }}>
+                              {aiModelOptions.map((model) => <option key={model} value={model}>{model}</option>)}
+                              <option value={customAiModelValue}>自定义模型...</option>
+                            </select>
+                          </label>
+                          {aiModelIsCustom ? (
+                            <label className="wide">自定义模型
+                              <input
+                                placeholder="输入供应商控制台里的模型 ID"
+                                value={state.aiSettings.model}
+                                onChange={(event) => {
+                                  updateAiSettings({ model: event.target.value });
+                                  setAiTestStatus("");
+                                }}
+                              />
+                            </label>
+                          ) : null}
+                          <label className="wide">Base URL
+                            <input
+                              placeholder={selectedAiProvider.baseUrl || "https://your-provider.example.com/v1"}
+                              value={state.aiSettings.baseUrl}
+                              onChange={(event) => updateAiSettings({ baseUrl: event.target.value })}
+                            />
+                            <small>{state.aiSettings.provider === "openai-compatible" || state.aiSettings.provider === "custom" ? "OpenAI-compatible / 自定义供应商必须填写 Base URL。" : "留空时使用该供应商默认接口地址。"}</small>
+                          </label>
+                          <label className="wide">API Key
+                            <input
+                              placeholder={state.aiSettings.apiKeyConfigured ? "已保存密钥；留空保存时会继续沿用" : "sk-..."}
+                              type="password"
+                              value={state.aiSettings.apiKey ?? ""}
+                              onChange={(event) => updateAiSettings({ apiKey: event.target.value })}
+                            />
+                            <small>{state.aiSettings.apiKeyConfigured ? "后台已有密钥。输入新密钥并保存可替换。" : "API Key 会保存到后台状态，列表读取时不会明文返回。"}</small>
+                          </label>
+                          <label className="wide">品牌语气<textarea value={state.aiSettings.brandVoice} onChange={(event) => updateAiSettings({ brandVoice: event.target.value })} /></label>
+                          <label className="wide">目标市场<input value={state.aiSettings.targetMarkets.join(", ")} onChange={(event) => updateAiSettings({ targetMarkets: event.target.value.split(",").map((item) => item.trim()).filter(Boolean) })} /></label>
+                          <label className="wide">必须包含关键词<input value={state.aiSettings.requiredKeywords.join(", ")} onChange={(event) => updateAiSettings({ requiredKeywords: event.target.value.split(",").map((item) => item.trim()).filter(Boolean) })} /></label>
+                          <label className="checkline"><input type="checkbox" checked={state.aiSettings.enabled} onChange={(event) => updateAiSettings({ enabled: event.target.checked })} />启用 AI 草稿入口</label>
+                          <div className="ai-api-actions">
+                            <button type="button" onClick={testAiConnection}>测试 API</button>
+                            <span className={aiTestStatusTone}>{aiTestStatus || "填写 API Key 后可测试供应商和模型是否可用。"}</span>
+                          </div>
+                        </div>
+                      </section>
+
+                      <section className="settings-panel ai-credit-panel">
+                        <div className="settings-panel-head with-action">
+                          <div>
+                            <h2>AI 积分与消耗</h2>
+                            <span>积分对应用户调用 AI 时消耗的 Token，最高管理员可设置余额和计价。</span>
+                          </div>
+                          <button type="button" disabled={!canResetUserPasswords} onClick={() => save()}>
+                            <Coins size={16} />
+                            保存积分设置
+                          </button>
+                        </div>
+                        {!canResetUserPasswords ? <p className="settings-lock-note">当前账号只能查看自己的余额和消耗记录，设置积分需使用最高管理员账号。</p> : null}
+                        <div className="ai-credit-summary">
+                          <div><span>我的余额</span><strong>{formatNumber(currentUser?.aiCredits ?? 0)} 积分</strong></div>
+                          <div><span>每 1000 Token</span><strong>{formatNumber(state.aiCreditSettings.pointsPerThousandTokens)} 积分</strong></div>
+                          <div><span>积分价格</span><strong>¥{formatNumber(state.aiCreditSettings.pointPriceCny)} / 积分</strong></div>
+                        </div>
+                        <div className="ai-credit-settings">
+                          <label className="checkline"><input disabled={!canResetUserPasswords} type="checkbox" checked={state.aiCreditSettings.enabled} onChange={(event) => updateAiCreditSettings({ enabled: event.target.checked })} />启用积分扣减</label>
+                          <label>每 1000 Token 消耗积分<input disabled={!canResetUserPasswords} type="number" min="0" step="0.01" value={state.aiCreditSettings.pointsPerThousandTokens} onChange={(event) => updateAiCreditSettings({ pointsPerThousandTokens: Math.max(0, Number(event.target.value) || 0) })} /></label>
+                          <label>每积分价格（人民币）<input disabled={!canResetUserPasswords} type="number" min="0" step="0.001" value={state.aiCreditSettings.pointPriceCny} onChange={(event) => updateAiCreditSettings({ pointPriceCny: Math.max(0, Number(event.target.value) || 0) })} /></label>
+                        </div>
+                      </section>
+
+                    </div>
+                  ) : null}
+
+                  {settingsSection === "translation" ? (
+                    <section className="settings-panel ai-translate-panel">
+                      <div className="settings-panel-head with-action">
+                        <div>
+                          <h2>翻译设置</h2>
+                          <span>发布新内容后，一键补齐已启用语言里缺失的翻译字段。</span>
+                        </div>
+                        <button type="button" disabled={!canRunAutoTranslation || translationRunning} onClick={() => runAutoTranslation()}>
+                          <Languages size={16} />
+                          自动补齐翻译
+                        </button>
+                      </div>
+                      {!canRunAutoTranslation ? <p className="settings-lock-note">当前账号没有自动翻译权限。请使用 Super Admin 或 Admin 账号执行。</p> : null}
+                      <div className="ai-translate-grid">
+                        <label>翻译范围
+                          <select value={translationScope} onChange={(event) => setTranslationScope(event.target.value as TranslationScope)}>
+                            {translationScopeOptions.map((option) => <option key={option.key} value={option.key}>{option.label}</option>)}
+                          </select>
+                          <small>{translationScopeOptions.find((option) => option.key === translationScope)?.description}</small>
+                        </label>
+                        <label>源语言
+                          <select value={translationSourceLocale} onChange={(event) => setTranslationSourceLocale(event.target.value as LocaleCode)}>
+                            {locales
+                              .filter((localeOption) => state.enabledLocales.includes(localeOption.code) || localeOption.code === "zh" || localeOption.code === "en")
+                              .map((localeOption) => <option key={localeOption.code} value={localeOption.code}>{localeOption.flag} {localeOption.nativeName}</option>)}
+                          </select>
+                          <small>默认从中文内容翻译；如果中文为空，会自动回退到英文或已有语言。</small>
+                        </label>
+                        <label className="checkline ai-translate-overwrite">
+                          <input type="checkbox" checked={translationOverwrite} onChange={(event) => setTranslationOverwrite(event.target.checked)} />
+                          覆盖已有翻译
+                        </label>
+                        <div className="ai-translate-status">
+                          <span>{translationStatus || "默认只补空白字段，不会覆盖已经人工编辑过的翻译。"}</span>
+                        </div>
+                      </div>
+                    </section>
+                  ) : null}
+
                 </section>
               </div>
 
+            </>
+          ) : null}
+
+          {tab === "collect" ? (
+            <>
+              <div className="admin-section-title">
+                <h1>内容采集</h1>
+              </div>
+              <section className="settings-panel collector-panel">
+                <div className="settings-panel-head">
+                  <div>
+                    <h2>采集并二次创作</h2>
+                    <span>输入网页链接，或粘贴其他内容，调用 AI 改写后导入文章或页面。</span>
+                  </div>
+                </div>
+                <div className="collector-form">
+                  <label className="wide">网页链接
+                    <input
+                      placeholder="https://example.com/article"
+                      value={collectorForm.sourceUrl}
+                      onChange={(event) => setCollectorForm({ ...collectorForm, sourceUrl: event.target.value })}
+                    />
+                  </label>
+                  <label>导入类型
+                    <select value={collectorForm.target} onChange={(event) => setCollectorForm({ ...collectorForm, target: event.target.value as AiContentTarget })}>
+                      <option value="article">文章</option>
+                      <option value="page">页面</option>
+                    </select>
+                  </label>
+                  <label>文章分类
+                    <select disabled={collectorForm.target !== "article"} value={collectorForm.category || state.siteSettings.defaultArticleCategory || state.products[0]?.slug || ""} onChange={(event) => setCollectorForm({ ...collectorForm, category: event.target.value })}>
+                      {articleProductCategoryOptions.map((category) => <option key={category.value} value={category.value}>{category.label}</option>)}
+                    </select>
+                  </label>
+                  <label className="wide">其他内容
+                    <textarea
+                      placeholder="也可以直接粘贴竞品页面、产品资料、旧文章、客户素材或大纲。"
+                      value={collectorForm.sourceText}
+                      onChange={(event) => setCollectorForm({ ...collectorForm, sourceText: event.target.value })}
+                    />
+                  </label>
+                </div>
+                <div className="ai-action-row">
+                  <button type="button" onClick={runCollector}>
+                    <Search size={16} />
+                    开始采集
+                  </button>
+                  <button type="button" disabled={!collectorDraft} onClick={importCollectorDraft}>
+                    <SendToBack size={16} />
+                    导入到文章/页面
+                  </button>
+                </div>
+                {collectorStatus ? <p className="ai-image-status">{collectorStatus}</p> : null}
+              </section>
+
+              <section className="settings-panel collector-preview-panel">
+                <div className="settings-panel-head">
+                  <div>
+                    <h2>采集结果预览</h2>
+                    <span>{collectorDraft ? `将导入${collectorDraft.target === "article" ? "文章" : "页面"}：${collectorDraft.title.zh || collectorDraft.title.en}` : "采集完成后可在这里查看二次创作结果。"}</span>
+                  </div>
+                </div>
+                {collectorDraft ? (
+                  <article className="ai-draft-preview">
+                    <div className="ai-draft-meta">
+                      <span>{collectorDraft.target === "article" ? "文章草稿" : "页面草稿"}</span>
+                      <span>/{collectorDraft.target === "article" ? "articles" : "pages"}/{collectorDraft.slug}</span>
+                    </div>
+                    <h3>{collectorDraft.title.zh || collectorDraft.title.en}</h3>
+                    <p>{collectorDraft.excerpt.zh || collectorDraft.excerpt.en}</p>
+                    <pre>{collectorDraft.body.zh || collectorDraft.body.en}</pre>
+                  </article>
+                ) : (
+                  <div className="ai-empty-preview">
+                    <Search size={24} />
+                    <strong>还没有采集内容</strong>
+                    <span>填写链接或粘贴内容后点击“开始采集”。</span>
+                  </div>
+                )}
+              </section>
             </>
           ) : null}
 
@@ -5048,6 +5476,50 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
                     <button type="button" onClick={logout}>退出登录</button>
                   </div>
                 </section>
+
+                <section className="account-ai-credit-card">
+                  <div className="settings-panel-head">
+                    <div>
+                      <h2>AI 积分与消耗</h2>
+                      <span>这里显示当前账号的 AI 积分余额、Token 计价和最近消耗记录。</span>
+                    </div>
+                  </div>
+                  <div className="ai-credit-summary account-ai-credit-summary">
+                    <div>
+                      <span>当前余额</span>
+                      <strong>{formatNumber(currentUser?.aiCredits ?? 0)} 积分</strong>
+                    </div>
+                    <div>
+                      <span>每 1000 Token</span>
+                      <strong>{formatNumber(state.aiCreditSettings.pointsPerThousandTokens)} 积分</strong>
+                    </div>
+                    <div>
+                      <span>积分价格</span>
+                      <strong>¥{formatNumber(state.aiCreditSettings.pointPriceCny)} / 积分</strong>
+                    </div>
+                  </div>
+                  <div className="ai-usage-table compact" role="table" aria-label="当前账号 AI 消耗表">
+                    <div className="ai-usage-row header" role="row">
+                      <span>时间</span>
+                      <span>操作</span>
+                      <span>模型</span>
+                      <span>Token</span>
+                      <span>消耗</span>
+                      <span>余额</span>
+                    </div>
+                    {visibleAiUsageRecords.slice(0, 10).map((record) => (
+                      <div className="ai-usage-row" role="row" key={record.id}>
+                        <span>{new Date(record.createdAt).toLocaleString("zh-CN", { hour12: false })}</span>
+                        <span>{record.action}</span>
+                        <span>{record.provider} / {record.model}</span>
+                        <span>{formatNumber(record.totalTokens)}</span>
+                        <strong>{formatNumber(record.pointsUsed)}</strong>
+                        <span>{formatNumber(record.balanceAfter)}</span>
+                      </div>
+                    ))}
+                    {visibleAiUsageRecords.length === 0 ? <p className="empty-state">当前账号暂无 AI 消耗记录。</p> : null}
+                  </div>
+                </section>
               </div>
             </>
           ) : null}
@@ -5055,110 +5527,24 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
           {tab === "ai" ? (
             <>
               <div className="ai-workbench">
-                <section className="settings-panel ai-settings-panel">
-                  <div className="settings-panel-head with-action">
-                    <div>
-                      <h2>AI 内容设置</h2>
-                      <span>这里定义生成时使用的模型、品牌语气、目标市场和关键词。</span>
-                    </div>
-                    <button type="button" onClick={() => save()}>
-                      <Save size={16} />
-                      保存 AI 设置
+                <div className="ai-workbench-switcher" role="tablist" aria-label="AI 内容分区">
+                  {aiWorkbenchSections.map((section) => (
+                    <button
+                      aria-selected={aiWorkbenchSection === section.key}
+                      className={aiWorkbenchSection === section.key ? "active" : ""}
+                      key={section.key}
+                      role="tab"
+                      type="button"
+                      onClick={() => setAiWorkbenchSection(section.key)}
+                    >
+                      <strong>{section.label}</strong>
+                      <span>{section.description}</span>
                     </button>
-                  </div>
-                  <div className="admin-edit-card ai-settings-card">
-                    <label>模型供应商
-                      <select value={state.aiSettings.provider} onChange={(event) => selectAiProvider(event.target.value)}>
-                        {aiProviderOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
-                      </select>
-                    </label>
-                    <label>模型
-                      <select value={aiModelSelectValue} onChange={(event) => {
-                        const nextModel = event.target.value;
-                        updateAiSettings({ model: nextModel === customAiModelValue ? "" : nextModel });
-                        setAiTestStatus("");
-                      }}>
-                        {aiModelOptions.map((model) => <option key={model} value={model}>{model}</option>)}
-                        <option value={customAiModelValue}>自定义模型...</option>
-                      </select>
-                    </label>
-                    {aiModelIsCustom ? (
-                      <label className="wide">自定义模型
-                        <input
-                          placeholder="输入供应商控制台里的模型 ID"
-                          value={state.aiSettings.model}
-                          onChange={(event) => {
-                            updateAiSettings({ model: event.target.value });
-                            setAiTestStatus("");
-                          }}
-                        />
-                      </label>
-                    ) : null}
-                    <label className="wide">Base URL
-                      <input
-                        placeholder={selectedAiProvider.baseUrl || "https://your-provider.example.com/v1"}
-                        value={state.aiSettings.baseUrl}
-                        onChange={(event) => updateAiSettings({ baseUrl: event.target.value })}
-                      />
-                      <small>{state.aiSettings.provider === "openai-compatible" || state.aiSettings.provider === "custom" ? "OpenAI-compatible / 自定义供应商必须填写 Base URL。" : "留空时使用该供应商默认接口地址。"}</small>
-                    </label>
-                    <label className="wide">API Key
-                      <input
-                        placeholder={state.aiSettings.apiKeyConfigured ? "已保存密钥；留空保存时会继续沿用" : "sk-..."}
-                        type="password"
-                        value={state.aiSettings.apiKey ?? ""}
-                        onChange={(event) => updateAiSettings({ apiKey: event.target.value })}
-                      />
-                      <small>{state.aiSettings.apiKeyConfigured ? "后台已有密钥。输入新密钥并保存可替换。" : "API Key 会保存到后台状态，列表读取时不会明文返回。"}</small>
-                    </label>
-                    <label className="wide">品牌语气<textarea value={state.aiSettings.brandVoice} onChange={(event) => updateAiSettings({ brandVoice: event.target.value })} /></label>
-                    <label className="wide">目标市场<input value={state.aiSettings.targetMarkets.join(", ")} onChange={(event) => updateAiSettings({ targetMarkets: event.target.value.split(",").map((item) => item.trim()).filter(Boolean) })} /></label>
-                    <label className="wide">必须包含关键词<input value={state.aiSettings.requiredKeywords.join(", ")} onChange={(event) => updateAiSettings({ requiredKeywords: event.target.value.split(",").map((item) => item.trim()).filter(Boolean) })} /></label>
-                    <label className="checkline"><input type="checkbox" checked={state.aiSettings.enabled} onChange={(event) => updateAiSettings({ enabled: event.target.checked })} />启用 AI 草稿入口</label>
-                    <div className="ai-api-actions">
-                      <button type="button" onClick={testAiConnection}>测试 API</button>
-                      <span className={aiTestStatusTone}>{aiTestStatus || "填写 API Key 后可测试供应商和模型是否可用。"}</span>
-                    </div>
-                  </div>
-                </section>
+                  ))}
+                </div>
 
-                <section className="settings-panel ai-translate-panel">
-                  <div className="settings-panel-head with-action">
-                    <div>
-                      <h2>多语言自动翻译</h2>
-                      <span>发布新内容后，一键补齐已启用语言里缺失的翻译字段。</span>
-                    </div>
-                    <button type="button" disabled={!canRunAutoTranslation || translationRunning} onClick={() => runAutoTranslation()}>
-                      <Languages size={16} />
-                      自动补齐翻译
-                    </button>
-                  </div>
-                  {!canRunAutoTranslation ? <p className="settings-lock-note">当前账号没有自动翻译权限。请使用 Super Admin 或 Admin 账号执行。</p> : null}
-                  <div className="ai-translate-grid">
-                    <label>翻译范围
-                      <select value={translationScope} onChange={(event) => setTranslationScope(event.target.value as TranslationScope)}>
-                        {translationScopeOptions.map((option) => <option key={option.key} value={option.key}>{option.label}</option>)}
-                      </select>
-                      <small>{translationScopeOptions.find((option) => option.key === translationScope)?.description}</small>
-                    </label>
-                    <label>源语言
-                      <select value={translationSourceLocale} onChange={(event) => setTranslationSourceLocale(event.target.value as LocaleCode)}>
-                        {locales
-                          .filter((localeOption) => state.enabledLocales.includes(localeOption.code) || localeOption.code === "zh" || localeOption.code === "en")
-                          .map((localeOption) => <option key={localeOption.code} value={localeOption.code}>{localeOption.flag} {localeOption.nativeName}</option>)}
-                      </select>
-                      <small>默认从中文内容翻译；如果中文为空，会自动回退到英文或已有语言。</small>
-                    </label>
-                    <label className="checkline ai-translate-overwrite">
-                      <input type="checkbox" checked={translationOverwrite} onChange={(event) => setTranslationOverwrite(event.target.checked)} />
-                      覆盖已有翻译
-                    </label>
-                    <div className="ai-translate-status">
-                      <span>{translationStatus || "默认只补空白字段，不会覆盖已经人工编辑过的翻译。"}</span>
-                    </div>
-                  </div>
-                </section>
-
+                {aiWorkbenchSection === "generate" ? (
+                  <>
                 <section className="settings-panel ai-compose-panel">
                   <div className="settings-panel-head">
                     <div>
@@ -5176,6 +5562,8 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
                         onClick={() => {
                           setAiContentForm((current) => ({ ...current, target: option.key }));
                           setAiDraftPreview(null);
+                          setAiGeneratedImage(null);
+                          setAiImageStatus("");
                         }}
                       >
                         <strong>{option.label}</strong>
@@ -5259,7 +5647,12 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
                       <RefreshCw size={16} />
                       重写预览
                     </button>
+                    <button type="button" disabled={!aiDraftPreview || aiDraftPreview.target !== "article" || aiImageStatus.startsWith("正在")} onClick={generateAiArticleImage}>
+                      <ImageIcon size={16} />
+                      根据文章生成配图
+                    </button>
                   </div>
+                  {aiImageStatus ? <p className="ai-image-status">{aiImageStatus}</p> : null}
                 </section>
 
                 <section className="settings-panel ai-preview-panel">
@@ -5276,6 +5669,12 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
                         <span>{aiWriteModeOptions.find((option) => option.key === aiContentForm.writeMode)?.label}</span>
                         <span>/{aiDraftPreview.target === "article" ? "articles" : "pages"}/{aiDraftPreview.slug}</span>
                       </div>
+                      {aiGeneratedImage ? (
+                        <figure className="ai-generated-image-preview">
+                          <Image src={aiGeneratedImage.url} alt={aiGeneratedImage.name} width={360} height={360} unoptimized />
+                          <figcaption>{aiGeneratedImage.name} 已保存到媒体库，填充文章时会作为封面图。</figcaption>
+                        </figure>
+                      ) : null}
                       <h3>{aiDraftPreview.title.zh || aiDraftPreview.title.en}</h3>
                       <p>{aiDraftPreview.excerpt.zh || aiDraftPreview.excerpt.en}</p>
                       <pre>{aiDraftPreview.body.zh || aiDraftPreview.body.en}</pre>
@@ -5288,6 +5687,8 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
                     </div>
                   )}
                 </section>
+                  </>
+                ) : null}
               </div>
             </>
           ) : null}

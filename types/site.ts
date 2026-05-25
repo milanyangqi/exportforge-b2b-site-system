@@ -177,11 +177,33 @@ export type AdminUser = {
   email: string;
   role: RoleKey;
   active: boolean;
+  aiCredits?: number;
   allowedTabs?: string[];
   jobTitle?: string;
   phone?: string;
   avatarUrl?: string;
   passwordHash?: string;
+};
+
+export type AiCreditSettings = {
+  enabled: boolean;
+  pointsPerThousandTokens: number;
+  pointPriceCny: number;
+};
+
+export type AiUsageRecord = {
+  id: string;
+  userId: string;
+  userEmail: string;
+  action: string;
+  provider: string;
+  model: string;
+  promptTokens: number;
+  completionTokens: number;
+  totalTokens: number;
+  pointsUsed: number;
+  balanceAfter: number;
+  createdAt: string;
 };
 
 export type AiSettings = {
@@ -278,5 +300,7 @@ export type AdminState = {
   siteSettings: SiteSettings;
   templateSettings: SiteTemplateSettings;
   aiSettings: AiSettings;
+  aiCreditSettings: AiCreditSettings;
+  aiUsageRecords: AiUsageRecord[];
   updatedAt: string;
 };
