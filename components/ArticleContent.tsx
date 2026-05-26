@@ -147,6 +147,102 @@ function renderTable(lines: string[], key: number) {
   );
 }
 
+function extractVideoId(pathname: string, pattern: RegExp) {
+  const match = pattern.exec(pathname);
+  return match?.[1] ?? "";
+}
+
+function resolveVideoEmbed(rawUrl: string) {
+  const urlText = rawUrl.trim();
+  if (!urlText) return null;
+
+  if (/\.(mp4|webm|ogg|mov)(\?.*)?$/i.test(urlText)) {
+    return { kind: "file" as const, src: urlText, originalUrl: urlText, provider: "Video file" };
+  }
+
+  try {
+    const url = new URL(urlText);
+    const host = url.hostname.replace(/^www\./, "").toLowerCase();
+    const pathname = url.pathname;
+
+    if (host === "youtu.be" || host.endsWith("youtube.com")) {
+      const id = host === "youtu.be"
+        ? pathname.split("/").filter(Boolean)[0]
+        : url.searchParams.get("v") || extractVideoId(pathname, /\/(?:embed|shorts|live)\/([^/?#]+)/);
+
+      if (id) {
+        return {
+          kind: "iframe" as const,
+          src: `https://www.youtube-nocookie.com/embed/${encodeURIComponent(id)}`,
+          originalUrl: urlText,
+          provider: "YouTube"
+        };
+      }
+    }
+
+    if (host.endsWith("vimeo.com")) {
+      const id = extractVideoId(pathname, /\/(?:video\/)?(\d+)/);
+      if (id) {
+        return {
+          kind: "iframe" as const,
+          src: `https://player.vimeo.com/video/${id}`,
+          originalUrl: urlText,
+          provider: "Vimeo"
+        };
+      }
+    }
+
+    if (host.endsWith("bilibili.com")) {
+      const bvid = extractVideoId(pathname, /\/video\/(BV[\w]+)/i);
+      if (bvid) {
+        return {
+          kind: "iframe" as const,
+          src: `https://player.bilibili.com/player.html?bvid=${encodeURIComponent(bvid)}&autoplay=0`,
+          originalUrl: urlText,
+          provider: "Bilibili"
+        };
+      }
+    }
+
+    if (host.endsWith("tiktok.com")) {
+      const id = extractVideoId(pathname, /\/video\/(\d+)/);
+      if (id) {
+        return {
+          kind: "iframe" as const,
+          src: `https://www.tiktok.com/embed/v2/${id}`,
+          originalUrl: urlText,
+          provider: "TikTok"
+        };
+      }
+    }
+
+    if (host.endsWith("facebook.com") || host.endsWith("fb.watch")) {
+      return {
+        kind: "iframe" as const,
+        src: `https://www.facebook.com/plugins/video.php?href=${encodeURIComponent(urlText)}&show_text=false&width=1200`,
+        originalUrl: urlText,
+        provider: "Facebook"
+      };
+    }
+
+    if (host.endsWith("instagram.com")) {
+      const embedPath = pathname.endsWith("/") ? `${pathname}embed` : `${pathname}/embed`;
+      if (/\/(p|reel|tv)\//.test(pathname)) {
+        return {
+          kind: "iframe" as const,
+          src: `https://www.instagram.com${embedPath}`,
+          originalUrl: urlText,
+          provider: "Instagram"
+        };
+      }
+    }
+  } catch {
+    return null;
+  }
+
+  return null;
+}
+
 function isLikelyImageReference(name: string, url: string) {
   return /\.(apng|avif|gif|jpe?g|png|svg|webp)(\?.*)?$/i.test(name) || /\.(apng|avif|gif|jpe?g|png|svg|webp)(\?.*)?$/i.test(url);
 }
@@ -164,6 +260,37 @@ function renderArticleBlock(block: ArticleBlock, index: number) {
   const lines = trimmed.split("\n");
   const imageMatch = /^!\[([^\]]*)]\(([^)]+)\)$/.exec(trimmed);
   const fileBlockMatch = /^\[下载文件：([^\]]+)]\(([^)]+)\)$/.exec(trimmed);
+  const explicitVideoMatch = /^@\[video(?::([^\]]+))?]\(([^)]+)\)$/i.exec(trimmed);
+  const linkedVideoMatch = /^\[(?:视频|Video|影片|播放视频)(?::\s*)?([^\]]*)]\(([^)]+)\)$/i.exec(trimmed);
+  const bareVideoUrlMatch = /^(https?:\/\/\S+)$/.exec(trimmed);
+  const videoTitle = explicitVideoMatch?.[1] || linkedVideoMatch?.[1] || "Video";
+  const videoUrl = explicitVideoMatch?.[2] || linkedVideoMatch?.[2] || bareVideoUrlMatch?.[1] || "";
+  const videoEmbed = resolveVideoEmbed(videoUrl);
+
+  if (videoEmbed) {
+    return (
+      <figure className="article-video-embed" key={`${index}-${trimmed}`}>
+        <div className="article-video-frame">
+          {videoEmbed.kind === "file" ? (
+            <video controls preload="metadata" src={videoEmbed.src} />
+          ) : (
+            <iframe
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+              allowFullScreen
+              loading="lazy"
+              referrerPolicy="strict-origin-when-cross-origin"
+              src={videoEmbed.src}
+              title={videoTitle || videoEmbed.provider}
+            />
+          )}
+        </div>
+        <figcaption>
+          <span>{videoTitle || videoEmbed.provider}</span>
+          <a href={videoEmbed.originalUrl} rel="noreferrer" target="_blank">打开原视频</a>
+        </figcaption>
+      </figure>
+    );
+  }
 
   if (imageMatch) {
     return (

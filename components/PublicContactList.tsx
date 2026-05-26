@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, type CSSProperties } from "react";
+import { ContactChannelIcon } from "@/components/ContactChannelIcon";
 import { t } from "@/lib/i18n";
 import type { ContactChannel, LocaleCode } from "@/types/site";
 
@@ -50,8 +51,13 @@ export function PublicContactList({
     <div className="stack-list public public-contact-list">
       {visibleChannels.map((channel) => (
         <a key={channel.id} href={channel.href} style={{ "--channel-color": channel.color } as CSSProperties}>
-          <strong>{t(channel.label, locale)}</strong>
-          <span>{channel.value}</span>
+          <span className="public-contact-icon">
+            <ContactChannelIcon channel={channel} size={22} />
+          </span>
+          <span>
+            <strong>{t(channel.label, locale)}</strong>
+            <small>{channel.value}</small>
+          </span>
         </a>
       ))}
     </div>

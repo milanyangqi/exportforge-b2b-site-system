@@ -86,6 +86,7 @@ export type ContactChannel = {
   color: string;
   enabled: boolean;
   qrCodeUrl?: string;
+  iconUrl?: string;
   icon?: LucideIcon;
 };
 
@@ -212,6 +213,16 @@ export type AiSettings = {
   baseUrl: string;
   apiKey?: string;
   apiKeyConfigured?: boolean;
+  imageProvider: string;
+  imageModel: string;
+  imageBaseUrl: string;
+  imageApiKey?: string;
+  imageApiKeyConfigured?: boolean;
+  voiceProvider: string;
+  voiceModel: string;
+  voiceBaseUrl: string;
+  voiceApiKey?: string;
+  voiceApiKeyConfigured?: boolean;
   defaultLocale: LocaleCode;
   brandVoice: string;
   targetMarkets: string[];
@@ -228,6 +239,10 @@ export type SiteSettings = {
   fontFamily: string;
   siteUrl: string;
   adminEmail: string;
+  mailFromEmail?: string;
+  mailFromName?: string;
+  mailProvider?: string;
+  mailReplyTemplate?: string;
   allowRegistration: boolean;
   defaultUserRole: RoleKey;
   siteLanguage: LocaleCode;

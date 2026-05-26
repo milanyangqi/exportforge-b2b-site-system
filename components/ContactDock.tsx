@@ -2,26 +2,10 @@
 
 import { useState } from "react";
 import Image from "next/image";
-import { Facebook, Instagram, Mail, MessageCircle, Music2, Phone, Send, UserRound, X, type LucideIcon } from "lucide-react";
+import { MessageCircle, X } from "lucide-react";
+import { ContactChannelIcon } from "@/components/ContactChannelIcon";
 import { t } from "@/lib/i18n";
-import type { ContactChannel, ContactChannelType, LocaleCode } from "@/types/site";
-
-const icons: Record<ContactChannelType, LucideIcon> = {
-  phone: Phone,
-  whatsapp: MessageCircle,
-  email: Mail,
-  wechat: MessageCircle,
-  zalo: MessageCircle,
-  line: MessageCircle,
-  facebook: Facebook,
-  instagram: Instagram,
-  tiktok: Music2,
-  messenger: Send,
-  linkedin: UserRound,
-  skype: Send,
-  custom: UserRound,
-  rfq: UserRound
-};
+import type { ContactChannel, LocaleCode } from "@/types/site";
 
 export function ContactDock({ locale, channels }: { locale: LocaleCode; channels: ContactChannel[] }) {
   const items = channels ?? [];
@@ -52,7 +36,6 @@ export function ContactDock({ locale, channels }: { locale: LocaleCode; channels
       </button>
       {open
         ? enabledChannels.map((channel) => {
-          const Icon = icons[channel.type];
           const label = t(channel.label, locale);
 
           if (channel.qrCodeUrl) {
@@ -66,7 +49,7 @@ export function ContactDock({ locale, channels }: { locale: LocaleCode; channels
                 aria-label={`${label} QR code`}
                 onClick={() => setActiveQrId((current) => (current === channel.id ? null : channel.id))}
               >
-                <Icon size={30} />
+                <ContactChannelIcon channel={channel} size={30} />
               </button>
             );
           }
@@ -81,7 +64,7 @@ export function ContactDock({ locale, channels }: { locale: LocaleCode; channels
               aria-label={label}
               onClick={() => setActiveQrId(null)}
             >
-              <Icon size={30} />
+              <ContactChannelIcon channel={channel} size={30} />
             </a>
           );
         })

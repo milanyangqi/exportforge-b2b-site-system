@@ -10,13 +10,15 @@ type TranslatePayload = {
   state?: AdminState;
   scope?: TranslationScope;
   targetId?: string;
-  sourceLocale?: LocaleCode;
+  sourceLocale?: LocaleCode | "auto";
+  targetLocales?: LocaleCode[];
   overwrite?: boolean;
 };
 
 type TranslationJob = {
   id: string;
   label: string;
+  sourceLanguage: string;
   targetLocale: LocaleCode;
   targetLanguage: string;
   sourceText: string;
@@ -86,6 +88,20 @@ function pickSourceText(translation: Translation, preferredLocale: LocaleCode) {
   return "";
 }
 
+function pickSourceTextWithLocale(translation: Translation, preferredLocale: LocaleCode | "auto") {
+  if (preferredLocale !== "auto") {
+    const preferred = translation[preferredLocale];
+    if (nonEmpty(preferred)) return { text: preferred.trim(), locale: preferredLocale };
+  }
+
+  for (const localeCode of ["zh", "en", ...locales.map((item) => item.code)] as LocaleCode[]) {
+    const value = translation[localeCode];
+    if (nonEmpty(value)) return { text: value.trim(), locale: localeCode };
+  }
+
+  return { text: "", locale: preferredLocale === "auto" ? "zh" as LocaleCode : preferredLocale };
+}
+
 function pickSourceList(translation: Translation<string[]>, preferredLocale: LocaleCode) {
   const preferred = translation[preferredLocale];
   if (Array.isArray(preferred) && preferred.length > 0) return preferred;
@@ -96,6 +112,20 @@ function pickSourceList(translation: Translation<string[]>, preferredLocale: Loc
   }
 
   return [];
+}
+
+function pickSourceListWithLocale(translation: Translation<string[]>, preferredLocale: LocaleCode | "auto") {
+  if (preferredLocale !== "auto") {
+    const preferred = translation[preferredLocale];
+    if (Array.isArray(preferred) && preferred.length > 0) return { list: preferred, locale: preferredLocale };
+  }
+
+  for (const localeCode of ["zh", "en", ...locales.map((item) => item.code)] as LocaleCode[]) {
+    const value = translation[localeCode];
+    if (Array.isArray(value) && value.length > 0) return { list: value, locale: localeCode };
+  }
+
+  return { list: [] as string[], locale: preferredLocale === "auto" ? "zh" as LocaleCode : preferredLocale };
 }
 
 function parseTranslatedList(value: string) {
@@ -113,22 +143,27 @@ function collectTranslationJobs(
   state: AdminState,
   scope: TranslationScope,
   targetId: string | undefined,
-  sourceLocale: LocaleCode,
+  sourceLocale: LocaleCode | "auto",
+  requestedTargetLocales: LocaleCode[] | undefined,
   overwrite: boolean
 ) {
   const jobs: TranslationJob[] = [];
   const appliers = new Map<string, (value: string) => void>();
   const enabledLocales = state.enabledLocales.length > 0 ? state.enabledLocales : ["en", "zh"] as LocaleCode[];
-  const targetLocales = enabledLocales.filter((localeCode) => localeCode !== sourceLocale);
+  const selectedTargetLocales = requestedTargetLocales?.length
+    ? requestedTargetLocales.filter((localeCode) => enabledLocales.includes(localeCode))
+    : enabledLocales;
   let skippedCount = 0;
 
   function queueText(translation: Translation | undefined, label: string) {
     if (!translation) return;
-    const sourceText = pickSourceText(translation, sourceLocale);
+    const { text: sourceText, locale: detectedSourceLocale } = pickSourceTextWithLocale(translation, sourceLocale);
     if (!sourceText) return;
 
-    targetLocales.forEach((targetLocale) => {
-      if (!overwrite && nonEmpty(translation[targetLocale])) {
+    selectedTargetLocales
+      .filter((targetLocale) => targetLocale !== detectedSourceLocale)
+      .forEach((targetLocale) => {
+      if (!overwrite && nonEmpty(translation[targetLocale]) && translation[targetLocale]?.trim() !== sourceText) {
         skippedCount += 1;
         return;
       }
@@ -137,6 +172,7 @@ function collectTranslationJobs(
       jobs.push({
         id,
         label,
+        sourceLanguage: getLocaleMeta(detectedSourceLocale).nativeName,
         targetLocale,
         targetLanguage: getLocaleMeta(targetLocale).nativeName,
         sourceText
@@ -149,12 +185,16 @@ function collectTranslationJobs(
 
   function queueList(translation: Translation<string[]> | undefined, label: string) {
     if (!translation) return;
-    const sourceList = pickSourceList(translation, sourceLocale);
+    const { list: sourceList, locale: detectedSourceLocale } = pickSourceListWithLocale(translation, sourceLocale);
     if (sourceList.length === 0) return;
     const sourceText = sourceList.join("\n");
 
-    targetLocales.forEach((targetLocale) => {
-      if (!overwrite && Array.isArray(translation[targetLocale]) && translation[targetLocale]!.length > 0) {
+    selectedTargetLocales
+      .filter((targetLocale) => targetLocale !== detectedSourceLocale)
+      .forEach((targetLocale) => {
+      const currentTargetList = translation[targetLocale];
+      const targetMatchesSource = Array.isArray(currentTargetList) && currentTargetList.join("\n").trim() === sourceText.trim();
+      if (!overwrite && Array.isArray(currentTargetList) && currentTargetList.length > 0 && !targetMatchesSource) {
         skippedCount += 1;
         return;
       }
@@ -163,6 +203,7 @@ function collectTranslationJobs(
       jobs.push({
         id,
         label,
+        sourceLanguage: getLocaleMeta(detectedSourceLocale).nativeName,
         targetLocale,
         targetLanguage: getLocaleMeta(targetLocale).nativeName,
         sourceText
@@ -231,7 +272,7 @@ function buildPrompt(jobs: TranslationJob[]) {
     "Preserve Markdown syntax, URLs, model numbers, product names, units, and placeholders.",
     "For list items, return one translated item per line.",
     "Do not add explanations, comments, or extra keys.",
-    JSON.stringify(jobs.map(({ id, label, targetLanguage, sourceText }) => ({ id, label, targetLanguage, sourceText })))
+    JSON.stringify(jobs.map(({ id, label, sourceLanguage, targetLanguage, sourceText }) => ({ id, label, sourceLanguage, targetLanguage, sourceText })))
   ].join("\n\n");
 }
 
@@ -287,7 +328,7 @@ async function requestAiTranslations(settings: AiSettings, jobs: TranslationJob[
     };
 
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 45000);
+  const timeout = setTimeout(() => controller.abort(), 90000);
 
   try {
     const response = await fetch(url, {
@@ -403,7 +444,10 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "只有 Super Admin 或 Admin 可以执行自动翻译。" }, { status: 403 });
   }
 
-  const sourceLocale = payload.sourceLocale && isLocale(payload.sourceLocale) ? payload.sourceLocale : "zh";
+  const sourceLocale = payload.sourceLocale === "auto" ? "auto" : payload.sourceLocale && isLocale(payload.sourceLocale) ? payload.sourceLocale : "auto";
+  const targetLocales = Array.isArray(payload.targetLocales)
+    ? payload.targetLocales.filter(isLocale)
+    : undefined;
   const scope = payload.scope ?? "all";
   const nextState = cloneState(payload.state ?? existingState);
   const stateForSave = preserveUserPasswordHashes(nextState, existingState);
@@ -417,6 +461,7 @@ export async function POST(request: Request) {
     scope,
     payload.targetId,
     sourceLocale,
+    targetLocales,
     Boolean(payload.overwrite)
   );
 

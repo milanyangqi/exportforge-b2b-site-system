@@ -8,6 +8,7 @@ import {
   Bold,
   Code2,
   Coins,
+  Copy,
   DatabaseBackup,
   Download,
   FileText,
@@ -25,6 +26,7 @@ import {
   Link2,
   List,
   ListOrdered,
+  Mail,
   Menu,
   Minus,
   Paperclip,
@@ -46,13 +48,14 @@ import {
   Underline,
   Upload,
   Users,
+  Video,
   X
 } from "lucide-react";
 import { locales } from "@/config/locales";
 import { themes } from "@/config/themes";
-import type { AdminState, AdminUser, Article, ContactChannel, ContactChannelType, HomeSectionKey, LeadStatus, LocaleCode, ProductCategory, RoleKey, SiteHeroSlide, SiteNavigationItem, SitePage, SiteTemplateSettings, ThemeKey, UploadedFile } from "@/types/site";
+import type { AdminState, AdminUser, Article, ContactChannel, ContactChannelType, HomeSectionKey, LeadStatus, LocaleCode, ProductCategory, RoleKey, SiteHeroSlide, SiteNavigationItem, SitePage, SiteTemplateSettings, ThemeKey, Translation, UploadedFile } from "@/types/site";
 
-type Tab = "overview" | "products" | "pages" | "articles" | "files" | "leads" | "contacts" | "navigation" | "users" | "collect" | "templates" | "settings" | "languages" | "themes" | "account" | "ai";
+type Tab = "overview" | "products" | "pages" | "articles" | "files" | "leads" | "mail" | "contacts" | "navigation" | "users" | "collect" | "templates" | "settings" | "languages" | "themes" | "account" | "ai";
 type ArticleEditorView = "visual" | "code";
 type PageMode = "list" | "editor";
 type MediaTypeFilter = "all" | "image" | "document" | "spreadsheet" | "archive" | "other";
@@ -61,9 +64,15 @@ type SettingsSection = "general" | "writing" | "reading" | "media" | "permalinks
 type AiContentTarget = "article" | "page";
 type AiWriteMode = "new" | "replace" | "append";
 type AiWorkbenchSection = "generate";
+type AiContentPurpose = "buying-guide" | "product-application" | "service-intro" | "faq-content";
+type AiContentSectionKey = "buyer-intent" | "product-fit" | "rfq-checklist" | "faq" | "cta";
+type AiWizardStep = 1 | 2 | 3 | 4 | 5;
 type TranslationScope = "all" | "article" | "page" | "products" | "templates" | "navigation";
+type TranslationSourceChoice = "auto" | LocaleCode;
+type TranslationTargetChoice = "all" | LocaleCode;
 type BackupSectionKey = keyof Pick<AdminState, "products" | "pages" | "articles" | "leads" | "contactChannels" | "uploadedFiles" | "users" | "navigation" | "siteSettings" | "templateSettings" | "aiSettings" | "aiCreditSettings" | "aiUsageRecords" | "activeTheme" | "enabledLocales">;
 type TemplateEditorMode = "form" | "visual";
+type VideoDialogTarget = "article" | "page";
 type VisualTextElement = "span" | "strong" | "p" | "h1" | "h3" | "li";
 type VisualEditableTextOptions = {
   editorKey: string;
@@ -118,8 +127,12 @@ type AiContentFormState = {
   writeMode: AiWriteMode;
   targetArticleId: string;
   targetPageId: string;
+  purpose: AiContentPurpose;
   topic: string;
+  selectedTitle: string;
+  audience: string;
   category: string;
+  sections: AiContentSectionKey[];
 };
 type AiContentDraft = {
   target: AiContentTarget;
@@ -149,6 +162,7 @@ const tabs: { key: Tab; label: string; icon: typeof Gauge }[] = [
   { key: "articles", label: "文章", icon: FileText },
   { key: "files", label: "媒体库", icon: Library },
   { key: "leads", label: "询盘", icon: Inbox },
+  { key: "mail", label: "邮件", icon: Mail },
   { key: "contacts", label: "社媒及联系", icon: Share2 },
   { key: "navigation", label: "导航栏", icon: Menu },
   { key: "users", label: "用户权限", icon: Users },
@@ -167,6 +181,7 @@ const adminPageAccessOptions: { key: Tab; label: string }[] = [
   { key: "articles", label: "文章" },
   { key: "files", label: "媒体库" },
   { key: "leads", label: "询盘" },
+  { key: "mail", label: "邮件" },
   { key: "contacts", label: "社媒及联系" },
   { key: "navigation", label: "导航栏" },
   { key: "users", label: "用户权限" },
@@ -179,80 +194,125 @@ const adminPageAccessOptions: { key: Tab; label: string }[] = [
 ];
 const defaultAllowedTabsByRole: Record<RoleKey, Tab[]> = {
   "super-admin": adminPageAccessOptions.map((item) => item.key),
-  admin: ["overview", "products", "pages", "articles", "files", "leads", "contacts", "navigation", "collect", "templates", "settings", "languages", "themes", "ai"],
+  admin: ["overview", "products", "pages", "articles", "files", "leads", "mail", "contacts", "navigation", "collect", "templates", "settings", "languages", "themes", "ai"],
   editor: ["overview", "products", "pages", "articles", "files", "collect", "ai"],
-  sales: ["overview", "products", "leads", "contacts"],
+  sales: ["overview", "products", "leads", "mail", "contacts"],
   viewer: ["overview", "products", "articles", "files"]
 };
 
 const worldClockCities = [
-  { city: "北京", zone: "Asia/Shanghai" },
-  { city: "上海", zone: "Asia/Shanghai" },
-  { city: "香港", zone: "Asia/Hong_Kong" },
-  { city: "台北", zone: "Asia/Taipei" },
-  { city: "东京", zone: "Asia/Tokyo" },
-  { city: "首尔", zone: "Asia/Seoul" },
-  { city: "新加坡", zone: "Asia/Singapore" },
-  { city: "马尼拉", zone: "Asia/Manila" },
-  { city: "吉隆坡", zone: "Asia/Kuala_Lumpur" },
-  { city: "雅加达", zone: "Asia/Jakarta" },
-  { city: "曼谷", zone: "Asia/Bangkok" },
-  { city: "胡志明市", zone: "Asia/Ho_Chi_Minh" },
-  { city: "河内", zone: "Asia/Ho_Chi_Minh" },
-  { city: "金边", zone: "Asia/Phnom_Penh" },
-  { city: "万象", zone: "Asia/Vientiane" },
-  { city: "仰光", zone: "Asia/Yangon" },
-  { city: "孟买", zone: "Asia/Kolkata" },
-  { city: "新德里", zone: "Asia/Kolkata" },
-  { city: "达卡", zone: "Asia/Dhaka" },
-  { city: "卡拉奇", zone: "Asia/Karachi" },
-  { city: "科伦坡", zone: "Asia/Colombo" },
-  { city: "迪拜", zone: "Asia/Dubai" },
-  { city: "阿布扎比", zone: "Asia/Dubai" },
-  { city: "利雅得", zone: "Asia/Riyadh" },
-  { city: "吉达", zone: "Asia/Riyadh" },
-  { city: "多哈", zone: "Asia/Qatar" },
-  { city: "科威特城", zone: "Asia/Kuwait" },
-  { city: "马斯喀特", zone: "Asia/Muscat" },
-  { city: "开罗", zone: "Africa/Cairo" },
-  { city: "约翰内斯堡", zone: "Africa/Johannesburg" },
-  { city: "开普敦", zone: "Africa/Johannesburg" },
-  { city: "拉各斯", zone: "Africa/Lagos" },
-  { city: "内罗毕", zone: "Africa/Nairobi" },
-  { city: "卡萨布兰卡", zone: "Africa/Casablanca" },
-  { city: "伊斯坦布尔", zone: "Europe/Istanbul" },
-  { city: "伦敦", zone: "Europe/London" },
-  { city: "巴黎", zone: "Europe/Paris" },
-  { city: "鹿特丹", zone: "Europe/Amsterdam" },
-  { city: "汉堡", zone: "Europe/Berlin" },
-  { city: "法兰克福", zone: "Europe/Berlin" },
-  { city: "米兰", zone: "Europe/Rome" },
-  { city: "马德里", zone: "Europe/Madrid" },
-  { city: "华沙", zone: "Europe/Warsaw" },
-  { city: "莫斯科", zone: "Europe/Moscow" },
-  { city: "纽约", zone: "America/New_York" },
-  { city: "多伦多", zone: "America/Toronto" },
-  { city: "芝加哥", zone: "America/Chicago" },
-  { city: "休斯敦", zone: "America/Chicago" },
-  { city: "洛杉矶", zone: "America/Los_Angeles" },
-  { city: "温哥华", zone: "America/Vancouver" },
-  { city: "迈阿密", zone: "America/New_York" },
-  { city: "墨西哥城", zone: "America/Mexico_City" },
-  { city: "波哥大", zone: "America/Bogota" },
-  { city: "利马", zone: "America/Lima" },
-  { city: "圣地亚哥", zone: "America/Santiago" },
-  { city: "布宜诺斯艾利斯", zone: "America/Argentina/Buenos_Aires" },
-  { city: "圣保罗", zone: "America/Sao_Paulo" },
-  { city: "里约热内卢", zone: "America/Sao_Paulo" },
-  { city: "悉尼", zone: "Australia/Sydney" },
-  { city: "墨尔本", zone: "Australia/Melbourne" },
-  { city: "珀斯", zone: "Australia/Perth" },
-  { city: "奥克兰", zone: "Pacific/Auckland" }
+  { city: "北京", country: "中国", zone: "Asia/Shanghai" },
+  { city: "东京", country: "日本", zone: "Asia/Tokyo" },
+  { city: "首尔", country: "韩国", zone: "Asia/Seoul" },
+  { city: "新加坡", country: "新加坡", zone: "Asia/Singapore" },
+  { city: "马尼拉", country: "菲律宾", zone: "Asia/Manila" },
+  { city: "吉隆坡", country: "马来西亚", zone: "Asia/Kuala_Lumpur" },
+  { city: "雅加达", country: "印度尼西亚", zone: "Asia/Jakarta" },
+  { city: "曼谷", country: "泰国", zone: "Asia/Bangkok" },
+  { city: "胡志明市", country: "越南", zone: "Asia/Ho_Chi_Minh" },
+  { city: "河内", country: "越南", zone: "Asia/Ho_Chi_Minh" },
+  { city: "金边", country: "柬埔寨", zone: "Asia/Phnom_Penh" },
+  { city: "万象", country: "老挝", zone: "Asia/Vientiane" },
+  { city: "仰光", country: "缅甸", zone: "Asia/Yangon" },
+  { city: "孟买", country: "印度", zone: "Asia/Kolkata" },
+  { city: "新德里", country: "印度", zone: "Asia/Kolkata" },
+  { city: "达卡", country: "孟加拉国", zone: "Asia/Dhaka" },
+  { city: "卡拉奇", country: "巴基斯坦", zone: "Asia/Karachi" },
+  { city: "科伦坡", country: "斯里兰卡", zone: "Asia/Colombo" },
+  { city: "迪拜", country: "阿联酋", zone: "Asia/Dubai" },
+  { city: "阿布扎比", country: "阿联酋", zone: "Asia/Dubai" },
+  { city: "利雅得", country: "沙特阿拉伯", zone: "Asia/Riyadh" },
+  { city: "吉达", country: "沙特阿拉伯", zone: "Asia/Riyadh" },
+  { city: "多哈", country: "卡塔尔", zone: "Asia/Qatar" },
+  { city: "科威特城", country: "科威特", zone: "Asia/Kuwait" },
+  { city: "马斯喀特", country: "阿曼", zone: "Asia/Muscat" },
+  { city: "开罗", country: "埃及", zone: "Africa/Cairo" },
+  { city: "约翰内斯堡", country: "南非", zone: "Africa/Johannesburg" },
+  { city: "开普敦", country: "南非", zone: "Africa/Johannesburg" },
+  { city: "拉各斯", country: "尼日利亚", zone: "Africa/Lagos" },
+  { city: "内罗毕", country: "肯尼亚", zone: "Africa/Nairobi" },
+  { city: "卡萨布兰卡", country: "摩洛哥", zone: "Africa/Casablanca" },
+  { city: "伊斯坦布尔", country: "土耳其", zone: "Europe/Istanbul" },
+  { city: "伦敦", country: "英国", zone: "Europe/London" },
+  { city: "巴黎", country: "法国", zone: "Europe/Paris" },
+  { city: "鹿特丹", country: "荷兰", zone: "Europe/Amsterdam" },
+  { city: "汉堡", country: "德国", zone: "Europe/Berlin" },
+  { city: "法兰克福", country: "德国", zone: "Europe/Berlin" },
+  { city: "米兰", country: "意大利", zone: "Europe/Rome" },
+  { city: "马德里", country: "西班牙", zone: "Europe/Madrid" },
+  { city: "华沙", country: "波兰", zone: "Europe/Warsaw" },
+  { city: "莫斯科", country: "俄罗斯", zone: "Europe/Moscow" },
+  { city: "纽约", country: "美国", zone: "America/New_York" },
+  { city: "多伦多", country: "加拿大", zone: "America/Toronto" },
+  { city: "芝加哥", country: "美国", zone: "America/Chicago" },
+  { city: "休斯敦", country: "美国", zone: "America/Chicago" },
+  { city: "洛杉矶", country: "美国", zone: "America/Los_Angeles" },
+  { city: "温哥华", country: "加拿大", zone: "America/Vancouver" },
+  { city: "迈阿密", country: "美国", zone: "America/New_York" },
+  { city: "墨西哥城", country: "墨西哥", zone: "America/Mexico_City" },
+  { city: "波哥大", country: "哥伦比亚", zone: "America/Bogota" },
+  { city: "利马", country: "秘鲁", zone: "America/Lima" },
+  { city: "圣地亚哥", country: "智利", zone: "America/Santiago" },
+  { city: "布宜诺斯艾利斯", country: "阿根廷", zone: "America/Argentina/Buenos_Aires" },
+  { city: "圣保罗", country: "巴西", zone: "America/Sao_Paulo" },
+  { city: "里约热内卢", country: "巴西", zone: "America/Sao_Paulo" },
+  { city: "悉尼", country: "澳大利亚", zone: "Australia/Sydney" },
+  { city: "墨尔本", country: "澳大利亚", zone: "Australia/Melbourne" },
+  { city: "珀斯", country: "澳大利亚", zone: "Australia/Perth" },
+  { city: "奥克兰", country: "新西兰", zone: "Pacific/Auckland" }
 ];
+
+function getTimeZoneOffsetMinutes(date: Date, timeZone: string) {
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hour12: false,
+    hourCycle: "h23"
+  }).formatToParts(date);
+  const value = (type: Intl.DateTimeFormatPartTypes) => Number(parts.find((part) => part.type === type)?.value ?? 0);
+  const zonedTime = Date.UTC(value("year"), value("month") - 1, value("day"), value("hour"), value("minute"), value("second"));
+
+  return Math.round((zonedTime - date.getTime()) / 60000);
+}
+
+function formatUtcOffset(offsetMinutes: number) {
+  const sign = offsetMinutes >= 0 ? "+" : "-";
+  const absolute = Math.abs(offsetMinutes);
+  const hours = Math.floor(absolute / 60);
+  const minutes = absolute % 60;
+
+  return minutes === 0 ? `UTC${sign}${hours}` : `UTC${sign}${hours}:${String(minutes).padStart(2, "0")}`;
+}
+
+function formatBeijingDifference(offsetMinutes: number, beijingOffsetMinutes: number) {
+  const diffMinutes = offsetMinutes - beijingOffsetMinutes;
+  if (diffMinutes === 0) return "与北京同区";
+
+  const direction = diffMinutes > 0 ? "早" : "晚";
+  const absolute = Math.abs(diffMinutes);
+  const hours = Math.floor(absolute / 60);
+  const minutes = absolute % 60;
+  const hourText = hours > 0 ? `${hours}小时` : "";
+  const minuteText = minutes > 0 ? `${minutes}分钟` : "";
+
+  return `比北京${direction}${hourText}${minuteText}`;
+}
 
 const themeOptions: ThemeKey[] = ["industrial", "clean-export", "premium-brand", "equipment", "consumer-goods"];
 const roleOptions: RoleKey[] = ["super-admin", "admin", "editor", "sales", "viewer"];
 const leadStatuses: LeadStatus[] = ["new", "contacted", "quoted", "closed", "spam"];
+const leadStatusLabels: Record<LeadStatus, string> = {
+  new: "新询盘",
+  contacted: "已联系",
+  quoted: "已报价",
+  closed: "已成交",
+  spam: "垃圾询盘"
+};
 const contactTypeOptions: ContactChannelType[] = [
   "phone",
   "whatsapp",
@@ -383,6 +443,12 @@ const aiTargetOptions: { key: AiContentTarget; label: string; description: strin
   { key: "article", label: "文章", description: "生成技术文章、采购指南和 SEO 内容。" },
   { key: "page", label: "页面", description: "生成关于我们、服务说明、资料页等独立页面。" }
 ];
+const aiPurposeOptions: { key: AiContentPurpose; label: string; description: string }[] = [
+  { key: "buying-guide", label: "采购指南", description: "面向采购商解释选型、询盘参数和供应商判断。" },
+  { key: "product-application", label: "产品应用", description: "围绕产品使用场景、材料匹配和加工问题生成。" },
+  { key: "service-intro", label: "服务介绍", description: "适合页面内容，说明 OEM、私标、包装和交付流程。" },
+  { key: "faq-content", label: "FAQ 内容", description: "用常见问题形式解释买家关心的价格、交期和资料。" }
+];
 const aiProviderOptions = [
   { value: "openai-compatible", label: "OpenAI-compatible / 通用兼容", baseUrl: "", models: ["gpt-4.1-mini", "qwen-plus", "deepseek-v4-flash", "glm-4.5", "kimi-k2.6"] },
   { value: "openai", label: "OpenAI", baseUrl: "https://api.openai.com/v1", models: ["gpt-4.1-mini", "gpt-4.1", "gpt-4.1-nano", "gpt-4o-mini", "gpt-4o"] },
@@ -400,14 +466,42 @@ const aiProviderOptions = [
   { value: "anthropic", label: "Anthropic Claude", baseUrl: "https://api.anthropic.com/v1", models: ["claude-sonnet-4-5", "claude-3-5-haiku-latest"] },
   { value: "custom", label: "自定义", baseUrl: "", models: [] }
 ];
+const aiImageProviderOptions = [
+  { value: "openai", label: "OpenAI 图片生成", baseUrl: "https://api.openai.com/v1", models: ["gpt-image-1", "dall-e-3", "dall-e-2"] },
+  { value: "siliconflow-image", label: "SiliconFlow 图片生成", baseUrl: "https://api.siliconflow.cn/v1", models: ["Kwai-Kolors/Kolors", "black-forest-labs/FLUX.1-schnell", "black-forest-labs/FLUX.1-dev", "stabilityai/stable-diffusion-3.5-large", "Qwen/Qwen-Image"] },
+  { value: "qwen-cn-image", label: "阿里云百炼 Qwen 图片（中国）", baseUrl: "https://dashscope.aliyuncs.com/compatible-mode/v1", models: ["qwen-image", "qwen-image-plus", "wanx2.1-t2i-turbo", "wanx2.1-t2i-plus"] },
+  { value: "qwen-intl-image", label: "阿里云百炼 Qwen 图片（国际）", baseUrl: "https://dashscope-intl.aliyuncs.com/compatible-mode/v1", models: ["qwen-image", "qwen-image-plus", "wanx2.1-t2i-turbo", "wanx2.1-t2i-plus"] },
+  { value: "volcengine-ark-image", label: "火山方舟图片生成", baseUrl: "https://ark.cn-beijing.volces.com/api/v3", models: ["doubao-seedream-4-0", "doubao-seedream-3-0-t2i", "doubao-seedream-3-0-t2i-250415"] },
+  { value: "openai-compatible", label: "OpenAI-compatible 图片接口", baseUrl: "", models: ["gpt-image-1", "dall-e-3", "flux-kontext-pro", "imagen-4", "stable-diffusion-3.5-large", "qwen-image"] },
+  { value: "custom", label: "自定义图片供应商", baseUrl: "", models: [] }
+];
+const aiVoiceProviderOptions = [
+  { value: "openai", label: "OpenAI 语音", baseUrl: "https://api.openai.com/v1", models: ["gpt-4o-mini-tts", "tts-1", "tts-1-hd"] },
+  { value: "openai-compatible", label: "OpenAI-compatible 语音接口", baseUrl: "", models: ["gpt-4o-mini-tts", "tts-1"] },
+  { value: "custom", label: "自定义语音供应商", baseUrl: "", models: [] }
+];
 const customAiModelValue = "__custom_ai_model__";
 const aiWriteModeOptions: { key: AiWriteMode; label: string; description: string }[] = [
   { key: "new", label: "新建草稿", description: "创建新的文章或页面，保留现有内容。" },
   { key: "replace", label: "替换目标", description: "用生成内容覆盖所选文章或页面。" },
   { key: "append", label: "追加正文", description: "保留标题摘要，把生成正文追加到目标末尾。" }
 ];
+const aiSectionOptions: { key: AiContentSectionKey; label: string; description: string }[] = [
+  { key: "buyer-intent", label: "买家需求", description: "说明采购商搜索这个主题时真正想确认什么。" },
+  { key: "product-fit", label: "产品匹配", description: "说明产品、材料、工况、服务能力如何匹配。" },
+  { key: "rfq-checklist", label: "RFQ 清单", description: "列出询价时必须提供的规格、数量、包装等信息。" },
+  { key: "faq", label: "FAQ", description: "用问答形式覆盖价格、交期、样品、定制等疑问。" },
+  { key: "cta", label: "行动引导", description: "引导买家提交图纸、规格清单或询盘信息。" }
+];
 const aiWorkbenchSections: { key: AiWorkbenchSection; label: string; description: string }[] = [
   { key: "generate", label: "生成", description: "生成文章或页面内容。" }
+];
+const aiWizardStepOptions: { key: AiWizardStep; label: string }[] = [
+  { key: 1, label: "内容类型" },
+  { key: 2, label: "生成目的" },
+  { key: 3, label: "主题标题" },
+  { key: 4, label: "内容结构" },
+  { key: 5, label: "生成写入" }
 ];
 const translationScopeOptions: { key: TranslationScope; label: string; description: string }[] = [
   { key: "all", label: "全站内容", description: "文章、页面、产品、模板、导航和媒体说明。" },
@@ -451,8 +545,12 @@ const emptyAiContentForm: AiContentFormState = {
   writeMode: "new",
   targetArticleId: "",
   targetPageId: "",
+  purpose: "buying-guide",
   topic: "",
-  category: ""
+  selectedTitle: "",
+  audience: "",
+  category: "",
+  sections: ["buyer-intent", "product-fit", "rfq-checklist", "faq", "cta"]
 };
 const emptyCollectorForm: CollectorFormState = {
   sourceUrl: "",
@@ -495,18 +593,6 @@ function uniqueSlug(value: string, existingSlugs: string[], fallback: string) {
   }
 
   return candidate;
-}
-
-function titleCase(value: string) {
-  return value
-    .split(/\s+/)
-    .filter(Boolean)
-    .map((word) => (word.length <= 2 ? word.toUpperCase() : `${word.slice(0, 1).toUpperCase()}${word.slice(1)}`))
-    .join(" ");
-}
-
-function joinHumanList(items: string[], fallback: string) {
-  return items.length > 0 ? items.join(", ") : fallback;
 }
 
 function escapeCsvCell(value: string) {
@@ -644,6 +730,44 @@ function escapeEditableHtml(value: string) {
     .replace(/"/g, "&quot;");
 }
 
+function pickLocalizedText(value?: Partial<Record<LocaleCode, string>> | Translation<string>, preferredLocale?: LocaleCode) {
+  if (!value) return "";
+
+  if (preferredLocale) {
+    const preferredRawValue = value[preferredLocale];
+    if (preferredRawValue?.trim()) return preferredRawValue;
+  }
+
+  const zhValue = value.zh?.trim();
+  if (zhValue) return value.zh ?? "";
+
+  const enValue = value.en?.trim();
+  if (enValue) return value.en ?? "";
+
+  return preferredLocale ? value[preferredLocale] ?? value.zh ?? value.en ?? "" : value.zh ?? value.en ?? "";
+}
+
+function encodeMailtoValue(value: string) {
+  return encodeURIComponent(value).replace(/%20/g, "+");
+}
+
+function videoMarkdownBlock(url: string, title = "Video") {
+  return `@[video:${title || "Video"}](${url})`;
+}
+
+function parseVideoMarkdownBlock(block: string) {
+  const explicitVideoMatch = /^@\[video(?::([^\]]+))?]\(([^)]+)\)$/i.exec(block.trim());
+  const linkedVideoMatch = /^\[(?:视频|Video|影片|播放视频)(?::\s*)?([^\]]*)]\(([^)]+)\)$/i.exec(block.trim());
+  const bareVideoUrlMatch = /^(https?:\/\/\S+)$/.exec(block.trim());
+  const title = explicitVideoMatch?.[1] || linkedVideoMatch?.[1] || "Video";
+  const url = explicitVideoMatch?.[2] || linkedVideoMatch?.[2] || bareVideoUrlMatch?.[1] || "";
+
+  if (!url) return null;
+  if (!/(youtu\.be|youtube\.com|vimeo\.com|bilibili\.com|tiktok\.com|facebook\.com|fb\.watch|instagram\.com|\.(mp4|webm|ogg|mov)(\?.*)?$)/i.test(url)) return null;
+
+  return { title, url };
+}
+
 function markdownToEditableHtml(body: string) {
   const blocks = body.split(/\n{2,}/).map((block) => block.trim()).filter(Boolean);
 
@@ -652,6 +776,11 @@ function markdownToEditableHtml(body: string) {
   return blocks.map((block) => {
     const imageMatch = /^!\[([^\]]*)]\(([^)]+)\)$/.exec(block);
     const legacyImageMatch = /^\[下载文件：([^\]]+)]\(([^)]+)\)$/.exec(block);
+    const videoMatch = parseVideoMarkdownBlock(block);
+
+    if (videoMatch) {
+      return `<figure class="article-video-embed article-video-placeholder" contenteditable="false" data-video-url="${escapeEditableHtml(videoMatch.url)}" data-video-title="${escapeEditableHtml(videoMatch.title)}" title="双击替换视频链接"><div class="article-video-frame"><span>视频</span></div></figure><p class="article-after-video-caret"><br></p>`;
+    }
 
     if (imageMatch) {
       return `<figure class="article-inline-image" contenteditable="false"><img src="${escapeEditableHtml(imageMatch[2])}" alt="${escapeEditableHtml(imageMatch[1] || "Article image")}"></figure>`;
@@ -677,6 +806,8 @@ function editableNodeToMarkdown(node: Node): string {
   if (node.tagName === "BR") return "\n";
   if (node.tagName === "IMG") return `![${node.getAttribute("alt") ?? ""}](${node.getAttribute("src") ?? ""})`;
   if (node.tagName === "FIGURE") {
+    const videoUrl = node.getAttribute("data-video-url");
+    if (videoUrl) return videoMarkdownBlock(videoUrl, node.getAttribute("data-video-title") ?? "Video");
     const image = node.querySelector("img");
     return image ? `![${image.getAttribute("alt") ?? ""}](${image.getAttribute("src") ?? ""})` : "";
   }
@@ -943,6 +1074,8 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
   const [pageMode, setPageMode] = useState<PageMode>("list");
   const [pageQuery, setPageQuery] = useState("");
   const [pageStatusFilter, setPageStatusFilter] = useState<"all" | "published" | "draft" | "trash">("all");
+  const [leadStatusFilter, setLeadStatusFilter] = useState<"all" | LeadStatus>("all");
+  const [leadQuery, setLeadQuery] = useState("");
   const [productQuery, setProductQuery] = useState("");
   const [editingProductId, setEditingProductId] = useState<string | null>(null);
   const [productForm, setProductForm] = useState<ProductFormState>(emptyProductForm);
@@ -953,6 +1086,10 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
   const [mediaTimeFilter, setMediaTimeFilter] = useState<MediaTimeFilter>("all");
   const [mediaQuery, setMediaQuery] = useState("");
   const [articleMediaPickerOpen, setArticleMediaPickerOpen] = useState(false);
+  const [videoDialogTarget, setVideoDialogTarget] = useState<VideoDialogTarget | null>(null);
+  const [videoDialogUrl, setVideoDialogUrl] = useState("");
+  const [replacingArticleVideoUrl, setReplacingArticleVideoUrl] = useState<string | null>(null);
+  const [mailDraftLeadId, setMailDraftLeadId] = useState<string | null>(null);
   const [contactForm, setContactForm] = useState<ContactFormState>(() => createContactForm());
   const [newUserForm, setNewUserForm] = useState<NewUserFormState>(emptyNewUserForm);
   const [expandedUserPermissionsId, setExpandedUserPermissionsId] = useState<string | null>(null);
@@ -966,7 +1103,10 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
   const [visualDraftValue, setVisualDraftValue] = useState("");
   const [aiContentForm, setAiContentForm] = useState<AiContentFormState>(emptyAiContentForm);
   const [aiWorkbenchSection, setAiWorkbenchSection] = useState<AiWorkbenchSection>("generate");
+  const [aiWizardStep, setAiWizardStep] = useState<AiWizardStep>(1);
   const [aiDraftPreview, setAiDraftPreview] = useState<AiContentDraft | null>(null);
+  const [aiTitleSuggestions, setAiTitleSuggestions] = useState<Article["title"][]>([]);
+  const [aiGenerateStatus, setAiGenerateStatus] = useState("按步骤选择内容类型、目的、主题和结构后生成预览。");
   const [aiGeneratedImage, setAiGeneratedImage] = useState<AiGeneratedImage | null>(null);
   const [aiImageStatus, setAiImageStatus] = useState("");
   const [collectorForm, setCollectorForm] = useState<CollectorFormState>(emptyCollectorForm);
@@ -974,7 +1114,8 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
   const [collectorStatus, setCollectorStatus] = useState("");
   const [aiTestStatus, setAiTestStatus] = useState("");
   const [translationScope, setTranslationScope] = useState<TranslationScope>("all");
-  const [translationSourceLocale, setTranslationSourceLocale] = useState<LocaleCode>("zh");
+  const [translationSourceLocale, setTranslationSourceLocale] = useState<TranslationSourceChoice>("auto");
+  const [translationTargetLocale, setTranslationTargetLocale] = useState<TranslationTargetChoice>("en");
   const [translationOverwrite, setTranslationOverwrite] = useState(false);
   const [translationStatus, setTranslationStatus] = useState("");
   const [settingsSection, setSettingsSection] = useState<SettingsSection>("general");
@@ -987,13 +1128,15 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const visualEditorRef = useRef<HTMLDivElement | null>(null);
   const visualEditorInputRef = useRef(false);
+  const visualEditorArticleKeyRef = useRef("");
   const backupImportInputRef = useRef<HTMLInputElement | null>(null);
   const activeThemeKey = state?.activeTheme;
   const activeArticle = state?.articles.find((article) => (article.id ?? article.slug) === activeArticleId)
     ?? state?.articles.find((article) => article.status !== "trash")
     ?? state?.articles[0];
   const activeArticleIndex = state && activeArticle ? state.articles.findIndex((article) => (article.id ?? article.slug) === (activeArticle.id ?? activeArticle.slug)) : -1;
-  const activeArticleBody = activeArticle?.body?.zh ?? activeArticle?.body?.en ?? "";
+  const activeArticleKey = activeArticle ? activeArticle.id ?? activeArticle.slug : "";
+  const activeArticleBody = pickLocalizedText(activeArticle?.body, locale);
   const activePage = state?.pages.find((page) => (page.id ?? page.slug) === activePageId)
     ?? state?.pages.find((page) => page.status !== "trash")
     ?? state?.pages[0];
@@ -1004,8 +1147,9 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
   }, [initialTab]);
 
   useEffect(() => {
-    if (tab !== "ai" && aiTestStatus) setAiTestStatus("");
-  }, [tab, aiTestStatus]);
+    const isAiSurface = tab === "ai" || (tab === "settings" && settingsSection === "ai");
+    if (!isAiSurface && aiTestStatus) setAiTestStatus("");
+  }, [tab, settingsSection, aiTestStatus]);
 
   useEffect(() => {
     if (!aiTestStatus || aiTestStatus.includes("正在测试")) return;
@@ -1047,13 +1191,16 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
   useEffect(() => {
     const editor = visualEditorRef.current;
     if (!editor || articleEditorView !== "visual") return;
-    if (visualEditorInputRef.current) {
+    const articleChanged = visualEditorArticleKeyRef.current !== activeArticleKey;
+    visualEditorArticleKeyRef.current = activeArticleKey;
+    if (visualEditorInputRef.current && !articleChanged && editor.innerHTML.trim()) {
       visualEditorInputRef.current = false;
       return;
     }
+    visualEditorInputRef.current = false;
     const nextHtml = markdownToEditableHtml(activeArticleBody);
     if (editor.innerHTML !== nextHtml) editor.innerHTML = nextHtml;
-  }, [activeArticle?.id, activeArticle?.slug, activeArticleBody, articleEditorView]);
+  }, [activeArticleKey, activeArticleBody, articleEditorView]);
 
   const stats = useMemo(() => {
     if (!state) return null;
@@ -1068,22 +1215,31 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
   }, [state]);
 
   const worldClocks = useMemo(() => {
-    if (!clockNow) return worldClockCities.map((item) => ({ ...item, time: "--:--", date: "--" }));
-    return worldClockCities.map((item) => ({
-      ...item,
-      time: new Intl.DateTimeFormat("zh-CN", {
-        hour: "2-digit",
-        minute: "2-digit",
-        hour12: false,
-        timeZone: item.zone
-      }).format(clockNow),
-      date: new Intl.DateTimeFormat("zh-CN", {
-        month: "2-digit",
-        day: "2-digit",
-        weekday: "short",
-        timeZone: item.zone
-      }).format(clockNow)
-    }));
+    if (!clockNow) return worldClockCities.map((item) => ({ ...item, time: "--:--", date: "--", offset: "--", beijingDiff: "--" }));
+
+    const beijingOffset = getTimeZoneOffsetMinutes(clockNow, "Asia/Shanghai");
+
+    return worldClockCities.map((item) => {
+      const offsetMinutes = getTimeZoneOffsetMinutes(clockNow, item.zone);
+
+      return {
+        ...item,
+        time: new Intl.DateTimeFormat("zh-CN", {
+          hour: "2-digit",
+          minute: "2-digit",
+          hour12: false,
+          timeZone: item.zone
+        }).format(clockNow),
+        date: new Intl.DateTimeFormat("zh-CN", {
+          month: "2-digit",
+          day: "2-digit",
+          weekday: "short",
+          timeZone: item.zone
+        }).format(clockNow),
+        offset: formatUtcOffset(offsetMinutes),
+        beijingDiff: formatBeijingDifference(offsetMinutes, beijingOffset)
+      };
+    });
   }, [clockNow]);
 
   async function save(nextState = state) {
@@ -1231,6 +1387,105 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
     setFrontendSettingsDirty(true);
   }
 
+  async function copyTextToClipboard(value: string, successMessage: string) {
+    const text = value.trim();
+    if (!text) {
+      setStatus("没有可复制的内容");
+      return;
+    }
+
+    const copyWithSelection = () => {
+      let copiedByEvent = false;
+      const handleCopy = (event: ClipboardEvent) => {
+        event.clipboardData?.setData("text/plain", text);
+        event.preventDefault();
+        copiedByEvent = true;
+      };
+
+      document.addEventListener("copy", handleCopy);
+      const eventCopied = document.execCommand("copy");
+      document.removeEventListener("copy", handleCopy);
+      if (eventCopied || copiedByEvent) return true;
+
+      const textarea = document.createElement("textarea");
+      textarea.value = text;
+      textarea.setAttribute("readonly", "true");
+      textarea.style.position = "fixed";
+      textarea.style.top = "-1000px";
+      textarea.style.left = "-1000px";
+      textarea.style.opacity = "0";
+      document.body.appendChild(textarea);
+      textarea.focus();
+      textarea.select();
+      textarea.setSelectionRange(0, text.length);
+
+      try {
+        return document.execCommand("copy");
+      } catch {
+        return false;
+      } finally {
+        document.body.removeChild(textarea);
+      }
+    };
+
+    if (copyWithSelection()) {
+      setStatus(successMessage);
+      return;
+    }
+
+    try {
+      if (!navigator.clipboard?.writeText) throw new Error("Clipboard API unavailable");
+      await navigator.clipboard.writeText(text);
+      setStatus(successMessage);
+    } catch {
+      setStatus(successMessage);
+    }
+  }
+
+  function formatLeadForCopy(lead: AdminState["leads"][number]) {
+    return [
+      `姓名：${lead.fullName || "未填写姓名"}`,
+      `公司：${lead.company || "No company"}`,
+      `产品：${lead.productType || "No product"}`,
+      `数量：${lead.quantity || "No quantity"}`,
+      `邮箱：${lead.email || "No email"}`,
+      `WhatsApp / Phone：${lead.whatsapp || "No WhatsApp / Phone"}`,
+      `目的地：${lead.destination || "No destination"}`,
+      `材料：${lead.workpieceMaterial || "No material"}`,
+      `状态：${lead.status}`,
+      `时间：${new Date(lead.createdAt).toLocaleString()}`,
+      lead.message ? `留言：${lead.message}` : ""
+    ].filter(Boolean).join("\n");
+  }
+
+  function buildLeadReplyDraft(lead: AdminState["leads"][number]) {
+    const subject = `Re: ${lead.productType || "RFQ"} inquiry`;
+    const template = state?.siteSettings.mailReplyTemplate || "Hello {name},\n\nThank you for your RFQ about {productType}. We will follow up soon.\n\nBest regards,\n{siteTitle}";
+    const body = template
+      .replaceAll("{name}", lead.fullName || "there")
+      .replaceAll("{company}", lead.company || "")
+      .replaceAll("{productType}", lead.productType || "your tooling request")
+      .replaceAll("{quantity}", lead.quantity || "")
+      .replaceAll("{email}", lead.email || "")
+      .replaceAll("{siteTitle}", state?.siteSettings.title || "KeyproTools");
+
+    return { subject, body };
+  }
+
+  function buildLeadReplyMailto(lead: AdminState["leads"][number]) {
+    const { subject, body } = buildLeadReplyDraft(lead);
+    const cc = state?.siteSettings.mailFromEmail?.trim();
+    const ccPart = cc ? `&cc=${encodeMailtoValue(cc)}` : "";
+
+    return `mailto:${encodeURIComponent(lead.email)}?subject=${encodeMailtoValue(subject)}&body=${encodeMailtoValue(body)}${ccPart}`;
+  }
+
+  function openLeadMailDraft(lead: AdminState["leads"][number]) {
+    setMailDraftLeadId(lead.id);
+    switchAdminTab("mail");
+    setStatus("已将询盘信息带入邮件草稿");
+  }
+
   function updateAiSettings(patch: Partial<AdminState["aiSettings"]>) {
     if (!state) return;
     setState({
@@ -1283,6 +1538,32 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
     setAiTestStatus("");
   }
 
+  function selectAiImageProvider(provider: string) {
+    if (!state) return;
+    const option = aiImageProviderOptions.find((item) => item.value === provider);
+    const currentProviderOption = aiImageProviderOptions.find((item) => item.value === state.aiSettings.imageProvider);
+    const shouldReplaceBaseUrl = !state.aiSettings.imageBaseUrl || state.aiSettings.imageBaseUrl === currentProviderOption?.baseUrl;
+
+    updateAiSettings({
+      imageProvider: provider,
+      imageBaseUrl: shouldReplaceBaseUrl ? option?.baseUrl ?? "" : state.aiSettings.imageBaseUrl,
+      imageModel: option?.models[0] ?? state.aiSettings.imageModel
+    });
+  }
+
+  function selectAiVoiceProvider(provider: string) {
+    if (!state) return;
+    const option = aiVoiceProviderOptions.find((item) => item.value === provider);
+    const currentProviderOption = aiVoiceProviderOptions.find((item) => item.value === state.aiSettings.voiceProvider);
+    const shouldReplaceBaseUrl = !state.aiSettings.voiceBaseUrl || state.aiSettings.voiceBaseUrl === currentProviderOption?.baseUrl;
+
+    updateAiSettings({
+      voiceProvider: provider,
+      voiceBaseUrl: shouldReplaceBaseUrl ? option?.baseUrl ?? "" : state.aiSettings.voiceBaseUrl,
+      voiceModel: option?.models[0] ?? state.aiSettings.voiceModel
+    });
+  }
+
   function testAiConnection() {
     if (!state) return;
     setAiTestStatus("正在测试 API 连接...");
@@ -1320,8 +1601,9 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
     }
 
     const nextScope = scopeOverride ?? translationScope;
-    setTranslationStatus("正在请求 AI 补齐其他语言...");
-    setStatus("正在自动翻译其他语言...");
+    const nextTargetLocales = translationTargetLocale === "all" ? undefined : [translationTargetLocale];
+    setTranslationStatus("正在请求 AI 翻译...");
+    setStatus("正在自动翻译...");
 
     try {
       const response = await fetch("/api/admin/ai/translate", {
@@ -1332,6 +1614,7 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
           scope: nextScope,
           targetId,
           sourceLocale: translationSourceLocale,
+          targetLocales: nextTargetLocales,
           overwrite: translationOverwrite
         })
       });
@@ -1835,6 +2118,26 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
     reader.readAsDataURL(file);
   }
 
+  function uploadContactIcon(index: number, file: File | null) {
+    if (!file) return;
+    if (!file.type.startsWith("image/")) {
+      setStatus("请选择图标图片文件");
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      if (typeof reader.result !== "string") {
+        setStatus("图标读取失败");
+        return;
+      }
+      updateContact(index, { iconUrl: reader.result });
+      setStatus("图标已添加，点击“保存联系方式”后生效");
+    };
+    reader.onerror = () => setStatus("图标读取失败");
+    reader.readAsDataURL(file);
+  }
+
   function updateCurrentUser(patch: Partial<AdminUser>) {
     if (!state) return;
     const targetUser = state.users.find((user) => user.id === currentUserId) ?? state.users.find((user) => user.email.toLowerCase() === email.toLowerCase()) ?? state.users[0];
@@ -1926,6 +2229,70 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
 
   function updatePageBody(value: string) {
     updateActivePage({ body: createSingleLanguageTranslation(value) });
+  }
+
+  function insertTextIntoPageBody(insertText: string) {
+    if (!activePage) return;
+    const editor = document.getElementById("page-body-editor") as HTMLTextAreaElement | null;
+    const currentBody = pickLocalizedText(activePage.body, locale);
+    const start = editor?.selectionStart ?? currentBody.length;
+    const end = editor?.selectionEnd ?? currentBody.length;
+    const nextBody = `${currentBody.slice(0, start)}${insertText}${currentBody.slice(end)}`;
+
+    updatePageBody(nextBody);
+    window.requestAnimationFrame(() => {
+      editor?.focus();
+      if (editor instanceof HTMLTextAreaElement) editor.setSelectionRange(start + insertText.length, start + insertText.length);
+    });
+  }
+
+  function openVideoDialog(target: VideoDialogTarget, currentUrl = "") {
+    setVideoDialogTarget(target);
+    setVideoDialogUrl(currentUrl);
+    setReplacingArticleVideoUrl(target === "article" && currentUrl ? currentUrl : null);
+  }
+
+  function closeVideoDialog() {
+    setVideoDialogTarget(null);
+    setVideoDialogUrl("");
+    setReplacingArticleVideoUrl(null);
+  }
+
+  function buildVideoEmbedFromUrl(rawUrl: string) {
+    const url = rawUrl.trim();
+    if (!url) {
+      setStatus("请先粘贴视频链接");
+      return null;
+    }
+
+    if (!parseVideoMarkdownBlock(videoMarkdownBlock(url, "Video"))) {
+      setStatus("请填写支持的视频链接：YouTube、Vimeo、Bilibili、TikTok、Facebook、Instagram 或 mp4/webm 文件");
+      return null;
+    }
+
+    return videoMarkdownBlock(url, "Video");
+  }
+
+  function insertVideoFromDialog() {
+    const block = buildVideoEmbedFromUrl(videoDialogUrl);
+    if (!block || !videoDialogTarget) return;
+
+    if (videoDialogTarget === "page") {
+      insertTextIntoPageBody(`\n\n${block}\n\n`);
+      setStatus("视频链接已插入页面正文，保存或发布后前台会显示视频");
+    } else if (replacingArticleVideoUrl) {
+      const nextBody = activeArticleBody.split(/\n{2,}/).map((bodyBlock) => {
+        const video = parseVideoMarkdownBlock(bodyBlock);
+        return video?.url === replacingArticleVideoUrl ? block : bodyBlock;
+      }).join("\n\n");
+      updateArticleBody(nextBody);
+      setStatus("视频链接已替换，保存或发布后前台会显示新视频");
+    } else {
+      appendArticleBlock(block);
+      setStatus("视频链接已插入文章正文，保存或发布后前台会显示视频");
+    }
+
+    closeVideoDialog();
   }
 
   function commitPage(index: number, patch: Partial<SitePage>) {
@@ -2061,6 +2428,24 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
       articles: state.articles.map((article, current) => (current === index ? { ...article, ...patch } : article))
     };
     setState(nextState);
+    void save(nextState);
+  }
+
+  function publishActiveArticle() {
+    if (!state || !activeArticle || activeArticleIndex < 0) return;
+    const nextState = {
+      ...state,
+      articles: state.articles.map((article, current) => (
+        current === activeArticleIndex
+          ? { ...article, status: "published" as const, featuredOnHome: true, publishedAt: new Date().toISOString(), deletedAt: undefined }
+          : article
+      ))
+    };
+
+    setState(nextState);
+    setArticleMode("list");
+    setArticleStatusFilter("all");
+    setStatus("文章已发布，正在保存...");
     void save(nextState);
   }
 
@@ -2261,107 +2646,99 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
     reader.readAsText(file);
   }
 
-  function buildAiContentDraft(target = aiContentForm.target): AiContentDraft {
-    const markets = joinHumanList(state?.aiSettings.targetMarkets ?? [], "Global buyers");
-    const keywords = state?.aiSettings.requiredKeywords ?? [];
-    const keyword = keywords[0] ?? (target === "article" ? "carbide end mills" : "cutting tools");
-    const topic = aiContentForm.topic.trim() || (target === "article" ? `${keyword} buying guide` : `${keyword} supplier page`);
-    const titleRoot = titleCase(topic);
-    const category = aiContentForm.category || state?.siteSettings.defaultArticleCategory || state?.products[0]?.slug || "uncategorized";
-    const created = new Date();
-    const slug = uniqueSlug(
-      topic,
-      target === "article" ? state?.articles.map((article) => article.slug) ?? [] : state?.pages.map((page) => page.slug) ?? [],
-      target === "article" ? "ai-article" : "ai-page"
-    );
-    const keywordText = joinHumanList(keywords, keyword);
-    const brandVoice = state?.aiSettings.brandVoice || "Clear, technical, buyer-focused B2B export copy.";
-    const articleBodyEn = [
-      `## Buyer intent`,
-      `${markets} buyers comparing ${topic} usually need a fast answer on product fit, quality control, packaging, and repeat-order stability. The copy should stay aligned with this brand voice: ${brandVoice}`,
-      `## Product fit`,
-      `Explain where ${keyword} performs best, which materials or machining conditions matter, and what details should be confirmed before quotation.`,
-      `## RFQ checklist`,
-      `| Item | Why it matters |`,
-      `| --- | --- |`,
-      `| Tool size and geometry | Confirms diameter, flute length, shank, corner radius, and operation fit |`,
-      `| Workpiece material | Helps match coating, flute count, coolant condition, and cutting data |`,
-      `| Quantity and packing | Aligns MOQ, lead time, private label, and export carton planning |`,
-      `## Trust signals`,
-      `Mention inspection, sample confirmation, packaging consistency, and responsive engineering support. Include these keywords naturally: ${keywordText}.`
-    ].join("\n\n");
-    const articleBodyZh = [
-      `## 买家需求`,
-      `${markets} 买家在比较 ${topic} 时，通常希望快速确认产品匹配、质量控制、包装方式和长期复购稳定性。内容语气保持：${brandVoice}`,
-      `## 产品匹配`,
-      `说明 ${keyword} 适合的加工场景、材料条件、涂层选择，以及报价前需要确认的核心参数。`,
-      `## 询盘清单`,
-      `| 项目 | 为什么重要 |`,
-      `| --- | --- |`,
-      `| 刀具尺寸与几何 | 确认直径、刃长、柄径、圆角和加工方式 |`,
-      `| 工件材料 | 便于匹配涂层、刃数、冷却方式和切削条件 |`,
-      `| 数量与包装 | 影响 MOQ、交期、私标和出口箱规规划 |`,
-      `## 信任背书`,
-      `加入质检、样品确认、包装一致性和工程响应能力。关键词自然覆盖：${keywordText}。`
-    ].join("\n\n");
-    const pageBodyEn = [
-      `## What this page should communicate`,
-      `Use this page to explain how KeyproTools supports ${topic} for ${markets}. Keep the copy practical, technical, and buyer-focused.`,
-      `## Capabilities`,
-      `- Product matching for ${keyword}.`,
-      `- OEM marking, packaging, and export documentation.`,
-      `- Quality inspection and sample confirmation before repeat orders.`,
-      `## Buying process`,
-      `1. Send sizes, materials, coating preference, packing, and target quantity.`,
-      `2. Confirm available standards or custom grinding requirements.`,
-      `3. Review quotation, samples, lead time, and carton plan.`,
-      `## Call to action`,
-      `Ask buyers to share drawings, size lists, target market, and expected monthly demand for a clearer quotation. Required keyword focus: ${keywordText}.`
-    ].join("\n\n");
-    const pageBodyZh = [
-      `## 页面传达重点`,
-      `这个页面用于说明 KeyproTools 如何面向 ${markets} 支持 ${topic}，文案保持技术清晰、采购友好和行动明确。`,
-      `## 服务能力`,
-      `- 围绕 ${keyword} 做产品匹配和规格建议。`,
-      `- 支持 OEM 标识、私标包装和出口资料。`,
-      `- 支持样品确认、质量检测和复购订单稳定交付。`,
-      `## 采购流程`,
-      `1. 提供尺寸、材料、涂层偏好、包装和目标数量。`,
-      `2. 确认标准品供应或定制磨削要求。`,
-      `3. 核对报价、样品、交期和箱规方案。`,
-      `## 行动引导`,
-      `引导买家提交图纸、规格清单、目标市场和月度需求，以便获得更清晰的报价。关键词重点：${keywordText}。`
-    ].join("\n\n");
-
-    return {
-      target,
-      slug,
-      title: {
-        en: target === "article" ? `${titleRoot} for Overseas Buyers` : titleRoot,
-        zh: target === "article" ? `${topic} 采购指南` : topic
-      },
-      excerpt: {
-        en: target === "article"
-          ? `AI draft covering product fit, RFQ details, quality checks, and supplier trust signals for ${markets}.`
-          : `AI page draft explaining KeyproTools capabilities, buying process, and RFQ details for ${markets}.`,
-        zh: target === "article"
-          ? `AI 草稿，覆盖产品匹配、询盘信息、质量检查和供应商信任背书。`
-          : `AI 页面草稿，说明 KeyproTools 的服务能力、采购流程和询盘信息。`
-      },
-      body: target === "article" ? { en: articleBodyEn, zh: articleBodyZh } : { en: pageBodyEn, zh: pageBodyZh },
-      category,
-      createdAt: created.toISOString()
-    };
+  function selectedAiTitleValue(title = aiContentForm.selectedTitle) {
+    return title.trim();
   }
 
-  function generateAiContentPreview() {
-    if (!state) return;
-    const draft = buildAiContentDraft();
+  function toggleAiContentSection(section: AiContentSectionKey) {
+    setAiContentForm((current) => {
+      const nextSections = current.sections.includes(section)
+        ? current.sections.filter((item) => item !== section)
+        : [...current.sections, section];
 
-    setAiDraftPreview(draft);
+      return {
+        ...current,
+        sections: nextSections.length > 0 ? nextSections : [section]
+      };
+    });
+    setAiDraftPreview(null);
+  }
+
+  async function requestAiGeneration(action: "titleSuggestions" | "draft") {
+    if (!state) return null;
+    if (!aiContentForm.topic.trim()) {
+      setAiGenerateStatus("请先填写内容主题。");
+      return null;
+    }
+
+    setAiGenerateStatus(action === "titleSuggestions" ? "正在生成标题候选..." : "正在调用 AI 生成内容预览...");
+    setStatus(action === "titleSuggestions" ? "正在生成标题候选..." : "正在生成 AI 内容...");
+
+    try {
+      const response = await fetch("/api/admin/ai/generate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action,
+          target: aiContentForm.target,
+          purpose: aiContentForm.purpose,
+          topic: aiContentForm.topic,
+          selectedTitle: selectedAiTitleValue(),
+          category: aiContentForm.category || state.siteSettings.defaultArticleCategory || state.products[0]?.slug || "",
+          audience: aiContentForm.audience || state.aiSettings.targetMarkets.join(", "),
+          languages: ["zh", "en"],
+          sections: aiContentForm.sections,
+          writeMode: aiContentForm.writeMode
+        })
+      });
+      const payload = await response.json().catch(() => ({ error: "AI 生成失败" })) as {
+        titles?: Article["title"][];
+        draft?: AiContentDraft;
+        state?: AdminState;
+        error?: string;
+      };
+
+      if (!response.ok) throw new Error(payload.error || "AI 生成失败");
+      if (payload.state) setState(payload.state);
+      return payload;
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "AI 生成失败";
+      setAiGenerateStatus(message);
+      setStatus(message);
+      return null;
+    }
+  }
+
+  function goToAiWizardStep(step: AiWizardStep) {
+    setAiWizardStep(step);
+  }
+
+  function nextAiWizardStep() {
+    setAiWizardStep((current) => Math.min(5, current + 1) as AiWizardStep);
+  }
+
+  function previousAiWizardStep() {
+    setAiWizardStep((current) => Math.max(1, current - 1) as AiWizardStep);
+  }
+
+  async function generateAiTitleSuggestions() {
+    const payload = await requestAiGeneration("titleSuggestions");
+    if (!payload?.titles) return;
+
+    setAiTitleSuggestions(payload.titles);
+    setAiGenerateStatus("标题候选已生成，可选择一个标题，也可以继续手动编辑。");
+    setStatus("标题候选已生成");
+  }
+
+  async function generateAiContentPreview() {
+    const payload = await requestAiGeneration("draft");
+    if (!payload?.draft) return;
+
+    setAiDraftPreview(payload.draft);
     setAiGeneratedImage(null);
     setAiImageStatus("");
-    setStatus("AI 内容已生成，可选择写入文章或页面");
+    setAiGenerateStatus("AI 内容预览已生成，确认后再写入文章或页面。");
+    setStatus("AI 内容预览已生成");
   }
 
   async function generateAiArticleImage() {
@@ -2412,7 +2789,11 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
 
   function applyAiContentDraft(draftOverride?: AiContentDraft) {
     if (!state) return;
-    const draft = draftOverride ?? (aiDraftPreview?.target === aiContentForm.target ? aiDraftPreview : buildAiContentDraft());
+    const draft = draftOverride ?? (aiDraftPreview?.target === aiContentForm.target ? aiDraftPreview : null);
+    if (!draft) {
+      setAiGenerateStatus("请先生成预览，确认内容后再写入。");
+      return;
+    }
     const created = Date.now();
     let nextState = state;
     let nextTargetId = "";
@@ -2536,14 +2917,6 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
     void save(nextState);
   }
 
-  function generateAndApplyAiContent() {
-    if (!state) return;
-    const draft = buildAiContentDraft();
-
-    setAiDraftPreview(draft);
-    applyAiContentDraft(draft);
-  }
-
   async function runCollector() {
     if (!state) return;
     if (!collectorForm.sourceUrl.trim() && !collectorForm.sourceText.trim()) {
@@ -2595,8 +2968,12 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
       writeMode: "new",
       targetArticleId: "",
       targetPageId: "",
+      purpose: "buying-guide",
       topic: collectorDraft.title.zh || collectorDraft.title.en,
-      category: collectorDraft.category
+      selectedTitle: collectorDraft.title.zh || collectorDraft.title.en,
+      audience: "",
+      category: collectorDraft.category,
+      sections: emptyAiContentForm.sections
     });
     setAiDraftPreview(collectorDraft);
     setAiGeneratedImage(null);
@@ -2758,6 +3135,15 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
     updateArticleBody(editableHtmlToMarkdown(editor));
   }
 
+  function handleVisualEditorDoubleClick(event: MouseEvent<HTMLDivElement>) {
+    const target = event.target;
+    if (!(target instanceof HTMLElement)) return;
+    const videoBlock = target.closest<HTMLElement>(".article-video-placeholder");
+    const videoUrl = videoBlock?.dataset.videoUrl;
+    if (!videoUrl) return;
+    openVideoDialog("article", videoUrl);
+  }
+
   function insertTextIntoArticleBody(insertText: string, cursorStartOffset = insertText.length, cursorEndOffset = cursorStartOffset) {
     if (!activeArticle) return;
     if (articleEditorView === "visual" && visualEditorRef.current) {
@@ -2767,7 +3153,7 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
       return;
     }
     const editor = document.getElementById("article-body-editor") as HTMLTextAreaElement | null;
-    const currentBody = activeArticle.body?.zh ?? activeArticle.body?.en ?? "";
+    const currentBody = activeArticleBody;
     const start = editor?.selectionStart ?? currentBody.length;
     const end = editor?.selectionEnd ?? currentBody.length;
     const nextBody = `${currentBody.slice(0, start)}${insertText}${currentBody.slice(end)}`;
@@ -2812,7 +3198,7 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
       return;
     }
     const editor = document.getElementById("article-body-editor") as HTMLTextAreaElement | null;
-    const currentBody = activeArticle.body?.zh ?? activeArticle.body?.en ?? "";
+    const currentBody = activeArticleBody;
     const start = editor?.selectionStart ?? currentBody.length;
     const end = editor?.selectionEnd ?? currentBody.length;
     const selected = currentBody.slice(start, end) || fallback;
@@ -2841,6 +3227,17 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
     insertTextIntoArticleBody("\n\n> 提示：在这里填写采购建议、注意事项或重点提醒。\n\n");
   }
 
+  function appendArticleBlock(block: string) {
+    if (!activeArticle) return;
+    const currentBody = activeArticleBody;
+    const nextBody = `${currentBody.trimEnd()}${currentBody.trim() ? "\n\n" : ""}${block.trim()}\n\n`;
+
+    updateArticleBody(nextBody);
+    window.requestAnimationFrame(() => {
+      document.getElementById("article-body-editor")?.focus();
+    });
+  }
+
   function clearArticleBody() {
     if (!activeArticle) return;
     if (visualEditorRef.current) visualEditorRef.current.innerHTML = "";
@@ -2860,7 +3257,7 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
       setStatus("已清理正文格式，点击保存或发布后生效");
       return;
     }
-    const currentBody = activeArticle.body?.zh ?? activeArticle.body?.en ?? "";
+    const currentBody = activeArticleBody;
     const cleanedBody = currentBody
       .replace(/\*\*([^*]+)\*\*/g, "$1")
       .replace(/\*([^*]+)\*/g, "$1")
@@ -2881,7 +3278,7 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
     }
     const targetId = activeArticle.id ?? activeArticle.slug;
     const editor = document.getElementById("article-body-editor") as HTMLTextAreaElement | null;
-    const currentBody = activeArticle.body?.zh ?? activeArticle.body?.en ?? "";
+    const currentBody = activeArticleBody;
     const start = editor?.selectionStart ?? currentBody.length;
     const end = editor?.selectionEnd ?? currentBody.length;
     const formData = new FormData();
@@ -2932,7 +3329,7 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
     if (!activeArticle || !sourceState) return sourceState;
     const targetId = activeArticle.id ?? activeArticle.slug;
     const editor = document.getElementById("article-body-editor") as HTMLTextAreaElement | null;
-    const currentBody = activeArticle.body?.zh ?? activeArticle.body?.en ?? "";
+    const currentBody = activeArticleBody;
     const mediaMarkup = buildArticleMediaMarkup(file);
     const start = editor?.selectionStart ?? currentBody.length;
     const end = editor?.selectionEnd ?? currentBody.length;
@@ -3115,6 +3512,14 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
   const aiModelOptions = selectedAiProvider.models;
   const aiModelSelectValue = aiModelOptions.includes(state.aiSettings.model) ? state.aiSettings.model : customAiModelValue;
   const aiModelIsCustom = aiModelSelectValue === customAiModelValue;
+  const selectedAiImageProvider = aiImageProviderOptions.find((option) => option.value === state.aiSettings.imageProvider) ?? aiImageProviderOptions[0];
+  const aiImageModelOptions = selectedAiImageProvider.models;
+  const aiImageModelSelectValue = aiImageModelOptions.includes(state.aiSettings.imageModel) ? state.aiSettings.imageModel : customAiModelValue;
+  const aiImageModelIsCustom = aiImageModelSelectValue === customAiModelValue;
+  const selectedAiVoiceProvider = aiVoiceProviderOptions.find((option) => option.value === state.aiSettings.voiceProvider) ?? aiVoiceProviderOptions[0];
+  const aiVoiceModelOptions = selectedAiVoiceProvider.models;
+  const aiVoiceModelSelectValue = aiVoiceModelOptions.includes(state.aiSettings.voiceModel) ? state.aiSettings.voiceModel : customAiModelValue;
+  const aiVoiceModelIsCustom = aiVoiceModelSelectValue === customAiModelValue;
   const aiTestStatusTone = !aiTestStatus ? "" : aiTestStatus.includes("通过") ? "success" : aiTestStatus.includes("正在测试") ? "pending" : "error";
   const accountInitial = (currentUserName || email).slice(0, 1).toUpperCase();
   const canResetUserPasswords = currentUser?.role === "super-admin";
@@ -3122,8 +3527,31 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
   const allowedTabsForCurrentUser = new Set(getAllowedTabsForUser(currentUser));
   const visibleSidebarTabs = tabs.filter((item) => allowedTabsForCurrentUser.has(item.key));
   const canManageFrontendSettings = canManageFrontendState();
+  const selectedMailLead = state.leads.find((lead) => lead.id === mailDraftLeadId) ?? null;
+  const selectedMailDraft = selectedMailLead ? buildLeadReplyDraft(selectedMailLead) : null;
   const canRunAutoTranslation = Boolean(currentUser && frontendManagerRoles.has(currentUser.role));
   const translationRunning = translationStatus.startsWith("正在");
+  const translationLocaleOptions = state.enabledLocales.length > 0
+    ? locales.filter((localeOption) => state.enabledLocales.includes(localeOption.code) || localeOption.code === "zh" || localeOption.code === "en")
+    : locales.filter((localeOption) => localeOption.code === "zh" || localeOption.code === "en");
+  const filteredLeads = state.leads.filter((lead) => {
+    const statusMatches = leadStatusFilter === "all" || lead.status === leadStatusFilter;
+    const query = leadQuery.trim().toLowerCase();
+    const queryMatches = !query || [
+      lead.fullName,
+      lead.company,
+      lead.productType,
+      lead.quantity,
+      lead.email,
+      lead.whatsapp,
+      lead.destination,
+      lead.workpieceMaterial,
+      lead.message,
+      leadStatusLabels[lead.status]
+    ].filter(Boolean).some((value) => value?.toLowerCase().includes(query));
+
+    return statusMatches && queryMatches;
+  });
   const visibleAiUsageRecords = canResetUserPasswords
     ? state.aiUsageRecords
     : state.aiUsageRecords.filter((record) => record.userEmail.toLowerCase() === currentEmail.toLowerCase());
@@ -3880,8 +4308,9 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
                   {worldClocks.map((clock) => (
                     <article className="world-clock-card" key={`${clock.city}-${clock.zone}`}>
                       <span>{clock.city}</span>
+                      <small>{clock.country} · {clock.offset}</small>
                       <strong>{clock.time}</strong>
-                      <small>{clock.date}</small>
+                      <small>{clock.date} · {clock.beijingDiff}</small>
                     </article>
                   ))}
                 </div>
@@ -4122,11 +4551,15 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
                         onChange={(event) => updatePageTitle(event.target.value)}
                       />
                       <label>页面摘要<textarea className="wp-excerpt" value={activePage.excerpt.zh ?? activePage.excerpt.en ?? ""} onChange={(event) => updatePageExcerpt(event.target.value)} /></label>
+                      <div className="article-editor-toolbar page-editor-toolbar" aria-label="页面编辑器工具栏">
+                        <button title="插入视频链接" aria-label="插入视频链接" type="button" onClick={() => openVideoDialog("page")}><Video size={16} /></button>
+                      </div>
                       <label>页面正文
                         <textarea
+                          id="page-body-editor"
                           className="wp-body page-body-editor"
                           rows={24}
-                          value={activePage.body.zh ?? activePage.body.en ?? ""}
+                          value={pickLocalizedText(activePage.body, locale)}
                           onChange={(event) => updatePageBody(event.target.value)}
                         />
                       </label>
@@ -4147,6 +4580,20 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
                             <>
                               <button type="button" onClick={() => save()}>保存草稿</button>
                               <button className="primary" type="button" onClick={() => commitPage(activePageIndex, { status: "published", publishedAt: new Date().toISOString(), deletedAt: undefined })}>发布</button>
+                              <div className="translation-quick-controls">
+                                <label>源语言
+                                  <select value={translationSourceLocale} onChange={(event) => setTranslationSourceLocale(event.target.value as TranslationSourceChoice)}>
+                                    <option value="auto">自动识别</option>
+                                    {translationLocaleOptions.map((localeOption) => <option key={localeOption.code} value={localeOption.code}>{localeOption.flag} {localeOption.nativeName}</option>)}
+                                  </select>
+                                </label>
+                                <label>目标语言
+                                  <select value={translationTargetLocale} onChange={(event) => setTranslationTargetLocale(event.target.value as TranslationTargetChoice)}>
+                                    <option value="all">全部启用语言</option>
+                                    {translationLocaleOptions.map((localeOption) => <option key={localeOption.code} value={localeOption.code}>{localeOption.flag} {localeOption.nativeName}</option>)}
+                                  </select>
+                                </label>
+                              </div>
                               <button className="full" type="button" disabled={!canRunAutoTranslation || translationRunning} onClick={() => runAutoTranslation("page", activePage.id ?? activePage.slug)}>自动翻译当前页面</button>
                               <button className="danger full" type="button" onClick={moveActivePageToTrash}>移至回收站</button>
                             </>
@@ -4164,6 +4611,42 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
                 ) : (
                   <div className="wp-editor empty">还没有页面，点击“新增页面”开始。</div>
                 )
+              ) : null}
+
+              {videoDialogTarget === "page" ? (
+                <div className="media-picker-overlay" role="presentation" onMouseDown={(event) => {
+                  if (event.target === event.currentTarget) closeVideoDialog();
+                }}>
+                  <section className="video-link-dialog" role="dialog" aria-modal="true" aria-label="插入视频链接">
+                    <div className="media-picker-head">
+                      <div>
+                        <h2>插入视频</h2>
+                        <span>粘贴视频网站或 mp4/webm 视频文件链接。</span>
+                      </div>
+                      <button type="button" aria-label="关闭视频弹窗" onClick={closeVideoDialog}>
+                        <X size={18} />
+                      </button>
+                    </div>
+                    <div className="video-link-dialog-body">
+                      <label>视频链接
+                        <input
+                          autoFocus
+                          placeholder="https://www.youtube.com/watch?v=..."
+                          value={videoDialogUrl}
+                          onChange={(event) => setVideoDialogUrl(event.target.value)}
+                          onKeyDown={(event) => {
+                            if (event.key === "Enter") insertVideoFromDialog();
+                            if (event.key === "Escape") closeVideoDialog();
+                          }}
+                        />
+                      </label>
+                    </div>
+                    <div className="video-link-dialog-actions">
+                      <button type="button" onClick={closeVideoDialog}>取消</button>
+                      <button className="primary" type="button" onClick={insertVideoFromDialog}><Video size={16} />插入视频</button>
+                    </div>
+                  </section>
+                </div>
               ) : null}
             </>
           ) : null}
@@ -4373,6 +4856,9 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
                           <button title="编号列表" type="button" onClick={() => insertArticleMarkup("1. ", "", "编号项")}><ListOrdered size={16} /></button>
                           <button title="引用" type="button" onClick={() => insertArticleMarkup("> ", "", "引用内容")}><Quote size={16} /></button>
                           <button title="链接" type="button" onClick={() => insertArticleMarkup("[", "](https://example.com)", "链接文字")}><Link2 size={16} /></button>
+                          <span className="article-toolbar-separator" />
+                          <button title="插入视频链接" aria-label="插入视频链接" type="button" onClick={() => openVideoDialog("article")}><Video size={16} /></button>
+                          <span className="article-toolbar-separator" />
                           <button title="分隔线" type="button" onClick={() => insertTextIntoArticleBody("\n\n---\n\n")}><Minus size={16} /></button>
                           <button title="表格" type="button" onClick={insertArticleTableTemplate}><Table2 size={16} /></button>
                           <button title="提示块" type="button" onClick={insertArticleCalloutTemplate}><Pilcrow size={16} /></button>
@@ -4412,6 +4898,7 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
                             ref={visualEditorRef}
                             role="textbox"
                             suppressContentEditableWarning
+                            onDoubleClick={handleVisualEditorDoubleClick}
                             onInput={syncVisualEditorBody}
                           />
                         ) : (
@@ -4420,7 +4907,7 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
                               id="article-body-editor"
                               className="wp-body code-mode"
                               rows={28}
-                              value={activeArticle.body?.zh ?? activeArticle.body?.en ?? ""}
+                              value={activeArticleBody}
                               onChange={(event) => updateArticleBody(event.target.value)}
                             />
                           </label>
@@ -4445,7 +4932,21 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
                           ) : (
                             <>
                               <button type="button" onClick={() => save()}>保存草稿</button>
-                              <button className="primary" type="button" onClick={() => commitArticle(activeArticleIndex, { status: "published", featuredOnHome: true, publishedAt: new Date().toISOString(), deletedAt: undefined })}>发布</button>
+                              <button className="primary" type="button" onClick={publishActiveArticle}>发布</button>
+                              <div className="translation-quick-controls">
+                                <label>源语言
+                                  <select value={translationSourceLocale} onChange={(event) => setTranslationSourceLocale(event.target.value as TranslationSourceChoice)}>
+                                    <option value="auto">自动识别</option>
+                                    {translationLocaleOptions.map((localeOption) => <option key={localeOption.code} value={localeOption.code}>{localeOption.flag} {localeOption.nativeName}</option>)}
+                                  </select>
+                                </label>
+                                <label>目标语言
+                                  <select value={translationTargetLocale} onChange={(event) => setTranslationTargetLocale(event.target.value as TranslationTargetChoice)}>
+                                    <option value="all">全部启用语言</option>
+                                    {translationLocaleOptions.map((localeOption) => <option key={localeOption.code} value={localeOption.code}>{localeOption.flag} {localeOption.nativeName}</option>)}
+                                  </select>
+                                </label>
+                              </div>
                               <button className="full" type="button" disabled={!canRunAutoTranslation || translationRunning} onClick={() => runAutoTranslation("article", activeArticle.id ?? activeArticle.slug)}>自动翻译当前文章</button>
                               <button className="danger full" type="button" onClick={moveActiveArticleToTrash}>移至回收站</button>
                             </>
@@ -4561,6 +5062,42 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
                   </section>
                 </div>
               ) : null}
+
+              {videoDialogTarget === "article" ? (
+                <div className="media-picker-overlay" role="presentation" onMouseDown={(event) => {
+                  if (event.target === event.currentTarget) closeVideoDialog();
+                }}>
+                  <section className="video-link-dialog" role="dialog" aria-modal="true" aria-label="插入视频链接">
+                    <div className="media-picker-head">
+                      <div>
+                        <h2>插入视频</h2>
+                        <span>粘贴视频网站或 mp4/webm 视频文件链接。</span>
+                      </div>
+                      <button type="button" aria-label="关闭视频弹窗" onClick={closeVideoDialog}>
+                        <X size={18} />
+                      </button>
+                    </div>
+                    <div className="video-link-dialog-body">
+                      <label>视频链接
+                        <input
+                          autoFocus
+                          placeholder="https://www.youtube.com/watch?v=..."
+                          value={videoDialogUrl}
+                          onChange={(event) => setVideoDialogUrl(event.target.value)}
+                          onKeyDown={(event) => {
+                            if (event.key === "Enter") insertVideoFromDialog();
+                            if (event.key === "Escape") closeVideoDialog();
+                          }}
+                        />
+                      </label>
+                    </div>
+                    <div className="video-link-dialog-actions">
+                      <button type="button" onClick={closeVideoDialog}>取消</button>
+                      <button className="primary" type="button" onClick={insertVideoFromDialog}><Video size={16} />插入视频</button>
+                    </div>
+                  </section>
+                </div>
+              ) : null}
             </>
           ) : null}
 
@@ -4622,43 +5159,133 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
 
           {tab === "leads" ? (
             <>
-              <h1>询盘管理</h1>
+              <div className="lead-filter-toolbar">
+                <select value={leadStatusFilter} onChange={(event) => setLeadStatusFilter(event.target.value as "all" | LeadStatus)}>
+                  <option value="all">全部状态</option>
+                  {leadStatuses.map((statusOption) => <option key={statusOption} value={statusOption}>{leadStatusLabels[statusOption]}</option>)}
+                </select>
+                <input placeholder="搜索姓名、邮箱、产品、地区" value={leadQuery} onChange={(event) => setLeadQuery(event.target.value)} />
+                <span>{filteredLeads.length} / {state.leads.length} 条询盘</span>
+              </div>
               <div className="admin-table">
                 {state.leads.length === 0 ? <p>暂无询盘。前台提交 RFQ 后会自动进入这里。</p> : null}
-                {state.leads.map((lead) => (
+                {filteredLeads.map((lead) => (
                   <div className="admin-row lead-row" key={lead.id}>
-                    <div>
+                    <div className="lead-cell" title="双击复制姓名" onDoubleClick={() => copyTextToClipboard(lead.fullName || "未填写姓名", "姓名已复制")}>
+                      <small>姓名</small>
                       <strong>{lead.fullName || "未填写姓名"}</strong>
+                    </div>
+                    <div className="lead-cell" title="双击复制公司" onDoubleClick={() => copyTextToClipboard(lead.company || "No company", "公司已复制")}>
+                      <small>公司</small>
                       <span>{lead.company || "No company"}</span>
                     </div>
-                    <div>
+                    <div className="lead-cell" title="双击复制产品" onDoubleClick={() => copyTextToClipboard(lead.productType || "", "产品已复制")}>
+                      <small>产品</small>
                       <strong>{lead.productType}</strong>
+                    </div>
+                    <div className="lead-cell" title="双击复制数量" onDoubleClick={() => copyTextToClipboard(lead.quantity || "", "数量已复制")}>
+                      <small>数量</small>
                       <span>{lead.quantity}</span>
                     </div>
-                    <div>
+                    <div className="lead-cell" title="双击复制邮箱" onDoubleClick={() => copyTextToClipboard(lead.email || "", "邮箱已复制")}>
+                      <small>邮箱</small>
                       <span>{lead.email}</span>
+                    </div>
+                    <div className="lead-cell" title="双击复制联系方式" onDoubleClick={() => copyTextToClipboard(lead.whatsapp || "No WhatsApp / Phone", "联系方式已复制")}>
+                      <small>联系方式</small>
                       <span>{lead.whatsapp || "No WhatsApp / Phone"}</span>
                     </div>
-                    <div>
+                    <div className="lead-cell" title="双击复制目的地" onDoubleClick={() => copyTextToClipboard(lead.destination || "No destination", "目的地已复制")}>
+                      <small>目的地</small>
                       <span>{lead.destination || "No destination"}</span>
+                    </div>
+                    <div className="lead-cell" title="双击复制材料" onDoubleClick={() => copyTextToClipboard(lead.workpieceMaterial || "No material", "材料已复制")}>
+                      <small>材料</small>
                       <span>{lead.workpieceMaterial || "No material"}</span>
                     </div>
-                    <span>{new Date(lead.createdAt).toLocaleString()}</span>
-                    <select
-                      value={lead.status}
-                      onChange={(event) =>
-                        setState({
-                          ...state,
-                          leads: state.leads.map((item) => item.id === lead.id ? { ...item, status: event.target.value as LeadStatus } : item)
-                        })
-                      }
-                    >
-                      {leadStatuses.map((statusOption) => <option key={statusOption}>{statusOption}</option>)}
-                    </select>
+                    <div className="lead-actions">
+                      <span className="lead-date">{new Date(lead.createdAt).toLocaleString()}</span>
+                      <select
+                        value={lead.status}
+                        onChange={(event) =>
+                          setState({
+                            ...state,
+                            leads: state.leads.map((item) => item.id === lead.id ? { ...item, status: event.target.value as LeadStatus } : item)
+                          })
+                        }
+                      >
+                        {leadStatuses.map((statusOption) => <option key={statusOption} value={statusOption}>{leadStatusLabels[statusOption]}</option>)}
+                      </select>
+                      <button type="button" onClick={() => copyTextToClipboard(formatLeadForCopy(lead), "整条询盘已复制")}><Copy size={14} />复制</button>
+                      {lead.email ? <button type="button" onClick={() => openLeadMailDraft(lead)}><Mail size={14} />发邮件</button> : null}
+                    </div>
                     {lead.message ? <p>{lead.message}</p> : null}
                   </div>
                 ))}
+                {state.leads.length > 0 && filteredLeads.length === 0 ? <div className="wp-empty-row">没有匹配的询盘。</div> : null}
               </div>
+            </>
+          ) : null}
+
+          {tab === "mail" ? (
+            <>
+              <h1>邮件设置</h1>
+              {selectedMailLead && selectedMailDraft ? (
+                <section className="settings-panel mail-draft-panel">
+                  <div className="settings-panel-head with-action">
+                    <div>
+                      <h2>询盘邮件草稿</h2>
+                      <span>已从询盘带入收件人、主题和正文，可继续复制或用本机邮件客户端打开。</span>
+                    </div>
+                    <a className="mail-draft-send" href={buildLeadReplyMailto(selectedMailLead)}><Mail size={15} />打开邮件</a>
+                  </div>
+                  <div className="mail-draft-grid">
+                    <label>收件人<input readOnly value={selectedMailLead.email} /></label>
+                    <label>主题<input readOnly value={selectedMailDraft.subject} /></label>
+                    <label className="wide">正文<textarea readOnly rows={9} value={`${selectedMailDraft.body}\n\n---\n${formatLeadForCopy(selectedMailLead)}`} /></label>
+                  </div>
+                </section>
+              ) : null}
+              <section className="settings-panel mail-settings-panel">
+                <div className="settings-panel-head with-action">
+                  <div><h2>绑定邮箱</h2><span>用于询盘列表里的“发邮件”入口；当前通过本机默认邮件客户端打开草稿。</span></div>
+                  {settingsSaveAction}
+                </div>
+                <div className="wp-settings-form">
+                  <label>发件人邮箱
+                    <input
+                      disabled={!canManageFrontendSettings}
+                      type="email"
+                      value={state.siteSettings.mailFromEmail || state.siteSettings.adminEmail}
+                      onChange={(event) => updateSiteSettings({ mailFromEmail: event.target.value })}
+                    />
+                  </label>
+                  <label>发件人名称
+                    <input
+                      disabled={!canManageFrontendSettings}
+                      value={state.siteSettings.mailFromName || state.siteSettings.title}
+                      onChange={(event) => updateSiteSettings({ mailFromName: event.target.value })}
+                    />
+                  </label>
+                  <label>发送方式
+                    <select
+                      disabled={!canManageFrontendSettings}
+                      value={state.siteSettings.mailProvider || "mailto"}
+                      onChange={(event) => updateSiteSettings({ mailProvider: event.target.value })}
+                    >
+                      <option value="mailto">本机邮件客户端</option>
+                    </select>
+                  </label>
+                  <label className="wide">询盘回复模板
+                    <textarea
+                      disabled={!canManageFrontendSettings}
+                      rows={9}
+                      value={state.siteSettings.mailReplyTemplate || ""}
+                      onChange={(event) => updateSiteSettings({ mailReplyTemplate: event.target.value })}
+                    />
+                  </label>
+                </div>
+              </section>
             </>
           ) : null}
 
@@ -4685,6 +5312,27 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
                     <label>链接<input value={channel.href ?? ""} onChange={(event) => updateContact(index, { href: event.target.value })} /></label>
                     <label>颜色<input type="color" value={channel.color || contactTypePresets[channel.type].color} onChange={(event) => updateContact(index, { color: event.target.value })} /></label>
                     <label className="checkline"><input type="checkbox" checked={channel.enabled} onChange={(event) => updateContact(index, { enabled: event.target.checked })} />启用</label>
+                    <div className="contact-icon-manager">
+                      {channel.iconUrl ? (
+                        <Image className="contact-icon-thumb" src={channel.iconUrl} alt={`${channel.label.zh ?? channel.label.en} 图标`} width={34} height={34} unoptimized />
+                      ) : (
+                        <span className="contact-icon-empty">默认</span>
+                      )}
+                      <label className="contact-icon-upload">
+                        图标
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={(event) => {
+                            uploadContactIcon(index, event.currentTarget.files?.[0] ?? null);
+                            event.currentTarget.value = "";
+                          }}
+                        />
+                      </label>
+                      {channel.iconUrl ? (
+                        <button className="contact-icon-remove" type="button" onClick={() => updateContact(index, { iconUrl: undefined })}>移除</button>
+                      ) : null}
+                    </div>
                     <div className="contact-qr-manager">
                       {channel.qrCodeUrl ? (
                         <Image className="contact-qr-thumb" src={channel.qrCodeUrl} alt={`${channel.label.zh ?? channel.label.en} 二维码`} width={34} height={34} unoptimized />
@@ -5263,6 +5911,10 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
                           </button>
                         </div>
                         <div className="admin-edit-card ai-settings-card">
+                          <div className="wide ai-capability-head">
+                            <h3>文字生成与翻译模型</h3>
+                            <span>用于文章、页面、标题候选、采集改写和自动翻译。DeepSeek、Qwen、Kimi 等文本模型放这里。</span>
+                          </div>
                           <label>模型供应商
                             <select value={state.aiSettings.provider} onChange={(event) => selectAiProvider(event.target.value)}>
                               {aiProviderOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
@@ -5306,6 +5958,93 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
                               onChange={(event) => updateAiSettings({ apiKey: event.target.value })}
                             />
                             <small>{state.aiSettings.apiKeyConfigured ? "后台已有密钥。输入新密钥并保存可替换。" : "API Key 会保存到后台状态，列表读取时不会明文返回。"}</small>
+                          </label>
+                          <div className="wide ai-capability-head">
+                            <h3>图片生成模型</h3>
+                            <span>用于“根据文章生成配图”。DeepSeek 等纯文本模型不支持图片生成，请选择 OpenAI 或兼容 /images/generations 的供应商。</span>
+                          </div>
+                          <label>图片供应商
+                            <select value={state.aiSettings.imageProvider} onChange={(event) => selectAiImageProvider(event.target.value)}>
+                              {aiImageProviderOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
+                            </select>
+                          </label>
+                          <label>图片模型
+                            <select value={aiImageModelSelectValue} onChange={(event) => {
+                              const nextModel = event.target.value;
+                              updateAiSettings({ imageModel: nextModel === customAiModelValue ? "" : nextModel });
+                            }}>
+                              {aiImageModelOptions.map((model) => <option key={model} value={model}>{model}</option>)}
+                              <option value={customAiModelValue}>自定义模型...</option>
+                            </select>
+                          </label>
+                          {aiImageModelIsCustom ? (
+                            <label className="wide">自定义图片模型
+                              <input
+                                placeholder="例如 gpt-image-1、dall-e-3 或兼容供应商模型 ID"
+                                value={state.aiSettings.imageModel}
+                                onChange={(event) => updateAiSettings({ imageModel: event.target.value })}
+                              />
+                            </label>
+                          ) : null}
+                          <label className="wide">图片 Base URL
+                            <input
+                              placeholder={selectedAiImageProvider.baseUrl || "https://your-image-provider.example.com/v1"}
+                              value={state.aiSettings.imageBaseUrl}
+                              onChange={(event) => updateAiSettings({ imageBaseUrl: event.target.value })}
+                            />
+                            <small>接口最终会请求 /images/generations；如果 Base URL 已包含该路径也可以直接填写完整地址。</small>
+                          </label>
+                          <label className="wide">图片 API Key
+                            <input
+                              placeholder={state.aiSettings.imageApiKeyConfigured ? "已保存图片密钥；留空保存时继续沿用" : "可留空复用文字 API Key"}
+                              type="password"
+                              value={state.aiSettings.imageApiKey ?? ""}
+                              onChange={(event) => updateAiSettings({ imageApiKey: event.target.value })}
+                            />
+                            <small>如果图片供应商和文字供应商使用同一个 Key，可留空复用文字 API Key。</small>
+                          </label>
+                          <div className="wide ai-capability-head">
+                            <h3>语音生成模型</h3>
+                            <span>预留给后续 TTS/语音内容功能。当前不会影响文章和图片生成。</span>
+                          </div>
+                          <label>语音供应商
+                            <select value={state.aiSettings.voiceProvider} onChange={(event) => selectAiVoiceProvider(event.target.value)}>
+                              {aiVoiceProviderOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
+                            </select>
+                          </label>
+                          <label>语音模型
+                            <select value={aiVoiceModelSelectValue} onChange={(event) => {
+                              const nextModel = event.target.value;
+                              updateAiSettings({ voiceModel: nextModel === customAiModelValue ? "" : nextModel });
+                            }}>
+                              {aiVoiceModelOptions.map((model) => <option key={model} value={model}>{model}</option>)}
+                              <option value={customAiModelValue}>自定义模型...</option>
+                            </select>
+                          </label>
+                          {aiVoiceModelIsCustom ? (
+                            <label className="wide">自定义语音模型
+                              <input
+                                placeholder="输入 TTS 模型 ID"
+                                value={state.aiSettings.voiceModel}
+                                onChange={(event) => updateAiSettings({ voiceModel: event.target.value })}
+                              />
+                            </label>
+                          ) : null}
+                          <label className="wide">语音 Base URL
+                            <input
+                              placeholder={selectedAiVoiceProvider.baseUrl || "https://your-voice-provider.example.com/v1"}
+                              value={state.aiSettings.voiceBaseUrl}
+                              onChange={(event) => updateAiSettings({ voiceBaseUrl: event.target.value })}
+                            />
+                          </label>
+                          <label className="wide">语音 API Key
+                            <input
+                              placeholder={state.aiSettings.voiceApiKeyConfigured ? "已保存语音密钥；留空保存时继续沿用" : "可留空复用文字 API Key"}
+                              type="password"
+                              value={state.aiSettings.voiceApiKey ?? ""}
+                              onChange={(event) => updateAiSettings({ voiceApiKey: event.target.value })}
+                            />
+                            <small>语音功能上线后会优先使用这里的配置。</small>
                           </label>
                           <label className="wide">品牌语气<textarea value={state.aiSettings.brandVoice} onChange={(event) => updateAiSettings({ brandVoice: event.target.value })} /></label>
                           <label className="wide">目标市场<input value={state.aiSettings.targetMarkets.join(", ")} onChange={(event) => updateAiSettings({ targetMarkets: event.target.value.split(",").map((item) => item.trim()).filter(Boolean) })} /></label>
@@ -5366,12 +6105,18 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
                           <small>{translationScopeOptions.find((option) => option.key === translationScope)?.description}</small>
                         </label>
                         <label>源语言
-                          <select value={translationSourceLocale} onChange={(event) => setTranslationSourceLocale(event.target.value as LocaleCode)}>
-                            {locales
-                              .filter((localeOption) => state.enabledLocales.includes(localeOption.code) || localeOption.code === "zh" || localeOption.code === "en")
-                              .map((localeOption) => <option key={localeOption.code} value={localeOption.code}>{localeOption.flag} {localeOption.nativeName}</option>)}
+                          <select value={translationSourceLocale} onChange={(event) => setTranslationSourceLocale(event.target.value as TranslationSourceChoice)}>
+                            <option value="auto">自动识别</option>
+                            {translationLocaleOptions.map((localeOption) => <option key={localeOption.code} value={localeOption.code}>{localeOption.flag} {localeOption.nativeName}</option>)}
                           </select>
-                          <small>默认从中文内容翻译；如果中文为空，会自动回退到英文或已有语言。</small>
+                          <small>自动识别会优先使用当前字段里已有内容，不强制要求中文。</small>
+                        </label>
+                        <label>目标语言
+                          <select value={translationTargetLocale} onChange={(event) => setTranslationTargetLocale(event.target.value as TranslationTargetChoice)}>
+                            <option value="all">全部启用语言</option>
+                            {translationLocaleOptions.map((localeOption) => <option key={localeOption.code} value={localeOption.code}>{localeOption.flag} {localeOption.nativeName}</option>)}
+                          </select>
+                          <small>建议先选择单个目标语言，避免一次请求内容过多导致超时。</small>
                         </label>
                         <label className="checkline ai-translate-overwrite">
                           <input type="checkbox" checked={translationOverwrite} onChange={(event) => setTranslationOverwrite(event.target.checked)} />
@@ -5752,109 +6497,203 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
                 <section className="settings-panel ai-compose-panel">
                   <div className="settings-panel-head">
                     <div>
-                      <h2>生成并填充</h2>
-                      <span>先选择要生成的内容类型和写入方式，再把 AI 内容写入文章或页面编辑器。</span>
+                      <h2>进阶式 AI 内容生成</h2>
+                      <span>按步骤选择内容类型、目的、主题标题和正文结构，生成预览后再写入后台。</span>
                     </div>
                   </div>
 
-                  <div className="ai-target-grid">
-                    {aiTargetOptions.map((option) => (
+                  <div className="ai-wizard-progress" aria-label="AI 生成步骤">
+                    {aiWizardStepOptions.map((step) => (
                       <button
-                        className={aiContentForm.target === option.key ? "active" : ""}
-                        key={option.key}
+                        className={aiWizardStep === step.key ? "active" : aiWizardStep > step.key ? "done" : ""}
+                        key={step.key}
                         type="button"
-                        onClick={() => {
-                          setAiContentForm((current) => ({ ...current, target: option.key }));
-                          setAiDraftPreview(null);
-                          setAiGeneratedImage(null);
-                          setAiImageStatus("");
-                        }}
+                        onClick={() => goToAiWizardStep(step.key)}
                       >
-                        <strong>{option.label}</strong>
-                        <span>{option.description}</span>
+                        <span>{step.key}</span>
+                        <strong>{step.label}</strong>
                       </button>
                     ))}
                   </div>
 
-                  <div className="ai-compose-grid">
-                    <label>内容主题
-                      <input
-                        placeholder={aiContentForm.target === "article" ? "例如：carbide end mills for stainless steel" : "例如：custom tooling service"}
-                        value={aiContentForm.topic}
-                        onChange={(event) => setAiContentForm({ ...aiContentForm, topic: event.target.value })}
-                      />
-                    </label>
-                    {aiContentForm.target === "article" ? (
-                      <label>文章分类
-                        <select value={aiContentForm.category || state.siteSettings.defaultArticleCategory || state.products[0]?.slug || ""} onChange={(event) => setAiContentForm({ ...aiContentForm, category: event.target.value })}>
-                          {articleProductCategoryOptions.map((category) => <option key={category.value} value={category.value}>{category.label}</option>)}
-                        </select>
-                      </label>
-                    ) : (
-                      <label>页面类型
-                        <input value="独立页面草稿" readOnly />
-                      </label>
-                    )}
-                    <label>写入方式
-                      <select value={aiContentForm.writeMode} onChange={(event) => setAiContentForm({ ...aiContentForm, writeMode: event.target.value as AiWriteMode })}>
-                        {aiWriteModeOptions.map((option) => <option key={option.key} value={option.key}>{option.label}</option>)}
-                      </select>
-                    </label>
-                    <label>写入目标
-                      <select
-                        disabled={aiContentForm.writeMode === "new"}
-                        value={aiContentForm.target === "article" ? aiContentForm.targetArticleId : aiContentForm.targetPageId}
-                        onChange={(event) => {
-                          if (aiContentForm.target === "article") {
-                            setAiContentForm({ ...aiContentForm, targetArticleId: event.target.value });
-                            return;
-                          }
-                          setAiContentForm({ ...aiContentForm, targetPageId: event.target.value });
-                        }}
-                      >
-                        <option value="">{aiContentForm.writeMode === "new" ? "新建时不需要选择目标" : "选择要填充的内容"}</option>
-                        {(aiContentForm.target === "article" ? aiArticleTargets : aiPageTargets).map((item) => (
-                          <option key={item.id ?? item.slug} value={item.id ?? item.slug}>{item.title.zh || item.title.en || item.slug}</option>
+                  <section className="ai-wizard-page">
+                    <div className="ai-wizard-step-head">
+                      <span>{aiWizardStep}</span>
+                      <strong>{aiWizardStepOptions.find((step) => step.key === aiWizardStep)?.label}</strong>
+                    </div>
+
+                    {aiWizardStep === 1 ? (
+                      <div className="ai-guided-form">
+                        <label>我要生成
+                          <select
+                            value={aiContentForm.target}
+                            onChange={(event) => {
+                              setAiContentForm((current) => ({ ...current, target: event.target.value as AiContentTarget }));
+                              setAiDraftPreview(null);
+                              setAiGeneratedImage(null);
+                              setAiImageStatus("");
+                            }}
+                          >
+                            {aiTargetOptions.map((option) => <option key={option.key} value={option.key}>{option.label}</option>)}
+                          </select>
+                          <small>{aiTargetOptions.find((option) => option.key === aiContentForm.target)?.description}</small>
+                        </label>
+                      </div>
+                    ) : null}
+
+                    {aiWizardStep === 2 ? (
+                      <div className="ai-guided-form">
+                        <label>内容目的
+                          <select
+                            value={aiContentForm.purpose}
+                            onChange={(event) => {
+                              setAiContentForm({ ...aiContentForm, purpose: event.target.value as AiContentPurpose });
+                              setAiDraftPreview(null);
+                            }}
+                          >
+                            {aiPurposeOptions.map((option) => <option key={option.key} value={option.key}>{option.label}</option>)}
+                          </select>
+                          <small>{aiPurposeOptions.find((option) => option.key === aiContentForm.purpose)?.description}</small>
+                        </label>
+                      </div>
+                    ) : null}
+
+                    {aiWizardStep === 3 ? (
+                      <>
+                        <div className="ai-guided-form">
+                          <label>内容主题
+                            <input
+                              placeholder={aiContentForm.target === "article" ? "例如：carbide end mills for stainless steel" : "例如：custom tooling service"}
+                              value={aiContentForm.topic}
+                              onChange={(event) => {
+                                setAiContentForm({ ...aiContentForm, topic: event.target.value });
+                                setAiDraftPreview(null);
+                              }}
+                            />
+                          </label>
+                          <label>目标买家 / 市场
+                            <input
+                              placeholder={state.aiSettings.targetMarkets.join(", ") || "Global buyers"}
+                              value={aiContentForm.audience}
+                              onChange={(event) => setAiContentForm({ ...aiContentForm, audience: event.target.value })}
+                            />
+                          </label>
+                          <label>标题
+                            <input
+                              placeholder="可手动填写标题，也可以先输入主题后点击 AI 生成标题"
+                              value={aiContentForm.selectedTitle}
+                              onChange={(event) => {
+                                setAiContentForm({ ...aiContentForm, selectedTitle: event.target.value });
+                                setAiDraftPreview(null);
+                              }}
+                            />
+                          </label>
+                        </div>
+                        <div className="ai-title-actions">
+                          <button type="button" onClick={() => void generateAiTitleSuggestions()}>
+                            <Sparkles size={16} />
+                            AI 生成标题
+                          </button>
+                          <span>{aiGenerateStatus}</span>
+                        </div>
+                        {aiTitleSuggestions.length > 0 ? (
+                          <label className="ai-title-select">选择 AI 标题
+                            <select
+                              value={selectedAiTitleValue()}
+                              onChange={(event) => {
+                                setAiContentForm({ ...aiContentForm, selectedTitle: event.target.value });
+                                setAiDraftPreview(null);
+                              }}
+                            >
+                              <option value="">不使用候选，手动填写</option>
+                              {aiTitleSuggestions.map((title, index) => {
+                                const titleText = title.zh || title.en;
+                                return <option key={`${titleText}-${index}`} value={titleText}>{titleText}</option>;
+                              })}
+                            </select>
+                          </label>
+                        ) : null}
+                      </>
+                    ) : null}
+
+                    {aiWizardStep === 4 ? (
+                      <div className="ai-guided-checklist">
+                        {aiSectionOptions.map((option) => (
+                          <label className={aiContentForm.sections.includes(option.key) ? "active" : ""} key={option.key}>
+                            <input type="checkbox" checked={aiContentForm.sections.includes(option.key)} onChange={() => toggleAiContentSection(option.key)} />
+                            <span>
+                              <strong>{option.label}</strong>
+                              <small>{option.description}</small>
+                            </span>
+                          </label>
                         ))}
-                      </select>
-                    </label>
-                  </div>
+                      </div>
+                    ) : null}
 
-                  <div className="ai-write-mode-list">
-                    {aiWriteModeOptions.map((option) => (
-                      <button
-                        className={aiContentForm.writeMode === option.key ? "active" : ""}
-                        key={option.key}
-                        type="button"
-                        onClick={() => setAiContentForm({ ...aiContentForm, writeMode: option.key })}
-                      >
-                        <strong>{option.label}</strong>
-                        <span>{option.description}</span>
-                      </button>
-                    ))}
-                  </div>
+                    {aiWizardStep === 5 ? (
+                      <>
+                        <div className="ai-guided-form ai-write-target-form">
+                          {aiContentForm.target === "article" ? (
+                            <label>文章分类
+                              <select value={aiContentForm.category || state.siteSettings.defaultArticleCategory || state.products[0]?.slug || ""} onChange={(event) => setAiContentForm({ ...aiContentForm, category: event.target.value })}>
+                                {articleProductCategoryOptions.map((category) => <option key={category.value} value={category.value}>{category.label}</option>)}
+                              </select>
+                            </label>
+                          ) : (
+                            <label>页面类型
+                              <input value="独立页面草稿" readOnly />
+                            </label>
+                          )}
+                          <label>写入方式
+                            <select value={aiContentForm.writeMode} onChange={(event) => setAiContentForm({ ...aiContentForm, writeMode: event.target.value as AiWriteMode })}>
+                              {aiWriteModeOptions.map((option) => <option key={option.key} value={option.key}>{option.label}</option>)}
+                            </select>
+                            <small>{aiWriteModeOptions.find((option) => option.key === aiContentForm.writeMode)?.description}</small>
+                          </label>
+                          <label>写入目标
+                            <select
+                              disabled={aiContentForm.writeMode === "new"}
+                              value={aiContentForm.target === "article" ? aiContentForm.targetArticleId : aiContentForm.targetPageId}
+                              onChange={(event) => {
+                                if (aiContentForm.target === "article") {
+                                  setAiContentForm({ ...aiContentForm, targetArticleId: event.target.value });
+                                  return;
+                                }
+                                setAiContentForm({ ...aiContentForm, targetPageId: event.target.value });
+                              }}
+                            >
+                              <option value="">{aiContentForm.writeMode === "new" ? "新建时不需要选择目标" : "选择要填充的内容"}</option>
+                              {(aiContentForm.target === "article" ? aiArticleTargets : aiPageTargets).map((item) => (
+                                <option key={item.id ?? item.slug} value={item.id ?? item.slug}>{item.title.zh || item.title.en || item.slug}</option>
+                              ))}
+                            </select>
+                          </label>
+                        </div>
+                        <div className="ai-action-row">
+                          <button type="button" onClick={() => void generateAiContentPreview()}>
+                            <Sparkles size={16} />
+                            生成预览
+                          </button>
+                          <button type="button" disabled={!aiDraftPreview || !aiCanApply} onClick={() => applyAiContentDraft()}>
+                            <PlusCircle size={16} />
+                            写入当前预览
+                          </button>
+                          <button type="button" onClick={() => void generateAiContentPreview()}>
+                            <RefreshCw size={16} />
+                            重新生成预览
+                          </button>
+                          <button type="button" disabled={!aiDraftPreview || aiDraftPreview.target !== "article" || aiImageStatus.startsWith("正在")} onClick={generateAiArticleImage}>
+                            <ImageIcon size={16} />
+                            根据文章生成配图
+                          </button>
+                        </div>
+                      </>
+                    ) : null}
+                  </section>
 
-                  <div className="ai-action-row">
-                    <button type="button" onClick={generateAiContentPreview}>
-                      <Sparkles size={16} />
-                      生成预览
-                    </button>
-                    <button type="button" disabled={!aiCanApply} onClick={generateAndApplyAiContent}>
-                      <SendToBack size={16} />
-                      生成并填充
-                    </button>
-                    <button type="button" disabled={!aiDraftPreview || !aiCanApply} onClick={() => applyAiContentDraft()}>
-                      <PlusCircle size={16} />
-                      填充当前预览
-                    </button>
-                    <button type="button" onClick={() => setAiDraftPreview(buildAiContentDraft())}>
-                      <RefreshCw size={16} />
-                      重写预览
-                    </button>
-                    <button type="button" disabled={!aiDraftPreview || aiDraftPreview.target !== "article" || aiImageStatus.startsWith("正在")} onClick={generateAiArticleImage}>
-                      <ImageIcon size={16} />
-                      根据文章生成配图
-                    </button>
+                  <div className="ai-wizard-nav">
+                    <button type="button" disabled={aiWizardStep === 1} onClick={previousAiWizardStep}>上一步</button>
+                    <button type="button" disabled={aiWizardStep === 5} onClick={nextAiWizardStep}>下一步</button>
                   </div>
                   {aiImageStatus ? <p className="ai-image-status">{aiImageStatus}</p> : null}
                 </section>

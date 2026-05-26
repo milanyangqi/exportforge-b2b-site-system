@@ -62,6 +62,10 @@ const defaultSiteSettings: SiteSettings = {
   fontFamily: "\"Manrope\", \"PingFang SC\", \"Microsoft YaHei\", sans-serif",
   siteUrl: process.env.NEXT_PUBLIC_SITE_URL ?? "https://exportforge-b2b-site-system.437991663.workers.dev",
   adminEmail: process.env.INITIAL_ADMIN_EMAIL ?? "admin@example.com",
+  mailFromEmail: process.env.INITIAL_ADMIN_EMAIL ?? "admin@example.com",
+  mailFromName: siteSettings.brand,
+  mailProvider: "mailto",
+  mailReplyTemplate: "Hello {name},\n\nThank you for your RFQ about {productType}. We have received your inquiry and will follow up with tooling details, quotation, and lead time soon.\n\nBest regards,\n{siteTitle}",
   allowRegistration: false,
   defaultUserRole: "viewer",
   siteLanguage: "zh",
@@ -230,6 +234,14 @@ export function createDefaultAdminState(): AdminState {
       model: process.env.AI_MODEL ?? "gpt-4.1-mini",
       baseUrl: process.env.AI_BASE_URL ?? "",
       apiKey: process.env.AI_API_KEY ?? "",
+      imageProvider: process.env.AI_IMAGE_PROVIDER ?? "openai",
+      imageModel: process.env.AI_IMAGE_MODEL ?? "gpt-image-1",
+      imageBaseUrl: process.env.AI_IMAGE_BASE_URL ?? "https://api.openai.com/v1",
+      imageApiKey: process.env.AI_IMAGE_API_KEY ?? "",
+      voiceProvider: process.env.AI_VOICE_PROVIDER ?? "openai",
+      voiceModel: process.env.AI_VOICE_MODEL ?? "gpt-4o-mini-tts",
+      voiceBaseUrl: process.env.AI_VOICE_BASE_URL ?? "https://api.openai.com/v1",
+      voiceApiKey: process.env.AI_VOICE_API_KEY ?? "",
       defaultLocale: "en",
       brandVoice: "Clear, technical, buyer-focused cutting tool copy for KeyproTools.",
       targetMarkets: ["Europe", "North America", "Southeast Asia", "MENA"],
@@ -274,6 +286,14 @@ function normalizeAiSettings(settings?: Partial<AdminState["aiSettings"]>): Admi
     model: settings?.model?.trim() || fallback.model,
     baseUrl: settings?.baseUrl?.trim() ?? fallback.baseUrl,
     apiKey: settings?.apiKey?.trim() || fallback.apiKey,
+    imageProvider: settings?.imageProvider?.trim() || fallback.imageProvider,
+    imageModel: settings?.imageModel?.trim() || fallback.imageModel,
+    imageBaseUrl: settings?.imageBaseUrl?.trim() ?? fallback.imageBaseUrl,
+    imageApiKey: settings?.imageApiKey?.trim() || fallback.imageApiKey,
+    voiceProvider: settings?.voiceProvider?.trim() || fallback.voiceProvider,
+    voiceModel: settings?.voiceModel?.trim() || fallback.voiceModel,
+    voiceBaseUrl: settings?.voiceBaseUrl?.trim() ?? fallback.voiceBaseUrl,
+    voiceApiKey: settings?.voiceApiKey?.trim() || fallback.voiceApiKey,
     targetMarkets: Array.isArray(settings?.targetMarkets) ? settings.targetMarkets.filter(Boolean) : fallback.targetMarkets,
     requiredKeywords: Array.isArray(settings?.requiredKeywords) ? settings.requiredKeywords.filter(Boolean) : fallback.requiredKeywords,
     blockedWords: Array.isArray(settings?.blockedWords) ? settings.blockedWords.filter(Boolean) : fallback.blockedWords,
@@ -617,7 +637,11 @@ export function sanitizeAdminState(state: AdminState): AdminState {
     aiSettings: {
       ...state.aiSettings,
       apiKey: "",
-      apiKeyConfigured: Boolean(state.aiSettings.apiKey)
+      apiKeyConfigured: Boolean(state.aiSettings.apiKey),
+      imageApiKey: "",
+      imageApiKeyConfigured: Boolean(state.aiSettings.imageApiKey),
+      voiceApiKey: "",
+      voiceApiKeyConfigured: Boolean(state.aiSettings.voiceApiKey)
     }
   };
 }
@@ -627,7 +651,9 @@ export function preserveUserPasswordHashes(nextState: AdminState, existingState:
     ...nextState,
     aiSettings: {
       ...nextState.aiSettings,
-      apiKey: nextState.aiSettings.apiKey?.trim() || existingState.aiSettings.apiKey || ""
+      apiKey: nextState.aiSettings.apiKey?.trim() || existingState.aiSettings.apiKey || "",
+      imageApiKey: nextState.aiSettings.imageApiKey?.trim() || existingState.aiSettings.imageApiKey || "",
+      voiceApiKey: nextState.aiSettings.voiceApiKey?.trim() || existingState.aiSettings.voiceApiKey || ""
     },
     users: nextState.users.map((user) => {
       const existing = existingState.users.find((item) => item.id === user.id || item.email.toLowerCase() === user.email.toLowerCase());

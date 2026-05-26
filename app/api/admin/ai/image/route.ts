@@ -20,7 +20,8 @@ function defaultBaseUrl(provider: string) {
 }
 
 function endpointUrl(settings: AiSettings) {
-  const baseUrl = trimTrailingSlash(settings.baseUrl?.trim() || defaultBaseUrl(settings.provider));
+  const provider = settings.imageProvider?.trim() || settings.provider;
+  const baseUrl = trimTrailingSlash(settings.imageBaseUrl?.trim() || defaultBaseUrl(provider));
 
   if (!baseUrl) return "";
   if (/\/images\/generations$/i.test(baseUrl)) return baseUrl;
@@ -77,8 +78,8 @@ function chargeImageCredits(state: AdminState, userEmail: string, totalTokens: n
         userId: currentUser?.id ?? "",
         userEmail,
         action: "生成文章配图",
-        provider: state.aiSettings.provider,
-        model: "gpt-image-1",
+        provider: state.aiSettings.imageProvider || state.aiSettings.provider,
+        model: state.aiSettings.imageModel || "gpt-image-1",
         promptTokens: totalTokens,
         completionTokens: 0,
         totalTokens,
@@ -92,14 +93,29 @@ function chargeImageCredits(state: AdminState, userEmail: string, totalTokens: n
 }
 
 async function fetchGeneratedImage(settings: AiSettings, prompt: string) {
-  const apiKey = settings.apiKey?.trim() ?? "";
+  const provider = settings.imageProvider?.trim() || settings.provider;
+  const model = settings.imageModel?.trim() || "gpt-image-1";
+  const apiKey = settings.imageApiKey?.trim() || settings.apiKey?.trim() || "";
   const url = endpointUrl(settings);
 
+  const compatibleImageProviders = new Set([
+    "openai",
+    "siliconflow-image",
+    "qwen-cn-image",
+    "qwen-intl-image",
+    "volcengine-ark-image",
+    "openai-compatible",
+    "custom"
+  ]);
+
+  if (!compatibleImageProviders.has(provider)) {
+    throw new Error("当前图片模型供应商不支持图片生成。请在 AI 设置中单独配置 OpenAI 或支持 /images/generations 的兼容供应商。");
+  }
   if (!url) {
-    throw new Error("请在 AI 设置里填写支持图片生成的 OpenAI-compatible Base URL。");
+    throw new Error("请在 AI 设置里填写支持图片生成的 Base URL。");
   }
   if (!apiKey) {
-    throw new Error("请先在 AI 内容设置中保存 API Key。");
+    throw new Error("请先在 AI 设置中保存图片生成 API Key。");
   }
 
   const response = await fetch(url, {
@@ -109,7 +125,7 @@ async function fetchGeneratedImage(settings: AiSettings, prompt: string) {
       Authorization: `Bearer ${apiKey}`
     },
     body: JSON.stringify({
-      model: "gpt-image-1",
+      model,
       prompt,
       size: "1024x1024",
       n: 1

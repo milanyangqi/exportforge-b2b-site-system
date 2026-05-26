@@ -3,7 +3,7 @@
 import type { CSSProperties } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Facebook, Instagram, Mail, MessageCircle, Music2, Send, UserRound, type LucideIcon } from "lucide-react";
+import { ContactChannelIcon } from "@/components/ContactChannelIcon";
 import { t } from "@/lib/i18n";
 import type { ContactChannel, ContactChannelType, LocaleCode, SiteNavigationItem } from "@/types/site";
 
@@ -21,23 +21,6 @@ const socialTypes = new Set<ContactChannelType>([
   "email",
   "custom"
 ]);
-
-const footerIcons: Record<ContactChannelType, LucideIcon> = {
-  phone: MessageCircle,
-  whatsapp: MessageCircle,
-  email: Mail,
-  wechat: MessageCircle,
-  zalo: MessageCircle,
-  line: MessageCircle,
-  facebook: Facebook,
-  instagram: Instagram,
-  tiktok: Music2,
-  messenger: Send,
-  linkedin: UserRound,
-  skype: Send,
-  custom: UserRound,
-  rfq: UserRound
-};
 
 function resolveFooterHref(href: string, locale: LocaleCode) {
   if (!href || href === "/") return `/${locale}`;
@@ -90,7 +73,6 @@ export function Footer({
         {socialChannels.length > 0 ? (
           <div className="footer-socials" aria-label="Social media links">
             {socialChannels.map((channel) => {
-              const Icon = footerIcons[channel.type];
               const label = t(channel.label, locale);
 
               return (
@@ -101,7 +83,7 @@ export function Footer({
                   title={label}
                   style={{ "--social-color": channel.color } as CSSProperties}
                 >
-                  <Icon size={18} />
+                  <ContactChannelIcon channel={channel} size={18} />
                 </a>
               );
             })}
