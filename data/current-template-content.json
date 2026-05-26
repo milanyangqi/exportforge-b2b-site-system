@@ -151,7 +151,7 @@
       "name": "KeyproTools carbide end mills",
       "mimeType": "image/png",
       "size": 1869134,
-      "url": "/assets/tools/carbide-end-mills.png",
+      "url": "/assets/current-template/carbide-end-mills.png",
       "createdAt": "2026-05-24T04:23:00.000Z",
       "description": {
         "en": "Carbide end mills product image for KeyproTools catalog pages.",
@@ -164,7 +164,7 @@
       "name": "KeyproTools drill bits",
       "mimeType": "image/png",
       "size": 1991497,
-      "url": "/assets/tools/drill-bits.png",
+      "url": "/assets/current-template/drill-bits.png",
       "createdAt": "2026-05-24T04:23:00.000Z",
       "description": {
         "en": "Drill bits product image for distributor buying pages.",
@@ -177,7 +177,7 @@
       "name": "KeyproTools coating inspection",
       "mimeType": "image/png",
       "size": 1985003,
-      "url": "/assets/tools/coating-inspection.png",
+      "url": "/assets/current-template/coating-inspection.png",
       "createdAt": "2026-05-24T04:23:00.000Z",
       "description": {
         "en": "Coated tool inspection image for technical articles.",
@@ -190,7 +190,7 @@
       "name": "KeyproTools export packaging",
       "mimeType": "image/png",
       "size": 2225914,
-      "url": "/assets/tools/export-packaging.png",
+      "url": "/assets/current-template/export-packaging.png",
       "createdAt": "2026-05-24T04:23:00.000Z",
       "description": {
         "en": "Export packaging and OEM tooling preparation image.",
@@ -203,7 +203,7 @@
       "name": "KeyproTools hero tooling range",
       "mimeType": "image/jpeg",
       "size": 334923,
-      "url": "/assets/tools/hero-tooling-range.jpg",
+      "url": "/assets/current-template/hero-tooling-range.jpg",
       "createdAt": "2026-05-24T13:21:00.000Z",
       "description": {
         "en": "Wide hero poster showing carbide end mills and drill bits.",
@@ -216,7 +216,7 @@
       "name": "KeyproTools hero CNC factory",
       "mimeType": "image/jpeg",
       "size": 359039,
-      "url": "/assets/tools/hero-cnc-factory.jpg",
+      "url": "/assets/current-template/hero-cnc-factory.jpg",
       "createdAt": "2026-05-24T13:21:00.000Z",
       "description": {
         "en": "Wide hero poster for CNC factory tooling supply.",
@@ -229,7 +229,7 @@
       "name": "KeyproTools hero export packing",
       "mimeType": "image/jpeg",
       "size": 440868,
-      "url": "/assets/tools/hero-export-packing.jpg",
+      "url": "/assets/current-template/hero-export-packing.jpg",
       "createdAt": "2026-05-24T13:21:00.000Z",
       "description": {
         "en": "Wide hero poster showing export packing and distributor-ready tool assortments.",
@@ -262,7 +262,7 @@
       },
       "specs": ["2F-6F", "0.2-25mm", "AlTiN / TiSiN / DLC", "HRC45-65", "OEM laser marking"],
       "themeFit": ["industrial", "equipment", "clean-export"],
-      "imageUrl": "/assets/tools/carbide-end-mills.png"
+      "imageUrl": "/assets/current-template/carbide-end-mills.png"
     },
     {
       "id": "product-square-end-mills",
@@ -282,7 +282,7 @@
       },
       "specs": ["2F / 4F", "D1-D20", "Corner protection optional", "Bright / coated"],
       "themeFit": ["industrial", "equipment"],
-      "imageUrl": "/assets/tools/carbide-end-mills.png"
+      "imageUrl": "/assets/current-template/carbide-end-mills.png"
     },
     {
       "id": "product-ball-nose-end-mills",
@@ -302,7 +302,7 @@
       },
       "specs": ["R0.25-R10", "Long neck optional", "HRC55 / HRC65", "TiSiN coating"],
       "themeFit": ["industrial", "premium-brand"],
-      "imageUrl": "/assets/tools/carbide-end-mills.png"
+      "imageUrl": "/assets/current-template/carbide-end-mills.png"
     },
     {
       "id": "product-aluminum-end-mills",
@@ -322,7 +322,7 @@
       },
       "specs": ["1F / 2F / 3F", "Polished flute", "DLC optional", "Large chip space"],
       "themeFit": ["industrial", "clean-export"],
-      "imageUrl": "/assets/tools/carbide-end-mills.png"
+      "imageUrl": "/assets/current-template/carbide-end-mills.png"
     },
     {
       "id": "product-drill-bits",
@@ -347,7 +347,7 @@
       },
       "specs": ["HSS / M35 / Carbide", "DIN / ANSI", "D0.5-D30", "118° / 135°", "Coolant-through optional"],
       "themeFit": ["industrial", "clean-export"],
-      "imageUrl": "/assets/tools/drill-bits.png"
+      "imageUrl": "/assets/current-template/drill-bits.png"
     },
     {
       "id": "product-solid-carbide-drills",
@@ -367,7 +367,7 @@
       },
       "specs": ["3D / 5D / 8D", "Internal coolant optional", "TiAlN / AlCrN", "D0.8-D20"],
       "themeFit": ["industrial", "equipment"],
-      "imageUrl": "/assets/tools/drill-bits.png"
+      "imageUrl": "/assets/current-template/drill-bits.png"
     },
     {
       "id": "product-hss-twist-drills",
@@ -387,7 +387,7 @@
       },
       "specs": ["HSS / M35 / M42", "Black oxide / TiN", "DIN338", "Bulk or set packing"],
       "themeFit": ["industrial", "clean-export"],
-      "imageUrl": "/assets/tools/drill-bits.png"
+      "imageUrl": "/assets/current-template/drill-bits.png"
     },
     {
       "id": "product-step-center-drills",
@@ -407,7 +407,7 @@
       },
       "specs": ["4-32mm step", "60° / 90° / 120°", "HSS-Co optional", "Set packing"],
       "themeFit": ["industrial", "equipment"],
-      "imageUrl": "/assets/tools/drill-bits.png"
+      "imageUrl": "/assets/current-template/drill-bits.png"
     },
     {
       "id": "product-custom-tooling",
@@ -432,7 +432,7 @@
       },
       "specs": ["2D drawing / sample", "MOQ by diameter", "Laser marking", "QC report", "FOB / EXW / DDP"],
       "themeFit": ["industrial", "premium-brand", "equipment"],
-      "imageUrl": "/assets/tools/export-packaging.png"
+      "imageUrl": "/assets/current-template/export-packaging.png"
     },
     {
       "id": "product-coating-oem-packaging",
@@ -452,7 +452,7 @@
       },
       "specs": ["TiAlN / TiSiN / DLC", "Tube / box / foam tray", "Barcode label", "QC sample photos"],
       "themeFit": ["industrial", "premium-brand"],
-      "imageUrl": "/assets/tools/coating-inspection.png"
+      "imageUrl": "/assets/current-template/coating-inspection.png"
     }
   ],
   "articles": [
@@ -468,14 +468,14 @@
         "zh": "从刃数、涂层、刀尖形式和询价信息出发，帮助经销商与加工厂快速选型。"
       },
       "body": {
-        "en": "![Carbide end mills](/assets/tools/carbide-end-mills.png)\n\n## Start with the workpiece material\n\nFor steel and stainless steel, KeyproTools usually recommends 4-flute carbide end mills with AlTiN or TiSiN coating. For aluminum and copper, polished 2-flute or 3-flute tools with large chip space help reduce built-up edge.\n\n## Match geometry to the operation\n\n- Square end mills are the default for slotting and side milling.\n- Ball nose end mills are used for mold cavities and 3D contour finishing.\n- Corner radius end mills improve edge strength when the buyer needs longer tool life.\n- Long-neck and micro end mills need clear neck length, effective flute length, and shank tolerance in the RFQ.\n\n| Material | Common choice | Notes |\n| --- | --- | --- |\n| Carbon steel | 4F AlTiN | Stable for roughing and finishing |\n| Stainless steel | 4F TiSiN | Control heat and chip evacuation |\n| Aluminum | 2F or 3F polished / DLC | Larger chip space matters |\n| Graphite | Diamond-coated option | Ask about dust control and edge wear |\n\n> Send diameter, flute length, overall length, shank, coating, workpiece material, and expected quantity for a faster quotation.",
-        "zh": "![硬质合金铣刀](/assets/tools/carbide-end-mills.png)\n\n## 先确认加工材料\n\n加工钢件和不锈钢时，KeyproTools 通常建议选择 4 刃硬质合金铣刀，并根据硬度搭配 AlTiN 或 TiSiN 涂层。加工铝合金、铜材等有色金属时，抛光槽型、2 刃或 3 刃、大排屑空间和 DLC 涂层更关键。\n\n## 按工序匹配刀具几何\n\n- 平底铣刀适合开槽、侧铣和常规精加工。\n- 球头铣刀适合模具型腔、三维曲面和轮廓精加工。\n- 圆鼻铣刀能提升刀尖强度，适合客户关注寿命的场景。\n- 长颈和微径铣刀询价时要写清颈长、有效刃长、柄径和公差。\n\n| 加工材料 | 常用选择 | 采购备注 |\n| --- | --- | --- |\n| 碳钢 | 4 刃 AlTiN | 粗精加工都较稳定 |\n| 不锈钢 | 4 刃 TiSiN | 注意控热和排屑 |\n| 铝合金 | 2 刃/3 刃抛光或 DLC | 排屑空间很重要 |\n| 石墨 | 金刚石涂层可选 | 需确认粉尘和磨损要求 |\n\n> 提交询价时请提供直径、刃长、总长、柄径、涂层、工件材料和预计数量，报价速度会更快。"
+        "en": "![Carbide end mills](/assets/current-template/carbide-end-mills.png)\n\n## Start with the workpiece material\n\nFor steel and stainless steel, KeyproTools usually recommends 4-flute carbide end mills with AlTiN or TiSiN coating. For aluminum and copper, polished 2-flute or 3-flute tools with large chip space help reduce built-up edge.\n\n## Match geometry to the operation\n\n- Square end mills are the default for slotting and side milling.\n- Ball nose end mills are used for mold cavities and 3D contour finishing.\n- Corner radius end mills improve edge strength when the buyer needs longer tool life.\n- Long-neck and micro end mills need clear neck length, effective flute length, and shank tolerance in the RFQ.\n\n| Material | Common choice | Notes |\n| --- | --- | --- |\n| Carbon steel | 4F AlTiN | Stable for roughing and finishing |\n| Stainless steel | 4F TiSiN | Control heat and chip evacuation |\n| Aluminum | 2F or 3F polished / DLC | Larger chip space matters |\n| Graphite | Diamond-coated option | Ask about dust control and edge wear |\n\n> Send diameter, flute length, overall length, shank, coating, workpiece material, and expected quantity for a faster quotation.",
+        "zh": "![硬质合金铣刀](/assets/current-template/carbide-end-mills.png)\n\n## 先确认加工材料\n\n加工钢件和不锈钢时，KeyproTools 通常建议选择 4 刃硬质合金铣刀，并根据硬度搭配 AlTiN 或 TiSiN 涂层。加工铝合金、铜材等有色金属时，抛光槽型、2 刃或 3 刃、大排屑空间和 DLC 涂层更关键。\n\n## 按工序匹配刀具几何\n\n- 平底铣刀适合开槽、侧铣和常规精加工。\n- 球头铣刀适合模具型腔、三维曲面和轮廓精加工。\n- 圆鼻铣刀能提升刀尖强度，适合客户关注寿命的场景。\n- 长颈和微径铣刀询价时要写清颈长、有效刃长、柄径和公差。\n\n| 加工材料 | 常用选择 | 采购备注 |\n| --- | --- | --- |\n| 碳钢 | 4 刃 AlTiN | 粗精加工都较稳定 |\n| 不锈钢 | 4 刃 TiSiN | 注意控热和排屑 |\n| 铝合金 | 2 刃/3 刃抛光或 DLC | 排屑空间很重要 |\n| 石墨 | 金刚石涂层可选 | 需确认粉尘和磨损要求 |\n\n> 提交询价时请提供直径、刃长、总长、柄径、涂层、工件材料和预计数量，报价速度会更快。"
       },
       "category": "carbide-end-mills",
       "status": "published",
       "featuredOnHome": true,
       "publishedAt": "2026-05-24T04:23:00.000Z",
-      "coverImageUrl": "/assets/tools/carbide-end-mills.png"
+      "coverImageUrl": "/assets/current-template/carbide-end-mills.png"
     },
     {
       "id": "article-drill-bit-buying-guide",
@@ -489,14 +489,14 @@
         "zh": "如何组合 HSS 麻花钻、硬质合金钻、阶梯钻和中心钻，形成更好销售的备货结构。"
       },
       "body": {
-        "en": "![Drill bits](/assets/tools/drill-bits.png)\n\n## Build the range by customer type\n\nA distributor serving maintenance users needs reliable HSS twist drills and practical set packing. A CNC customer needs solid carbide drills, short lead time, and stable size repeatability. Sheet-metal customers often add step drills and countersink preparation tools.\n\n## Recommended stocking logic\n\n1. Keep HSS twist drills as the traffic product.\n2. Add M35 cobalt drills for stainless and harder materials.\n3. Use solid carbide drills for CNC customers who care about hole accuracy and tool life.\n4. Add step drills and center drills to increase basket value.\n\n| Product line | Typical buyer | Key RFQ details |\n| --- | --- | --- |\n| HSS twist drills | Hardware retail and maintenance | DIN338, finish, set or bulk |\n| Solid carbide drills | CNC machining | Diameter, depth ratio, coating, coolant |\n| Step drills | Sheet metal users | Step range, shank, coating |\n| Center drills | Machine shops | Angle, size, material |\n\nKeyproTools can quote mixed cartons, private-label tubes, and size assortments for distributor programs.",
-        "zh": "![钻头](/assets/tools/drill-bits.png)\n\n## 按客户类型搭建产品线\n\n服务维修维护客户的经销商，需要稳定的 HSS 麻花钻和实用套装包装。服务 CNC 加工客户时，整体硬质合金钻、交期和尺寸一致性更重要。面向钣金客户时，阶梯钻、定点钻和倒角前序工具可以提升客单价。\n\n## 建议备货逻辑\n\n1. HSS 麻花钻作为基础走量产品。\n2. 加入 M35 含钴钻头覆盖不锈钢和较硬材料。\n3. 用整体硬质合金钻服务重视孔精度和寿命的 CNC 客户。\n4. 搭配阶梯钻和中心钻，提高组合销售能力。\n\n| 产品线 | 典型买家 | 询价重点 |\n| --- | --- | --- |\n| HSS 麻花钻 | 五金零售与维修维护 | DIN338、表面处理、套装或散装 |\n| 整体硬质合金钻 | CNC 加工厂 | 直径、深径比、涂层、内冷要求 |\n| 阶梯钻 | 钣金用户 | 阶梯范围、柄型、涂层 |\n| 中心钻 | 机加工客户 | 角度、规格、材质 |\n\nKeyproTools 可按经销商需求报价混装外箱、私标塑管和规格套装。"
+        "en": "![Drill bits](/assets/current-template/drill-bits.png)\n\n## Build the range by customer type\n\nA distributor serving maintenance users needs reliable HSS twist drills and practical set packing. A CNC customer needs solid carbide drills, short lead time, and stable size repeatability. Sheet-metal customers often add step drills and countersink preparation tools.\n\n## Recommended stocking logic\n\n1. Keep HSS twist drills as the traffic product.\n2. Add M35 cobalt drills for stainless and harder materials.\n3. Use solid carbide drills for CNC customers who care about hole accuracy and tool life.\n4. Add step drills and center drills to increase basket value.\n\n| Product line | Typical buyer | Key RFQ details |\n| --- | --- | --- |\n| HSS twist drills | Hardware retail and maintenance | DIN338, finish, set or bulk |\n| Solid carbide drills | CNC machining | Diameter, depth ratio, coating, coolant |\n| Step drills | Sheet metal users | Step range, shank, coating |\n| Center drills | Machine shops | Angle, size, material |\n\nKeyproTools can quote mixed cartons, private-label tubes, and size assortments for distributor programs.",
+        "zh": "![钻头](/assets/current-template/drill-bits.png)\n\n## 按客户类型搭建产品线\n\n服务维修维护客户的经销商，需要稳定的 HSS 麻花钻和实用套装包装。服务 CNC 加工客户时，整体硬质合金钻、交期和尺寸一致性更重要。面向钣金客户时，阶梯钻、定点钻和倒角前序工具可以提升客单价。\n\n## 建议备货逻辑\n\n1. HSS 麻花钻作为基础走量产品。\n2. 加入 M35 含钴钻头覆盖不锈钢和较硬材料。\n3. 用整体硬质合金钻服务重视孔精度和寿命的 CNC 客户。\n4. 搭配阶梯钻和中心钻，提高组合销售能力。\n\n| 产品线 | 典型买家 | 询价重点 |\n| --- | --- | --- |\n| HSS 麻花钻 | 五金零售与维修维护 | DIN338、表面处理、套装或散装 |\n| 整体硬质合金钻 | CNC 加工厂 | 直径、深径比、涂层、内冷要求 |\n| 阶梯钻 | 钣金用户 | 阶梯范围、柄型、涂层 |\n| 中心钻 | 机加工客户 | 角度、规格、材质 |\n\nKeyproTools 可按经销商需求报价混装外箱、私标塑管和规格套装。"
       },
       "category": "drill-bits",
       "status": "published",
       "featuredOnHome": true,
       "publishedAt": "2026-05-24T04:23:00.000Z",
-      "coverImageUrl": "/assets/tools/drill-bits.png"
+      "coverImageUrl": "/assets/current-template/drill-bits.png"
     },
     {
       "id": "article-tool-coating-guide",
@@ -510,14 +510,14 @@
         "zh": "面向需要提升寿命、区分产品档次的采购商，快速比较常见刀具涂层。"
       },
       "body": {
-        "en": "![Coating inspection](/assets/tools/coating-inspection.png)\n\n## Coating is a positioning decision\n\nCoating is not only a technical choice. It also helps distributors create clear product tiers: economy bright finish, mainstream AlTiN, high-hardness TiSiN, and aluminum-focused DLC.\n\n| Coating | Better for | Buyer note |\n| --- | --- | --- |\n| Bright finish | Aluminum, plastic, general economy use | Good when chip welding is low |\n| AlTiN | Steel and general machining | Common mainstream coated option |\n| TiSiN | Hardened steel and high-speed cutting | Better heat resistance |\n| DLC | Aluminum, copper, non-ferrous materials | Helps reduce built-up edge |\n\n## What to include in the RFQ\n\n- Workpiece material and hardness.\n- Cutting condition: dry, coolant, or mist.\n- Current tool life or pain point.\n- Required label, color ring, or packaging tier.\n\nKeyproTools can help align coating, geometry, and packaging so each series has a clear sales story.",
-        "zh": "![涂层检测](/assets/tools/coating-inspection.png)\n\n## 涂层也是产品定位\n\n涂层不只是技术选择，也能帮助经销商建立清晰的产品层级：经济型亮面、主流 AlTiN、高硬度 TiSiN，以及面向铝铜加工的 DLC。\n\n| 涂层 | 适用方向 | 采购备注 |\n| --- | --- | --- |\n| 亮面 | 铝、塑料、经济型通用加工 | 不易粘刀的场景更合适 |\n| AlTiN | 钢件和通用加工 | 常见主流涂层方案 |\n| TiSiN | 高硬钢和高速切削 | 耐热表现更好 |\n| DLC | 铝、铜和有色金属 | 有助于减少积屑瘤 |\n\n## 询价时建议提供\n\n- 工件材料和硬度。\n- 干切、冷却液或微量润滑等加工条件。\n- 当前刀具寿命或主要痛点。\n- 标签、色环、包装档次要求。\n\nKeyproTools 可以把涂层、几何和包装统一规划，让每个系列都有清晰的销售卖点。"
+        "en": "![Coating inspection](/assets/current-template/coating-inspection.png)\n\n## Coating is a positioning decision\n\nCoating is not only a technical choice. It also helps distributors create clear product tiers: economy bright finish, mainstream AlTiN, high-hardness TiSiN, and aluminum-focused DLC.\n\n| Coating | Better for | Buyer note |\n| --- | --- | --- |\n| Bright finish | Aluminum, plastic, general economy use | Good when chip welding is low |\n| AlTiN | Steel and general machining | Common mainstream coated option |\n| TiSiN | Hardened steel and high-speed cutting | Better heat resistance |\n| DLC | Aluminum, copper, non-ferrous materials | Helps reduce built-up edge |\n\n## What to include in the RFQ\n\n- Workpiece material and hardness.\n- Cutting condition: dry, coolant, or mist.\n- Current tool life or pain point.\n- Required label, color ring, or packaging tier.\n\nKeyproTools can help align coating, geometry, and packaging so each series has a clear sales story.",
+        "zh": "![涂层检测](/assets/current-template/coating-inspection.png)\n\n## 涂层也是产品定位\n\n涂层不只是技术选择，也能帮助经销商建立清晰的产品层级：经济型亮面、主流 AlTiN、高硬度 TiSiN，以及面向铝铜加工的 DLC。\n\n| 涂层 | 适用方向 | 采购备注 |\n| --- | --- | --- |\n| 亮面 | 铝、塑料、经济型通用加工 | 不易粘刀的场景更合适 |\n| AlTiN | 钢件和通用加工 | 常见主流涂层方案 |\n| TiSiN | 高硬钢和高速切削 | 耐热表现更好 |\n| DLC | 铝、铜和有色金属 | 有助于减少积屑瘤 |\n\n## 询价时建议提供\n\n- 工件材料和硬度。\n- 干切、冷却液或微量润滑等加工条件。\n- 当前刀具寿命或主要痛点。\n- 标签、色环、包装档次要求。\n\nKeyproTools 可以把涂层、几何和包装统一规划，让每个系列都有清晰的销售卖点。"
       },
       "category": "custom-tooling",
       "status": "published",
       "featuredOnHome": true,
       "publishedAt": "2026-05-24T04:23:00.000Z",
-      "coverImageUrl": "/assets/tools/coating-inspection.png"
+      "coverImageUrl": "/assets/current-template/coating-inspection.png"
     },
     {
       "id": "article-oem-export-packaging",
@@ -531,14 +531,14 @@
         "zh": "经销商下单私标铣刀和钻头前，应确认哪些包装、质检和交付细节。"
       },
       "body": {
-        "en": "![Export packaging](/assets/tools/export-packaging.png)\n\n## Confirm the commercial format before production\n\nFor OEM cutting tools, packaging is part of the product. Before production starts, confirm the tube color, label language, barcode, diameter grouping, carton mark, and whether the buyer needs sample photos before shipment.\n\n## QC checkpoints\n\n- Diameter, flute length, overall length, shank, and runout.\n- Coating color and surface finish.\n- Laser marking position and readability.\n- Tube, label, and carton consistency.\n- Mixed-size packing list and carton count.\n\n| Stage | What to check | Output |\n| --- | --- | --- |\n| Sample | Geometry and coating | Buyer approval photos |\n| Mass production | Size and surface | Inspection record |\n| Packing | Label and assortment | Packing list |\n| Shipment | Carton mark and quantity | Final loading confirmation |\n\nKeyproTools supports distributor-ready export packing for end mills, drill bits, and custom tooling assortments.",
-        "zh": "![出口包装](/assets/tools/export-packaging.png)\n\n## 生产前先确认商业包装形式\n\n对 OEM 刀具来说，包装就是产品的一部分。生产前应确认塑管颜色、标签语言、条码、规格分组、外箱唛头，以及出货前是否需要拍照确认。\n\n## 质检关键点\n\n- 直径、刃长、总长、柄径和跳动。\n- 涂层颜色和表面状态。\n- 激光打标位置与清晰度。\n- 塑管、标签和外箱一致性。\n- 混装规格清单和箱数。\n\n| 阶段 | 检查内容 | 交付物 |\n| --- | --- | --- |\n| 样品 | 几何和涂层 | 客户确认照片 |\n| 大货 | 尺寸和表面 | 检验记录 |\n| 包装 | 标签和组合 | 装箱单 |\n| 出货 | 唛头和数量 | 最终出货确认 |\n\nKeyproTools 支持铣刀、钻头和定制刀具组合的经销商出口包装。"
+        "en": "![Export packaging](/assets/current-template/export-packaging.png)\n\n## Confirm the commercial format before production\n\nFor OEM cutting tools, packaging is part of the product. Before production starts, confirm the tube color, label language, barcode, diameter grouping, carton mark, and whether the buyer needs sample photos before shipment.\n\n## QC checkpoints\n\n- Diameter, flute length, overall length, shank, and runout.\n- Coating color and surface finish.\n- Laser marking position and readability.\n- Tube, label, and carton consistency.\n- Mixed-size packing list and carton count.\n\n| Stage | What to check | Output |\n| --- | --- | --- |\n| Sample | Geometry and coating | Buyer approval photos |\n| Mass production | Size and surface | Inspection record |\n| Packing | Label and assortment | Packing list |\n| Shipment | Carton mark and quantity | Final loading confirmation |\n\nKeyproTools supports distributor-ready export packing for end mills, drill bits, and custom tooling assortments.",
+        "zh": "![出口包装](/assets/current-template/export-packaging.png)\n\n## 生产前先确认商业包装形式\n\n对 OEM 刀具来说，包装就是产品的一部分。生产前应确认塑管颜色、标签语言、条码、规格分组、外箱唛头，以及出货前是否需要拍照确认。\n\n## 质检关键点\n\n- 直径、刃长、总长、柄径和跳动。\n- 涂层颜色和表面状态。\n- 激光打标位置与清晰度。\n- 塑管、标签和外箱一致性。\n- 混装规格清单和箱数。\n\n| 阶段 | 检查内容 | 交付物 |\n| --- | --- | --- |\n| 样品 | 几何和涂层 | 客户确认照片 |\n| 大货 | 尺寸和表面 | 检验记录 |\n| 包装 | 标签和组合 | 装箱单 |\n| 出货 | 唛头和数量 | 最终出货确认 |\n\nKeyproTools 支持铣刀、钻头和定制刀具组合的经销商出口包装。"
       },
       "category": "custom-tooling",
       "status": "published",
       "featuredOnHome": true,
       "publishedAt": "2026-05-24T04:23:00.000Z",
-      "coverImageUrl": "/assets/tools/export-packaging.png"
+      "coverImageUrl": "/assets/current-template/export-packaging.png"
     },
     {
       "id": "article-end-mill-rfq-details",
@@ -552,14 +552,14 @@
         "zh": "把铣刀图纸和样品需求整理成可报价规格的采购清单。"
       },
       "body": {
-        "en": "![End mill RFQ details](/assets/tools/hero-tooling-range.jpg)\n\n## Why RFQ detail matters\n\nA small change in flute count, neck relief, corner radius, coating, or tolerance can change both price and lead time. Buyers get faster answers when each end mill line is written as a complete tool specification.\n\n## Recommended RFQ fields\n\n- Diameter, flute length, overall length, shank diameter, and neck length.\n- Flute count, helix angle preference, corner radius, or ball radius.\n- Workpiece material, hardness, coolant condition, and target operation.\n- Coating, laser marking, label language, and packaging format.\n\n| RFQ item | Why it matters |\n| --- | --- |\n| Corner radius | Improves edge strength and changes finishing behavior |\n| Neck length | Controls clearance for deep walls and mold features |\n| Coating | Aligns tool life, heat resistance, and product tier |\n| Tolerance | Affects grinding process and inspection requirements |\n\nKeyproTools can quote standard catalog items first, then move to custom grinding when the RFQ includes drawings or samples.",
-        "zh": "![铣刀询价参数](/assets/tools/hero-tooling-range.jpg)\n\n## 询价信息越清楚，报价越快\n\n刃数、避空颈、刀尖圆角、涂层和公差只要有一项变化，价格和交期都可能不同。经销商把每一支铣刀写成完整规格，工厂才能更快判断是否走标准品或定制研磨。\n\n## 建议写清的字段\n\n- 直径、刃长、总长、柄径和颈长。\n- 刃数、螺旋角偏好、刀尖圆角或球头半径。\n- 工件材料、硬度、冷却条件和加工工序。\n- 涂层、激光打标、标签语言和包装方式。\n\n| 询价项目 | 影响点 |\n| --- | --- |\n| 刀尖圆角 | 提升刀尖强度，也会影响精加工表现 |\n| 颈长 | 影响深腔、深壁和模具结构的避让能力 |\n| 涂层 | 决定寿命、耐热和产品档次定位 |\n| 公差 | 影响研磨工艺和检测要求 |\n\nKeyproTools 可先按标准目录报价，若 RFQ 附图纸或样品，再进入定制研磨评估。"
+        "en": "![End mill RFQ details](/assets/current-template/hero-tooling-range.jpg)\n\n## Why RFQ detail matters\n\nA small change in flute count, neck relief, corner radius, coating, or tolerance can change both price and lead time. Buyers get faster answers when each end mill line is written as a complete tool specification.\n\n## Recommended RFQ fields\n\n- Diameter, flute length, overall length, shank diameter, and neck length.\n- Flute count, helix angle preference, corner radius, or ball radius.\n- Workpiece material, hardness, coolant condition, and target operation.\n- Coating, laser marking, label language, and packaging format.\n\n| RFQ item | Why it matters |\n| --- | --- |\n| Corner radius | Improves edge strength and changes finishing behavior |\n| Neck length | Controls clearance for deep walls and mold features |\n| Coating | Aligns tool life, heat resistance, and product tier |\n| Tolerance | Affects grinding process and inspection requirements |\n\nKeyproTools can quote standard catalog items first, then move to custom grinding when the RFQ includes drawings or samples.",
+        "zh": "![铣刀询价参数](/assets/current-template/hero-tooling-range.jpg)\n\n## 询价信息越清楚，报价越快\n\n刃数、避空颈、刀尖圆角、涂层和公差只要有一项变化，价格和交期都可能不同。经销商把每一支铣刀写成完整规格，工厂才能更快判断是否走标准品或定制研磨。\n\n## 建议写清的字段\n\n- 直径、刃长、总长、柄径和颈长。\n- 刃数、螺旋角偏好、刀尖圆角或球头半径。\n- 工件材料、硬度、冷却条件和加工工序。\n- 涂层、激光打标、标签语言和包装方式。\n\n| 询价项目 | 影响点 |\n| --- | --- |\n| 刀尖圆角 | 提升刀尖强度，也会影响精加工表现 |\n| 颈长 | 影响深腔、深壁和模具结构的避让能力 |\n| 涂层 | 决定寿命、耐热和产品档次定位 |\n| 公差 | 影响研磨工艺和检测要求 |\n\nKeyproTools 可先按标准目录报价，若 RFQ 附图纸或样品，再进入定制研磨评估。"
       },
       "category": "carbide-end-mills",
       "status": "published",
       "featuredOnHome": true,
       "publishedAt": "2026-05-24T13:45:00.000Z",
-      "coverImageUrl": "/assets/tools/hero-tooling-range.jpg"
+      "coverImageUrl": "/assets/current-template/hero-tooling-range.jpg"
     },
     {
       "id": "article-drill-assortment-planning",
@@ -573,14 +573,14 @@
         "zh": "如何平衡 HSS、含钴钻、硬质合金钻和套装，形成可持续复购的备货结构。"
       },
       "body": {
-        "en": "![Drill assortment planning](/assets/tools/hero-export-packing.jpg)\n\n## Start from buyer use cases\n\nA good drill bit assortment is not only a size list. It should match the distributor's customers: hardware retail, maintenance teams, sheet-metal users, or CNC machining shops.\n\n## Practical stocking mix\n\n1. Use HSS twist drills for high-volume general demand.\n2. Add M35 cobalt drills for stainless steel and harder maintenance jobs.\n3. Keep solid carbide drills for CNC accounts that value hole accuracy.\n4. Package popular sizes as sets and replenish slow sizes in bulk.\n\n| Assortment layer | Typical role |\n| --- | --- |\n| HSS twist drills | Traffic product and regular replenishment |\n| M35 cobalt drills | Higher-margin stainless steel solution |\n| Carbide drills | Precision CNC buyer retention |\n| Sets and private labels | Shelf-ready retail and distributor branding |\n\nKeyproTools can prepare mixed cartons, foam tray assortments, plastic tube labels, and reorder lists for distributor programs.",
-        "zh": "![钻头备货组合](/assets/tools/hero-export-packing.jpg)\n\n## 先看客户使用场景\n\n好的钻头组合不是简单规格表，而要匹配经销商服务的客户：五金零售、维修维护、钣金开孔，或 CNC 加工厂。\n\n## 实用备货结构\n\n1. 用 HSS 麻花钻覆盖通用走量需求。\n2. 加入 M35 含钴钻，应对不锈钢和较硬材料维修场景。\n3. 保留整体硬质合金钻，服务重视孔精度的 CNC 客户。\n4. 热销规格做套装，慢销规格按散装补货。\n\n| 组合层级 | 典型作用 |\n| --- | --- |\n| HSS 麻花钻 | 走量基础品和常规复购 |\n| M35 含钴钻 | 不锈钢加工的高毛利方案 |\n| 硬质合金钻 | 绑定精密 CNC 客户 |\n| 套装与私标 | 适合货架销售和经销商品牌化 |\n\nKeyproTools 可为经销商项目准备混装外箱、泡棉托盘、塑管标签和复购清单。"
+        "en": "![Drill assortment planning](/assets/current-template/hero-export-packing.jpg)\n\n## Start from buyer use cases\n\nA good drill bit assortment is not only a size list. It should match the distributor's customers: hardware retail, maintenance teams, sheet-metal users, or CNC machining shops.\n\n## Practical stocking mix\n\n1. Use HSS twist drills for high-volume general demand.\n2. Add M35 cobalt drills for stainless steel and harder maintenance jobs.\n3. Keep solid carbide drills for CNC accounts that value hole accuracy.\n4. Package popular sizes as sets and replenish slow sizes in bulk.\n\n| Assortment layer | Typical role |\n| --- | --- |\n| HSS twist drills | Traffic product and regular replenishment |\n| M35 cobalt drills | Higher-margin stainless steel solution |\n| Carbide drills | Precision CNC buyer retention |\n| Sets and private labels | Shelf-ready retail and distributor branding |\n\nKeyproTools can prepare mixed cartons, foam tray assortments, plastic tube labels, and reorder lists for distributor programs.",
+        "zh": "![钻头备货组合](/assets/current-template/hero-export-packing.jpg)\n\n## 先看客户使用场景\n\n好的钻头组合不是简单规格表，而要匹配经销商服务的客户：五金零售、维修维护、钣金开孔，或 CNC 加工厂。\n\n## 实用备货结构\n\n1. 用 HSS 麻花钻覆盖通用走量需求。\n2. 加入 M35 含钴钻，应对不锈钢和较硬材料维修场景。\n3. 保留整体硬质合金钻，服务重视孔精度的 CNC 客户。\n4. 热销规格做套装，慢销规格按散装补货。\n\n| 组合层级 | 典型作用 |\n| --- | --- |\n| HSS 麻花钻 | 走量基础品和常规复购 |\n| M35 含钴钻 | 不锈钢加工的高毛利方案 |\n| 硬质合金钻 | 绑定精密 CNC 客户 |\n| 套装与私标 | 适合货架销售和经销商品牌化 |\n\nKeyproTools 可为经销商项目准备混装外箱、泡棉托盘、塑管标签和复购清单。"
       },
       "category": "drill-bits",
       "status": "published",
       "featuredOnHome": true,
       "publishedAt": "2026-05-24T13:45:00.000Z",
-      "coverImageUrl": "/assets/tools/hero-export-packing.jpg"
+      "coverImageUrl": "/assets/current-template/hero-export-packing.jpg"
     }
   ],
   "siteSettings": {

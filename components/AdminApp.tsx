@@ -47,7 +47,7 @@ import {
 } from "lucide-react";
 import { locales } from "@/config/locales";
 import { themes } from "@/config/themes";
-import type { AdminState, AdminUser, Article, ContactChannel, ContactChannelType, HomeSectionKey, HomeTemplateKey, LeadStatus, LocaleCode, ProductCategory, RoleKey, SiteHeroSlide, SiteNavigationItem, SitePage, SiteTemplateSettings, ThemeKey, UploadedFile } from "@/types/site";
+import type { AdminState, AdminUser, Article, ContactChannel, ContactChannelType, HomeSectionKey, LeadStatus, LocaleCode, ProductCategory, RoleKey, SiteHeroSlide, SiteNavigationItem, SitePage, SiteTemplateSettings, ThemeKey, UploadedFile } from "@/types/site";
 
 type Tab = "overview" | "products" | "pages" | "articles" | "files" | "leads" | "contacts" | "navigation" | "users" | "collect" | "templates" | "settings" | "languages" | "themes" | "account" | "ai";
 type ArticleEditorView = "visual" | "code";
@@ -328,11 +328,6 @@ const settingsSections: { key: SettingsSection; label: string; description: stri
   { key: "privacy", label: "隐私", description: "隐私页面、Cookie 提示和数据说明。" },
   { key: "ai", label: "AI", description: "模型、API 和积分。" },
   { key: "translation", label: "翻译设置", description: "多语言自动翻译。" }
-];
-const templateOptions: { key: HomeTemplateKey; label: string; description: string }[] = [
-  { key: "industrial-showcase", label: "工业展示", description: "保留首屏海报、工厂能力和完整首页模块。" },
-  { key: "catalog-focus", label: "目录优先", description: "适合突出产品分类、目录检索和批量采购入口。" },
-  { key: "rfq-focus", label: "询盘优先", description: "适合把报价入口前置，压缩装饰视觉和阅读路径。" }
 ];
 const homeSectionOptions: { key: HomeSectionKey; label: string; description: string }[] = [
   { key: "products", label: "产品目录", description: "首页产品分类卡片模块。" },
@@ -3039,7 +3034,7 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
   const visualArticles = state.articles
     .filter((article) => article.status === "published" && article.featuredOnHome)
     .slice(0, templateSettings.homeArticleCount);
-  const visualHeroImage = activeVisualSlide?.imageUrl || "/assets/tools/hero-tooling-range.jpg";
+  const visualHeroImage = activeVisualSlide?.imageUrl || "/assets/current-template/hero-tooling-range.jpg";
   const visualHeroImageStyle = { "--visual-hero-image": `url(${visualHeroImage})` } as CSSProperties;
   const visualText = (blockKey: string, fallback: string) => templateSettings.textBlocks[blockKey]?.zh || templateSettings.textBlocks[blockKey]?.en || fallback;
   const visualFactoryCards = [1, 2, 3].map((index) => ({
@@ -3094,7 +3089,7 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
   }
 
   function renderVisualImageTarget(options: VisualEditableImageOptions) {
-    const imageValue = options.value || "/assets/tools/hero-tooling-range.jpg";
+    const imageValue = options.value || "/assets/current-template/hero-tooling-range.jpg";
 
     return (
       <div
@@ -4749,7 +4744,7 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
                 <div className="settings-panel-head with-action">
                   <div>
                     <h2>前台模板</h2>
-                    <span>控制首页模板预设、首屏文案、模块显示、排序和首页内容数量。</span>
+                    <span>控制当前模板的首屏文案、轮播图片、模块显示、排序和首页内容数量。</span>
                   </div>
                   <div className="settings-actions template-mode-actions">
                     <div className="template-mode-toggle" aria-label="模板编辑模式">
@@ -4775,21 +4770,6 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
                     </button>
                   </div>
                 </div>
-
-                <div className="template-preset-grid" aria-label="首页模板预设">
-                  {templateOptions.map((option) => (
-                    <button
-                      className={templateSettings.homeTemplate === option.key ? "template-preset-button active" : "template-preset-button"}
-                      disabled={!canManageFrontendSettings}
-                      key={option.key}
-                      type="button"
-                      onClick={() => updateTemplateSettings({ homeTemplate: option.key })}
-                    >
-                      <strong>{option.label}</strong>
-                      <span>{option.description}</span>
-                    </button>
-                  ))}
-                </div>
               </section>
 
               {templateEditorMode === "visual" ? templateVisualEditorPanel : (
@@ -4810,7 +4790,7 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
                 </div>
                 <div className="hero-slide-add-row">
                   <label>添加图片 URL
-                    <input disabled={!canManageFrontendSettings} placeholder="/assets/tools/hero-new.jpg 或 https://..." value={newHeroSlideUrl} onChange={(event) => setNewHeroSlideUrl(event.target.value)} />
+                    <input disabled={!canManageFrontendSettings} placeholder="/assets/current-template/hero-new.jpg 或 https://..." value={newHeroSlideUrl} onChange={(event) => setNewHeroSlideUrl(event.target.value)} />
                   </label>
                   <button disabled={!canManageFrontendSettings} type="button" onClick={addHeroSlideFromUrl}>添加 URL</button>
                   <label>从媒体库选择

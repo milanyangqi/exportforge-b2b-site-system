@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "@/styles/globals.css";
+import "@/styles/active-template.css";
 
 export const metadata: Metadata = {
   title: "KeyproTools | Carbide End Mills, Drill Bits, and OEM Cutting Tools",

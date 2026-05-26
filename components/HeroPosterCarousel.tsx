@@ -4,21 +4,21 @@ import type { SiteHeroSlide } from "@/types/site";
 const fallbackHeroSlides: SiteHeroSlide[] = [
   {
     id: "hero-tooling-range",
-    imageUrl: "/assets/tools/hero-tooling-range.jpg",
+    imageUrl: "/assets/current-template/hero-tooling-range.jpg",
     alt: { en: "Carbide end mills and drill bits hero poster" },
     enabled: true,
     order: 10
   },
   {
     id: "hero-cnc-factory",
-    imageUrl: "/assets/tools/hero-cnc-factory.jpg",
+    imageUrl: "/assets/current-template/hero-cnc-factory.jpg",
     alt: { en: "CNC factory tooling production hero poster" },
     enabled: true,
     order: 20
   },
   {
     id: "hero-export-packing",
-    imageUrl: "/assets/tools/hero-export-packing.jpg",
+    imageUrl: "/assets/current-template/hero-export-packing.jpg",
     alt: { en: "Export packing and OEM tooling hero poster" },
     enabled: true,
     order: 30

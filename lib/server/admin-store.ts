@@ -25,27 +25,29 @@ type CloudflareContext = {
 
 const stateKey = "admin-state";
 const uploadKeyPrefix = "upload:";
-const keyproContentVersion = "keyprotools-tools-v1";
+const currentTemplateContentVersion = "current-template-keyprotools-v1";
+const legacyTemplateAssetPath = "/assets/tools/";
+const currentTemplateAssetPath = "/assets/current-template/";
 const homeTemplateKeys = new Set<HomeTemplateKey>(["industrial-showcase", "catalog-focus", "rfq-focus"]);
 const homeSectionKeys: HomeSectionKey[] = ["products", "factory", "markets", "articles", "rfq"];
 const defaultHeroSlides: SiteHeroSlide[] = [
   {
     id: "hero-tooling-range",
-    imageUrl: "/assets/tools/hero-tooling-range.jpg",
+    imageUrl: "/assets/current-template/hero-tooling-range.jpg",
     alt: { en: "Carbide end mills and drill bits hero poster", zh: "硬质合金铣刀与钻头首页海报" },
     enabled: true,
     order: 10
   },
   {
     id: "hero-cnc-factory",
-    imageUrl: "/assets/tools/hero-cnc-factory.jpg",
+    imageUrl: "/assets/current-template/hero-cnc-factory.jpg",
     alt: { en: "CNC factory tooling production hero poster", zh: "CNC 工厂刀具生产首页海报" },
     enabled: true,
     order: 20
   },
   {
     id: "hero-export-packing",
-    imageUrl: "/assets/tools/hero-export-packing.jpg",
+    imageUrl: "/assets/current-template/hero-export-packing.jpg",
     alt: { en: "Export packing and OEM tooling hero poster", zh: "出口包装与 OEM 刀具首页海报" },
     enabled: true,
     order: 30
@@ -55,7 +57,7 @@ const defaultHeroSlides: SiteHeroSlide[] = [
 const defaultSiteSettings: SiteSettings = {
   title: siteSettings.brand,
   tagline: "Carbide end mills, drill bits, OEM tooling, and export-ready packing.",
-  contentVersion: keyproContentVersion,
+  contentVersion: currentTemplateContentVersion,
   siteIconUrl: "",
   fontFamily: "\"Manrope\", \"PingFang SC\", \"Microsoft YaHei\", sans-serif",
   siteUrl: process.env.NEXT_PUBLIC_SITE_URL ?? "https://exportforge-b2b-site-system.437991663.workers.dev",
@@ -135,6 +137,17 @@ const defaultTemplateTextBlocks: Record<string, Translation> = {
   heroMetric3Value: { en: "OEM", zh: "出口包装" },
   heroMetric3Label: { en: "Laser marking and packing", zh: "经销商备货" }
 };
+
+function normalizeCurrentTemplateAssetUrl(value?: string) {
+  return (value ?? "").replaceAll(legacyTemplateAssetPath, currentTemplateAssetPath);
+}
+
+function normalizeCurrentTemplateAssetTranslation(value?: Partial<Translation>) {
+  return {
+    en: normalizeCurrentTemplateAssetUrl(value?.en),
+    zh: normalizeCurrentTemplateAssetUrl(value?.zh)
+  };
+}
 
 const defaultTemplateSettings: SiteTemplateSettings = {
   homeTemplate: "industrial-showcase",
@@ -328,7 +341,7 @@ function normalizeTemplateSettings(settings?: Partial<SiteTemplateSettings>): Si
   const normalizedSlides = heroSlides
     .map((slide, index) => ({
       id: slide.id || `hero-slide-${index}`,
-      imageUrl: slide.imageUrl || "",
+      imageUrl: normalizeCurrentTemplateAssetUrl(slide.imageUrl),
       alt: normalizeTranslation(slide.alt, defaultHeroSlides[index]?.alt ?? { en: "Homepage hero slide", zh: "首页轮播图片" }),
       enabled: slide.enabled ?? true,
       order: Number.isFinite(slide.order) ? Math.trunc(slide.order) : (index + 1) * 10
@@ -366,7 +379,7 @@ function mergeContactChannels(existingChannels = contactChannels) {
   return [...existingChannels, ...missingDefaultChannels];
 }
 
-function normalizeKeyproContactChannels(existingChannels = contactChannels) {
+function normalizeActiveTemplateContactChannels(existingChannels = contactChannels) {
   return mergeContactChannels(existingChannels).map((channel) => {
     if (channel.id === "email" && (channel.value === "sales@example.com" || channel.href === "mailto:sales@example.com")) {
       return { ...channel, value: "sales@keyprotools.com", href: "mailto:sales@keyprotools.com" };
@@ -436,11 +449,11 @@ function normalizeNavigation(existingNavigation?: SiteNavigationItem[]) {
     .sort((a, b) => a.order - b.order);
 }
 
-function shouldRefreshKeyproContent(parsed: AdminState) {
-  return parsed.siteSettings?.contentVersion !== keyproContentVersion;
+function shouldRefreshActiveTemplateContent(parsed: AdminState) {
+  return parsed.siteSettings?.contentVersion !== currentTemplateContentVersion;
 }
 
-function mergeKeyproMedia(existingFiles = uploadedFiles) {
+function mergeActiveTemplateMedia(existingFiles = uploadedFiles) {
   const seedIds = new Set(uploadedFiles.map((file) => file.id));
   const retainedFiles = existingFiles.filter((file) => !seedIds.has(file.id));
 
@@ -531,17 +544,17 @@ async function deleteLocalUploadFile(id: string) {
 }
 
 function normalizeAdminState(parsed: AdminState): AdminState {
-  const refreshKeyproContent = shouldRefreshKeyproContent(parsed);
-  const productsSource = refreshKeyproContent ? productCategories : (parsed.products ?? productCategories);
-  const articlesSource = refreshKeyproContent ? articles : mergeSeedArticles(parsed.articles ?? articles);
-  const navigationSource = refreshKeyproContent ? defaultNavigation : parsed.navigation;
-  const uploadedFilesSource = refreshKeyproContent ? mergeKeyproMedia(parsed.uploadedFiles) : mergeKeyproMedia(parsed.uploadedFiles ?? uploadedFiles);
-  const siteSettingsSource = refreshKeyproContent
+  const refreshActiveTemplateContent = shouldRefreshActiveTemplateContent(parsed);
+  const productsSource = refreshActiveTemplateContent ? productCategories : (parsed.products ?? productCategories);
+  const articlesSource = refreshActiveTemplateContent ? articles : mergeSeedArticles(parsed.articles ?? articles);
+  const navigationSource = refreshActiveTemplateContent ? defaultNavigation : parsed.navigation;
+  const uploadedFilesSource = refreshActiveTemplateContent ? mergeActiveTemplateMedia(parsed.uploadedFiles) : mergeActiveTemplateMedia(parsed.uploadedFiles ?? uploadedFiles);
+  const siteSettingsSource = refreshActiveTemplateContent
     ? {
         ...(parsed.siteSettings ?? {}),
         title: defaultSiteSettings.title,
         tagline: defaultSiteSettings.tagline,
-        contentVersion: keyproContentVersion,
+        contentVersion: currentTemplateContentVersion,
         defaultArticleCategory: productCategories[0]?.slug ?? "uncategorized",
         privacySummary: defaultSiteSettings.privacySummary
       }
@@ -551,19 +564,25 @@ function normalizeAdminState(parsed: AdminState): AdminState {
     ...parsed,
     products: productsSource.map((product, index) => ({
       ...product,
-      id: product.id ?? `product-${index}-${product.slug}`
+      id: product.id ?? `product-${index}-${product.slug}`,
+      imageUrl: normalizeCurrentTemplateAssetUrl(product.imageUrl)
     })),
     pages: normalizePages(parsed.pages, parsed.updatedAt),
     articles: articlesSource.map((article) => ({
       ...article,
       id: article.id ?? `article-${article.slug}`,
+      body: normalizeCurrentTemplateAssetTranslation(article.body),
+      coverImageUrl: normalizeCurrentTemplateAssetUrl(article.coverImageUrl),
       status: article.status ?? "published",
       featuredOnHome: article.featuredOnHome ?? true,
       publishedAt: article.publishedAt ?? parsed.updatedAt
     })),
     leads: parsed.leads ?? [],
-    contactChannels: refreshKeyproContent ? normalizeKeyproContactChannels(parsed.contactChannels) : mergeContactChannels(parsed.contactChannels),
-    uploadedFiles: uploadedFilesSource,
+    contactChannels: refreshActiveTemplateContent ? normalizeActiveTemplateContactChannels(parsed.contactChannels) : mergeContactChannels(parsed.contactChannels),
+    uploadedFiles: uploadedFilesSource.map((file) => ({
+      ...file,
+      url: normalizeCurrentTemplateAssetUrl(file.url)
+    })),
     users: normalizeAdminUsers(parsed.users),
     activeTheme: parsed.activeTheme ?? "industrial",
     enabledLocales: normalizeEnabledLocales(parsed.enabledLocales),

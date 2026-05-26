@@ -4390,51 +4390,6 @@ textarea:disabled {
   background: color-mix(in srgb, #b42318, white 94%);
 }
 
-.template-preset-grid {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 12px;
-}
-
-.template-preset-button {
-  display: grid;
-  min-height: 118px;
-  gap: 8px;
-  align-content: start;
-  border: 1px solid var(--line);
-  border-radius: 8px;
-  padding: 16px;
-  color: var(--ink);
-  background:
-    linear-gradient(135deg, color-mix(in srgb, var(--primary), white 94%), transparent 58%),
-    #fff;
-  text-align: left;
-  cursor: pointer;
-}
-
-.template-preset-button strong,
-.template-preset-button span {
-  display: block;
-}
-
-.template-preset-button span {
-  color: var(--muted);
-  font-size: 13px;
-  font-weight: 800;
-  line-height: 1.5;
-}
-
-.template-preset-button.active {
-  color: #fff;
-  border-color: var(--primary);
-  background:
-    linear-gradient(135deg, var(--primary), color-mix(in srgb, var(--primary), #111827 24%));
-}
-
-.template-preset-button.active span {
-  color: rgba(255, 255, 255, 0.78);
-}
-
 .template-builder-grid {
   display: grid;
   grid-template-columns: minmax(0, 1.25fr) minmax(300px, 0.75fr);
@@ -4503,20 +4458,20 @@ textarea:disabled {
   color: #fff;
   background:
     linear-gradient(135deg, rgba(4, 18, 27, 0.92), rgba(11, 95, 125, 0.86)),
-    url("/assets/tools/hero-tooling-range.jpg") center / cover;
+    url("/assets/current-template/hero-tooling-range.jpg") center / cover;
   box-shadow: 0 24px 64px rgba(9, 36, 54, 0.18);
 }
 
 .template-preview-panel.catalog-focus {
   background:
     linear-gradient(135deg, rgba(4, 18, 27, 0.94), rgba(20, 82, 103, 0.72)),
-    url("/assets/tools/hero-cnc-factory.jpg") center / cover;
+    url("/assets/current-template/hero-cnc-factory.jpg") center / cover;
 }
 
 .template-preview-panel.rfq-focus {
   background:
     linear-gradient(135deg, rgba(4, 18, 27, 0.96), rgba(163, 68, 16, 0.78)),
-    url("/assets/tools/hero-export-packing.jpg") center / cover;
+    url("/assets/current-template/hero-export-packing.jpg") center / cover;
 }
 
 .template-preview-panel .eyebrow {
@@ -5290,6 +5245,129 @@ textarea:disabled {
   min-height: 16px;
   flex: 0 0 16px;
   padding: 0;
+}
+
+.site-backup-panel {
+  display: grid;
+  gap: 16px;
+}
+
+.site-backup-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.site-backup-card {
+  display: grid;
+  gap: 14px;
+  align-content: start;
+}
+
+.site-backup-card-head {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: center;
+}
+
+.site-backup-card-head strong,
+.site-backup-option strong {
+  display: block;
+  color: var(--ink);
+  font-size: 14px;
+  font-weight: 900;
+}
+
+.site-backup-card-head span,
+.site-backup-option small {
+  display: block;
+  margin-top: 3px;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1.35;
+}
+
+.site-backup-card-head button,
+.site-backup-toolbar button {
+  display: inline-flex;
+  min-height: 38px;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  border: 0;
+  border-radius: 6px;
+  padding: 0 12px;
+  color: #fff;
+  background: var(--primary);
+  font-size: 13px;
+  font-weight: 900;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.site-backup-card-head button:disabled,
+.site-backup-toolbar button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.site-backup-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+  justify-content: space-between;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 10px;
+  background: #f8fafc;
+}
+
+.site-backup-toolbar .checkline {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--ink);
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.site-backup-toolbar input[type="checkbox"],
+.site-backup-option input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  flex: 0 0 16px;
+}
+
+.site-backup-options {
+  display: grid;
+  gap: 8px;
+}
+
+.site-backup-option {
+  display: grid;
+  grid-template-columns: 18px minmax(0, 1fr);
+  gap: 9px;
+  align-items: start;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 10px;
+  background: #fff;
+}
+
+.site-backup-status {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  border: 1px solid color-mix(in srgb, var(--primary) 28%, var(--line));
+  border-radius: 6px;
+  padding: 12px;
+  color: var(--primary);
+  background: color-mix(in srgb, var(--primary) 7%, #fff);
+  font-size: 13px;
+  font-weight: 900;
 }
 
 .site-icon-setting {
@@ -6245,7 +6323,6 @@ textarea:disabled {
   .contact-qr-manager,
   .theme-picker-detailed,
   .theme-live-preview,
-  .template-preset-grid,
   .template-builder-grid,
   .template-copy-form,
   .template-section-row,
@@ -6265,6 +6342,8 @@ textarea:disabled {
   .ai-credit-summary,
   .ai-credit-settings,
   .ai-usage-row,
+  .site-backup-grid,
+  .site-backup-card-head,
   .collector-form,
   .ai-compose-grid,
   .ai-api-actions,

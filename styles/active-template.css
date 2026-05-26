@@ -1,0 +1,7 @@
+/*
+ * Current production template styles.
+ *
+ * Keep this file scoped to the active template only. Additional template
+ * packages should live in the external template library and be copied here
+ * through `npm run template:apply -- <templateKey>`.
+ */

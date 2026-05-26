@@ -41,6 +41,59 @@ npm run dev
 - 后台主题切换保存后，前台会读取当前主题颜色。
 - 后台 AI 内容中心可生成文章草稿，人工审核后再发布。
 
+## Template Library Workflow
+
+生产项目采用“只保留当前启用模板”的结构。未启用模板不要长期放在本仓库的生产包里，应放在独立模板库目录或仓库中。
+
+默认本机模板库目录：
+
+```bash
+/Users/zhang/Documents/Codex_project/WebsiteTemplates
+```
+
+当前项目固定读取这些生产模板入口：
+
+- `components/templates/ActiveTemplate.tsx`
+- `styles/active-template.css`
+- `data/current-template-content.json`
+- `public/assets/current-template/`
+
+从模板库导入模板：
+
+```bash
+npm run template:apply -- <templateKey>
+```
+
+也可以指定模板库位置：
+
+```bash
+TEMPLATE_LIBRARY_DIR=/path/to/WebsiteTemplates npm run template:apply -- <templateKey>
+```
+
+模板库中每个模板目录需包含 `manifest.json`，并至少提供内容 seed 和素材目录。示例结构：
+
+```text
+WebsiteTemplates/
+  keyprotools/
+    manifest.json
+    seed.json
+    assets/
+    ActiveTemplate.tsx
+    active-template.css
+```
+
+新站建议流程：
+
+```bash
+git switch main
+git switch -c client-template-preview
+npm run template:apply -- keyprotools
+npm run typecheck
+npm run build
+```
+
+确认无误后再提交该分支。只有确定要上线时，才合并到 `main` 或按发布流程部署。
+
 ## Self-host
 
 Docker 自部署只需要 Web 服务。后台数据、上传文件会持久化到宿主机的 `.data/` 目录，不依赖 Postgres。

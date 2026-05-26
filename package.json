@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
+    "dev": "EXPORTFORGE_SELF_HOST=1 next dev",
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
@@ -14,7 +14,8 @@
     "cf:types": "wrangler types --env-interface CloudflareEnv cloudflare-env.d.ts",
     "backup:cloudflare": "node scripts/cloudflare-kv-backup.mjs",
     "restore:cloudflare": "node scripts/cloudflare-kv-restore.mjs",
-    "deploy:cloudflare": "node scripts/cloudflare-deploy.mjs"
+    "deploy:cloudflare": "node scripts/cloudflare-deploy.mjs",
+    "template:apply": "node scripts/apply-template.mjs"
   },
   "dependencies": {
     "@types/node": "^20.12.12",

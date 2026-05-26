@@ -1,5 +1,29 @@
 # Agent Notes
 
+## 模板库与生产模板约束
+
+本项目采用“主分支只保留当前生产模板”的模式。其他模板必须放在项目外的模板库目录或独立仓库中，例如：
+
+```bash
+/Users/zhang/Documents/Codex_project/WebsiteTemplates
+```
+
+生产项目固定读取以下当前模板入口：
+
+- `components/templates/ActiveTemplate.tsx`
+- `styles/active-template.css`
+- `data/current-template-content.json`
+- `public/assets/current-template/`
+
+后续 agent 必须遵守：
+
+- 不要把多个模板组件、模板 CSS 或大量未启用模板素材直接塞进生产项目。
+- 不要在后台“模板”页展示所有模板库模板；后台只管理当前生产模板的轮播、首屏内容、模块显示、排序和首页内容数量。
+- 新模板必须通过 `npm run template:apply -- <templateKey>` 从模板库导入到固定入口。
+- 前台模板可以替换，但后台 `/admin` 的登录、用户权限、媒体库、产品、文章、页面、导航、设置、询盘等 CMS 能力必须保留。
+- 用户要求“本地复刻”时，先新建分支；不要默认 push GitHub 或部署 Cloudflare。
+- 用户明确要求 push 或部署时，才执行对应操作；Cloudflare 部署仍必须遵守下方发布流程。
+
 ## Cloudflare 构建与部署流程
 
 推荐每次发布前按下面顺序执行：
@@ -175,8 +199,8 @@ PATH="/Users/zhang/.cache/codex-runtimes/codex-primary-runtime/dependencies/node
 
 - 产品分类替换为硬质合金铣刀、平底铣刀、球头铣刀、铝用铣刀、钻头、整体硬质合金钻头、HSS 麻花钻、阶梯钻与中心钻、定制刀具与 OEM、涂层与私标包装。
 - 前台导航改为“铣刀 / 钻头 / 定制刀具 / 技术文章 / 资料下载 / 联系我们”，产品导航直接指向对应产品分类页。
-- 生成并保存 4 张刀具相关图片到 `public/assets/tools/`，用于产品卡片、产品详情、文章封面和媒体库。
-- `data/keypro-content.json` 作为 KeyproTools 内容 seed；`lib/server/admin-store.ts` 通过 `contentVersion=keyprotools-tools-v1` 将旧后台状态迁移到本轮内容，同时保留用户、询盘和已有联系方式。
+- 生成并保存刀具相关图片到当前生产模板素材目录 `public/assets/current-template/`，用于产品卡片、产品详情、文章封面和媒体库。
+- `data/current-template-content.json` 作为当前生产模板内容 seed；`lib/server/admin-store.ts` 通过 `contentVersion=current-template-keyprotools-v1` 将旧后台状态迁移到本轮内容，同时保留用户、询盘和已有联系方式。
 
 本轮验证记录：
 
@@ -192,7 +216,7 @@ PATH="/Users/zhang/.cache/codex-runtimes/codex-primary-runtime/dependencies/node
 - 发布时间：2026-05-24
 - 线上地址：`https://exportforge-b2b-site-system.437991663.workers.dev`
 - Worker Version ID：`1367d4f8-3ae2-4887-92ce-e40a1259c594`
-- 线上验证：`/zh` 包含 `KeyproTools`、`硬质合金铣刀`、`钻头`；`/zh/products/carbide-end-mills` 和 `/zh/products/drill-bits` 返回 `HTTP/2 200`；`/zh/articles` 返回 `HTTP/2 200` 并显示五金工具文章；`/assets/tools/carbide-end-mills.png` 返回 `HTTP/2 200`；`/zh/admin?tab=products` 返回 `HTTP/2 307` 并重定向到 `/zh/admin/login`。
+- 线上验证：`/zh` 包含 `KeyproTools`、`硬质合金铣刀`、`钻头`；`/zh/products/carbide-end-mills` 和 `/zh/products/drill-bits` 返回 `HTTP/2 200`；`/zh/articles` 返回 `HTTP/2 200` 并显示五金工具文章；当前模板素材返回 `HTTP/2 200`；`/zh/admin?tab=products` 返回 `HTTP/2 307` 并重定向到 `/zh/admin/login`。
 
 ## KeyproTools 首页轮播、导航保存与卡片布局修复（2026-05-24）
 
