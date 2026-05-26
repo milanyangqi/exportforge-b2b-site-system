@@ -8,6 +8,8 @@ import {
   Bold,
   Code2,
   Coins,
+  DatabaseBackup,
+  Download,
   FileText,
   FolderTree,
   Gauge,
@@ -42,6 +44,7 @@ import {
   Table2,
   Trash2,
   Underline,
+  Upload,
   Users,
   X
 } from "lucide-react";
@@ -54,11 +57,12 @@ type ArticleEditorView = "visual" | "code";
 type PageMode = "list" | "editor";
 type MediaTypeFilter = "all" | "image" | "document" | "spreadsheet" | "archive" | "other";
 type MediaTimeFilter = "all" | "7d" | "30d" | "90d";
-type SettingsSection = "general" | "writing" | "reading" | "media" | "permalinks" | "privacy" | "ai" | "translation";
+type SettingsSection = "general" | "writing" | "reading" | "media" | "permalinks" | "privacy" | "ai" | "translation" | "backup";
 type AiContentTarget = "article" | "page";
 type AiWriteMode = "new" | "replace" | "append";
 type AiWorkbenchSection = "generate";
 type TranslationScope = "all" | "article" | "page" | "products" | "templates" | "navigation";
+type BackupSectionKey = keyof Pick<AdminState, "products" | "pages" | "articles" | "leads" | "contactChannels" | "uploadedFiles" | "users" | "navigation" | "siteSettings" | "templateSettings" | "aiSettings" | "aiCreditSettings" | "aiUsageRecords" | "activeTheme" | "enabledLocales">;
 type TemplateEditorMode = "form" | "visual";
 type VisualTextElement = "span" | "strong" | "p" | "h1" | "h3" | "li";
 type VisualEditableTextOptions = {
@@ -327,7 +331,38 @@ const settingsSections: { key: SettingsSection; label: string; description: stri
   { key: "permalinks", label: "固定链接", description: "产品、文章和资料的 URL 基础路径。" },
   { key: "privacy", label: "隐私", description: "隐私页面、Cookie 提示和数据说明。" },
   { key: "ai", label: "AI", description: "模型、API 和积分。" },
-  { key: "translation", label: "翻译设置", description: "多语言自动翻译。" }
+  { key: "translation", label: "翻译设置", description: "多语言自动翻译。" },
+  { key: "backup", label: "备份导入", description: "按模块导入导出整站数据。" }
+];
+const backupSectionOptions: { key: BackupSectionKey; label: string; description: string }[] = [
+  { key: "products", label: "产品分类", description: "产品目录、分类关系、规格和图片 URL。" },
+  { key: "pages", label: "页面", description: "独立页面、状态、正文和发布时间。" },
+  { key: "articles", label: "文章", description: "文章标题、摘要、正文、分类和封面。" },
+  { key: "leads", label: "询盘", description: "客户询盘、状态和分配记录。" },
+  { key: "contactChannels", label: "社媒及联系", description: "联系方式、浮窗渠道、二维码 URL。" },
+  { key: "uploadedFiles", label: "媒体记录", description: "媒体库列表、文件名、URL 和说明。" },
+  { key: "navigation", label: "导航栏", description: "前台菜单、子菜单、启用和排序。" },
+  { key: "siteSettings", label: "常规设置", description: "站点标题、URL、语言、固定链接和隐私设置。" },
+  { key: "templateSettings", label: "首页模板设置", description: "首屏、轮播、模块显示和首页数量。" },
+  { key: "activeTheme", label: "主题", description: "当前前台主题。" },
+  { key: "enabledLocales", label: "语言", description: "前台启用语言列表。" },
+  { key: "users", label: "用户权限", description: "后台用户、角色、可访问页面和密码哈希。" },
+  { key: "aiSettings", label: "AI 配置", description: "模型供应商、Base URL、API Key 和品牌语气。" },
+  { key: "aiCreditSettings", label: "AI 积分设置", description: "积分扣减和价格规则。" },
+  { key: "aiUsageRecords", label: "AI 消耗记录", description: "用户 AI 调用和积分消耗明细。" }
+];
+const sensitiveBackupSections = new Set<BackupSectionKey>(["users", "aiSettings", "aiCreditSettings", "aiUsageRecords"]);
+const defaultBackupSections: BackupSectionKey[] = [
+  "products",
+  "pages",
+  "articles",
+  "contactChannels",
+  "uploadedFiles",
+  "navigation",
+  "siteSettings",
+  "templateSettings",
+  "activeTheme",
+  "enabledLocales"
 ];
 const homeSectionOptions: { key: HomeSectionKey; label: string; description: string }[] = [
   { key: "products", label: "产品目录", description: "首页产品分类卡片模块。" },
@@ -943,10 +978,16 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
   const [translationOverwrite, setTranslationOverwrite] = useState(false);
   const [translationStatus, setTranslationStatus] = useState("");
   const [settingsSection, setSettingsSection] = useState<SettingsSection>("general");
+  const [backupSections, setBackupSections] = useState<BackupSectionKey[]>(defaultBackupSections);
+  const [backupIncludeFiles, setBackupIncludeFiles] = useState(false);
+  const [backupImportSections, setBackupImportSections] = useState<BackupSectionKey[]>(defaultBackupSections);
+  const [backupImportFiles, setBackupImportFiles] = useState(false);
+  const [backupStatus, setBackupStatus] = useState("选择要导出的数据模块，生成 JSON 后可用于恢复。");
   const [clockNow, setClockNow] = useState<Date | null>(null);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const visualEditorRef = useRef<HTMLDivElement | null>(null);
   const visualEditorInputRef = useRef(false);
+  const backupImportInputRef = useRef<HTMLInputElement | null>(null);
   const activeThemeKey = state?.activeTheme;
   const activeArticle = state?.articles.find((article) => (article.id ?? article.slug) === activeArticleId)
     ?? state?.articles.find((article) => article.status !== "trash")
@@ -1061,6 +1102,97 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
     setState(payload);
     setFrontendSettingsDirty(false);
     setStatus("已保存");
+  }
+
+  function toggleBackupSection(section: BackupSectionKey, target: "export" | "import") {
+    const selected = target === "export" ? backupSections : backupImportSections;
+    const setSelected = target === "export" ? setBackupSections : setBackupImportSections;
+    setSelected(selected.includes(section) ? selected.filter((item) => item !== section) : [...selected, section]);
+  }
+
+  function selectAllBackupSections(target: "export" | "import") {
+    const canSelectSensitiveSections = getCurrentUser()?.role === "super-admin";
+    const allSections = backupSectionOptions
+      .map((item) => item.key)
+      .filter((section) => canSelectSensitiveSections || !sensitiveBackupSections.has(section));
+    if (target === "export") {
+      setBackupSections(backupSections.length === allSections.length ? [] : allSections);
+    } else {
+      setBackupImportSections(backupImportSections.length === allSections.length ? [] : allSections);
+    }
+  }
+
+  async function exportSiteBackup() {
+    if (!state) return;
+    if (!backupSections.length) {
+      setBackupStatus("请至少选择一个要导出的数据模块。");
+      return;
+    }
+    setBackupStatus("正在生成备份文件...");
+    const response = await fetch("/api/admin/backup", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        action: "export",
+        sections: backupSections,
+        includeFiles: backupIncludeFiles
+      })
+    });
+    if (!response.ok) {
+      const payload = await response.json().catch(() => ({}));
+      setBackupStatus(payload.error ?? "备份导出失败，请检查登录状态。");
+      return;
+    }
+    const payload = await response.json();
+    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const timestamp = new Date().toISOString().slice(0, 19).replace(/[:T]/g, "-");
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `exportforge-site-backup-${timestamp}.json`;
+    link.click();
+    URL.revokeObjectURL(url);
+    setBackupStatus(`已导出 ${backupSections.length} 个模块${backupIncludeFiles ? "，包含媒体文件内容" : ""}。`);
+  }
+
+  async function importSiteBackup(file: File | null) {
+    if (!file) return;
+    if (!backupImportSections.length) {
+      setBackupStatus("请至少选择一个要导入的数据模块。");
+      return;
+    }
+    setBackupStatus("正在读取备份文件...");
+    try {
+      const backup = JSON.parse(await file.text());
+      setBackupStatus("正在导入选中的数据模块...");
+      const response = await fetch("/api/admin/backup", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "import",
+          sections: backupImportSections,
+          includeFiles: backupImportFiles,
+          backup
+        })
+      });
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        setBackupStatus(payload.error ?? "导入失败，请检查备份文件格式。");
+        return;
+      }
+      if (payload.state) {
+        setState(payload.state);
+        applyThemeToDocument(payload.state.activeTheme);
+        applySiteFontToDocument(payload.state.siteSettings.fontFamily);
+      }
+      setFrontendSettingsDirty(false);
+      setBackupStatus(`已导入 ${payload.importedSections?.length ?? backupImportSections.length} 个模块${payload.importedFileCount ? `，恢复 ${payload.importedFileCount} 个媒体文件` : ""}。`);
+      setStatus("整站数据导入完成");
+    } catch {
+      setBackupStatus("导入失败：备份文件不是有效的 JSON。");
+    } finally {
+      if (backupImportInputRef.current) backupImportInputRef.current.value = "";
+    }
   }
 
   async function logout() {
@@ -2986,6 +3118,7 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
   const aiTestStatusTone = !aiTestStatus ? "" : aiTestStatus.includes("通过") ? "success" : aiTestStatus.includes("正在测试") ? "pending" : "error";
   const accountInitial = (currentUserName || email).slice(0, 1).toUpperCase();
   const canResetUserPasswords = currentUser?.role === "super-admin";
+  const selectableBackupSectionCount = backupSectionOptions.filter((option) => canResetUserPasswords || !sensitiveBackupSections.has(option.key)).length;
   const allowedTabsForCurrentUser = new Set(getAllowedTabsForUser(currentUser));
   const visibleSidebarTabs = tabs.filter((item) => allowedTabsForCurrentUser.has(item.key));
   const canManageFrontendSettings = canManageFrontendState();
@@ -5248,6 +5381,97 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
                           <span>{translationStatus || "默认只补空白字段，不会覆盖已经人工编辑过的翻译。"}</span>
                         </div>
                       </div>
+                    </section>
+                  ) : null}
+
+                  {settingsSection === "backup" ? (
+                    <section className="settings-panel site-backup-panel">
+                      <div className="settings-panel-head">
+                        <div>
+                          <h2>整站数据备份</h2>
+                          <span>导出或导入后台数据，按模块选择内容，避免备份文件过大。</span>
+                        </div>
+                      </div>
+                      {!canManageFrontendSettings ? <p className="settings-lock-note">当前账号没有备份权限。请使用 Super Admin 或 Admin 账号操作。</p> : null}
+                      <div className="site-backup-grid">
+                        <article className="admin-edit-card site-backup-card">
+                          <div className="site-backup-card-head">
+                            <div>
+                              <strong>导出数据</strong>
+                              <span>生成可下载的 JSON 备份文件。</span>
+                            </div>
+                            <button type="button" disabled={!canManageFrontendSettings} onClick={exportSiteBackup}>
+                              <Download size={16} />
+                              导出备份
+                            </button>
+                          </div>
+                          <div className="site-backup-toolbar">
+                            <button type="button" disabled={!canManageFrontendSettings} onClick={() => selectAllBackupSections("export")}>
+                              {backupSections.length === selectableBackupSectionCount ? "取消全选" : "全选模块"}
+                            </button>
+                            <label className="checkline">
+                              <input disabled={!canManageFrontendSettings || !backupSections.includes("uploadedFiles")} type="checkbox" checked={backupIncludeFiles} onChange={(event) => setBackupIncludeFiles(event.target.checked)} />
+                              包含媒体文件内容
+                            </label>
+                          </div>
+                          <div className="site-backup-options">
+                            {backupSectionOptions.map((option) => (
+                              <label className="site-backup-option" key={option.key}>
+                                <input disabled={!canManageFrontendSettings || (!canResetUserPasswords && sensitiveBackupSections.has(option.key))} type="checkbox" checked={backupSections.includes(option.key)} onChange={() => toggleBackupSection(option.key, "export")} />
+                                <span>
+                                  <strong>{option.label}</strong>
+                                  <small>{option.description}</small>
+                                </span>
+                              </label>
+                            ))}
+                          </div>
+                        </article>
+
+                        <article className="admin-edit-card site-backup-card">
+                          <div className="site-backup-card-head">
+                            <div>
+                              <strong>导入数据</strong>
+                              <span>只覆盖勾选模块，未选中的现有数据会保留。</span>
+                            </div>
+                            <button type="button" disabled={!canManageFrontendSettings} onClick={() => backupImportInputRef.current?.click()}>
+                              <Upload size={16} />
+                              选择备份导入
+                            </button>
+                            <input
+                              ref={backupImportInputRef}
+                              accept="application/json,.json"
+                              hidden
+                              type="file"
+                              onChange={(event) => importSiteBackup(event.currentTarget.files?.[0] ?? null)}
+                            />
+                          </div>
+                          <div className="site-backup-toolbar">
+                            <button type="button" disabled={!canManageFrontendSettings} onClick={() => selectAllBackupSections("import")}>
+                              {backupImportSections.length === selectableBackupSectionCount ? "取消全选" : "全选模块"}
+                            </button>
+                            <label className="checkline">
+                              <input disabled={!canManageFrontendSettings || !backupImportSections.includes("uploadedFiles")} type="checkbox" checked={backupImportFiles} onChange={(event) => setBackupImportFiles(event.target.checked)} />
+                              恢复媒体文件内容
+                            </label>
+                          </div>
+                          <div className="site-backup-options">
+                            {backupSectionOptions.map((option) => (
+                              <label className="site-backup-option" key={option.key}>
+                                <input disabled={!canManageFrontendSettings || (!canResetUserPasswords && sensitiveBackupSections.has(option.key))} type="checkbox" checked={backupImportSections.includes(option.key)} onChange={() => toggleBackupSection(option.key, "import")} />
+                                <span>
+                                  <strong>{option.label}</strong>
+                                  <small>{option.description}</small>
+                                </span>
+                              </label>
+                            ))}
+                          </div>
+                        </article>
+                      </div>
+                      <div className="site-backup-status">
+                        <DatabaseBackup size={18} />
+                        <span>{backupStatus}</span>
+                      </div>
+                      <p className="settings-lock-note">用户权限和 AI 配置可能包含密码哈希或 API Key；只把备份文件交给可信人员保存。</p>
                     </section>
                   ) : null}
 

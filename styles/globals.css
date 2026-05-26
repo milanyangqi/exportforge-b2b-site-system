@@ -5256,19 +5256,25 @@ textarea:disabled {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 14px;
+  align-items: stretch;
 }
 
 .site-backup-card {
   display: grid;
+  grid-template-columns: 1fr;
+  grid-template-rows: auto auto 1fr;
   gap: 14px;
   align-content: start;
+  min-width: 0;
+  height: 100%;
 }
 
 .site-backup-card-head {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   gap: 12px;
-  align-items: center;
+  align-items: start;
+  min-height: 48px;
 }
 
 .site-backup-card-head strong,
@@ -5314,11 +5320,10 @@ textarea:disabled {
 }
 
 .site-backup-toolbar {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
   gap: 10px;
   align-items: center;
-  justify-content: space-between;
   border: 1px solid var(--line);
   border-radius: 6px;
   padding: 10px;
@@ -5329,9 +5334,11 @@ textarea:disabled {
   display: inline-flex;
   align-items: center;
   gap: 8px;
+  justify-self: end;
   color: var(--ink);
   font-size: 13px;
   font-weight: 900;
+  text-align: right;
 }
 
 .site-backup-toolbar input[type="checkbox"],
@@ -5343,6 +5350,7 @@ textarea:disabled {
 
 .site-backup-options {
   display: grid;
+  align-content: start;
   gap: 8px;
 }
 
