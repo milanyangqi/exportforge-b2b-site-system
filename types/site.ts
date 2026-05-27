@@ -90,6 +90,14 @@ export type ContactChannel = {
   icon?: LucideIcon;
 };
 
+export type SeoSettings = {
+  title?: Translation;
+  description?: Translation;
+  ogImageUrl?: string;
+  canonicalUrl?: string;
+  indexable?: boolean;
+};
+
 export type ProductCategory = {
   id?: string;
   slug: string;
@@ -100,6 +108,7 @@ export type ProductCategory = {
   specs: string[];
   themeFit: ThemeKey[];
   imageUrl?: string;
+  seo?: SeoSettings;
 };
 
 export type Article = {
@@ -114,6 +123,7 @@ export type Article = {
   publishedAt?: string;
   deletedAt?: string;
   coverImageUrl?: string;
+  seo?: SeoSettings;
 };
 
 export type SitePage = {
@@ -125,6 +135,7 @@ export type SitePage = {
   status?: "draft" | "published" | "trash";
   publishedAt?: string;
   deletedAt?: string;
+  seo?: SeoSettings;
 };
 
 export type SiteNavigationItem = {
@@ -180,10 +191,17 @@ export type AdminUser = {
   active: boolean;
   aiCredits?: number;
   allowedTabs?: string[];
+  articleImportEnabled?: boolean;
   jobTitle?: string;
   phone?: string;
   avatarUrl?: string;
   passwordHash?: string;
+};
+
+export type AdminRolePermissions = {
+  allowedTabs: string[];
+  settingsSections?: string[];
+  articleImportEnabled?: boolean;
 };
 
 export type AiCreditSettings = {
@@ -271,12 +289,46 @@ export type SiteSettings = {
 
 export type HomeTemplateKey = "industrial-showcase" | "catalog-focus" | "rfq-focus";
 
-export type HomeSectionKey = "products" | "factory" | "markets" | "articles" | "rfq";
+export type HomeSectionKey = "navigation" | "hero" | "products" | "factory" | "markets" | "articles" | "rfq";
 
 export type SiteHeroSlide = {
   id: string;
   imageUrl: string;
   alt: Translation;
+  enabled: boolean;
+  order: number;
+};
+
+export type SiteTemplateCustomBlockType = "text" | "image" | "video" | "cta";
+export type SiteTemplateImageLayout = "single" | "split" | "grid" | "mosaic" | "carousel";
+
+export type SiteTemplateImageItem = {
+  id: string;
+  url: string;
+  alt?: Translation;
+  caption?: Translation;
+  enabled: boolean;
+  order: number;
+};
+
+export type SiteTemplateCustomBlock = {
+  id: string;
+  type: SiteTemplateCustomBlockType;
+  eyebrow?: Translation;
+  title: Translation;
+  body: Translation;
+  mediaUrl?: string;
+  imageItems?: SiteTemplateImageItem[];
+  imageLayout?: SiteTemplateImageLayout;
+  imageCarouselAutoplay?: boolean;
+  imageCarouselIntervalSeconds?: number;
+  buttonLabel?: Translation;
+  linkUrl?: string;
+  openInNewTab?: boolean;
+  align?: "left" | "center";
+  layout?: "stacked" | "media-left" | "media-right";
+  theme?: "light" | "tint" | "dark";
+  spacing?: "compact" | "normal" | "large";
   enabled: boolean;
   order: number;
 };
@@ -299,6 +351,7 @@ export type SiteTemplateSettings = {
   visibleSections: Record<HomeSectionKey, boolean>;
   sectionOrder: Record<HomeSectionKey, number>;
   textBlocks: Record<string, Translation>;
+  customBlocks: SiteTemplateCustomBlock[];
 };
 
 export type AdminState = {
@@ -309,6 +362,7 @@ export type AdminState = {
   contactChannels: ContactChannel[];
   uploadedFiles: UploadedFile[];
   users: AdminUser[];
+  rolePermissions?: Partial<Record<RoleKey, AdminRolePermissions>>;
   activeTheme: ThemeKey;
   enabledLocales: LocaleCode[];
   navigation: SiteNavigationItem[];

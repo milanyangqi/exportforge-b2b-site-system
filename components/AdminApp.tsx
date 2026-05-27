@@ -1,6 +1,6 @@
 "use client";
 
-import { type CSSProperties, type KeyboardEvent, type MouseEvent, useEffect, useMemo, useRef, useState } from "react";
+import { Fragment, type CSSProperties, type DragEvent, type KeyboardEvent, type MouseEvent, useEffect, useMemo, useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import {
@@ -27,8 +27,12 @@ import {
   List,
   ListOrdered,
   Mail,
+  Maximize2,
   Menu,
   Minus,
+  Minimize2,
+  MoveDown,
+  MoveUp,
   Paperclip,
   Palette,
   Pilcrow,
@@ -38,6 +42,7 @@ import {
   Save,
   Search,
   SendToBack,
+  ShieldCheck,
   Sparkles,
   Share2,
   Strikethrough,
@@ -45,6 +50,7 @@ import {
   Superscript,
   Table2,
   Trash2,
+  Type,
   Underline,
   Upload,
   Users,
@@ -53,14 +59,14 @@ import {
 } from "lucide-react";
 import { locales } from "@/config/locales";
 import { themes } from "@/config/themes";
-import type { AdminState, AdminUser, Article, ContactChannel, ContactChannelType, HomeSectionKey, LeadStatus, LocaleCode, ProductCategory, RoleKey, SiteHeroSlide, SiteNavigationItem, SitePage, SiteTemplateSettings, ThemeKey, Translation, UploadedFile } from "@/types/site";
+import type { AdminRolePermissions, AdminState, AdminUser, Article, ContactChannel, ContactChannelType, HomeSectionKey, LeadStatus, LocaleCode, ProductCategory, RoleKey, SiteHeroSlide, SiteNavigationItem, SitePage, SiteTemplateCustomBlock, SiteTemplateCustomBlockType, SiteTemplateImageItem, SiteTemplateImageLayout, SiteTemplateSettings, ThemeKey, Translation, UploadedFile } from "@/types/site";
 
 type Tab = "overview" | "products" | "pages" | "articles" | "files" | "leads" | "mail" | "contacts" | "navigation" | "users" | "collect" | "templates" | "settings" | "languages" | "themes" | "account" | "ai";
 type ArticleEditorView = "visual" | "code";
 type PageMode = "list" | "editor";
 type MediaTypeFilter = "all" | "image" | "document" | "spreadsheet" | "archive" | "other";
 type MediaTimeFilter = "all" | "7d" | "30d" | "90d";
-type SettingsSection = "general" | "writing" | "reading" | "media" | "permalinks" | "privacy" | "ai" | "translation" | "backup";
+type SettingsSection = "general" | "writing" | "reading" | "seo" | "media" | "permalinks" | "privacy" | "ai" | "translation" | "backup";
 type AiContentTarget = "article" | "page";
 type AiWriteMode = "new" | "replace" | "append";
 type AiWorkbenchSection = "generate";
@@ -70,9 +76,17 @@ type AiWizardStep = 1 | 2 | 3 | 4 | 5;
 type TranslationScope = "all" | "article" | "page" | "products" | "templates" | "navigation";
 type TranslationSourceChoice = "auto" | LocaleCode;
 type TranslationTargetChoice = "all" | LocaleCode;
-type BackupSectionKey = keyof Pick<AdminState, "products" | "pages" | "articles" | "leads" | "contactChannels" | "uploadedFiles" | "users" | "navigation" | "siteSettings" | "templateSettings" | "aiSettings" | "aiCreditSettings" | "aiUsageRecords" | "activeTheme" | "enabledLocales">;
+type BackupSectionKey = keyof Pick<AdminState, "products" | "pages" | "articles" | "leads" | "contactChannels" | "uploadedFiles" | "users" | "rolePermissions" | "navigation" | "siteSettings" | "templateSettings" | "aiSettings" | "aiCreditSettings" | "aiUsageRecords" | "activeTheme" | "enabledLocales">;
 type TemplateEditorMode = "form" | "visual";
 type VideoDialogTarget = "article" | "page";
+type VisualBuilderDevice = "desktop" | "tablet" | "mobile";
+type VisualBuilderSidebarTab = "components" | "properties";
+type VisualBuilderModuleKind = "section" | "custom";
+type VisualBuilderDragPayload = {
+  source: "module" | "palette";
+  moduleId?: string;
+  blockType?: SiteTemplateCustomBlockType;
+};
 type VisualTextElement = "span" | "strong" | "p" | "h1" | "h3" | "li";
 type VisualEditableTextOptions = {
   editorKey: string;
@@ -97,6 +111,13 @@ type ProductFormState = {
   parentId: string;
   summaryZh: string;
   summaryEn: string;
+  seoTitleZh: string;
+  seoTitleEn: string;
+  seoDescriptionZh: string;
+  seoDescriptionEn: string;
+  seoOgImageUrl: string;
+  seoCanonicalUrl: string;
+  seoIndexable: boolean;
 };
 type ContactFormState = {
   type: ContactChannelType;
@@ -305,6 +326,13 @@ function formatBeijingDifference(offsetMinutes: number, beijingOffsetMinutes: nu
 
 const themeOptions: ThemeKey[] = ["industrial", "clean-export", "premium-brand", "equipment", "consumer-goods"];
 const roleOptions: RoleKey[] = ["super-admin", "admin", "editor", "sales", "viewer"];
+const roleLabels: Record<RoleKey, string> = {
+  "super-admin": "超级管理员",
+  admin: "管理员",
+  editor: "编辑",
+  sales: "销售",
+  viewer: "访客"
+};
 const leadStatuses: LeadStatus[] = ["new", "contacted", "quoted", "closed", "spam"];
 const leadStatusLabels: Record<LeadStatus, string> = {
   new: "新询盘",
@@ -387,6 +415,7 @@ const settingsSections: { key: SettingsSection; label: string; description: stri
   { key: "general", label: "常规", description: "站点标题、网址、语言和时区。" },
   { key: "writing", label: "撰写", description: "文章默认分类与发布方式。" },
   { key: "reading", label: "阅读", description: "首页内容、列表数量和搜索可见性。" },
+  { key: "seo", label: "SEO", description: "多语种索引、元信息和完整度检查。" },
   { key: "media", label: "媒体", description: "图片尺寸和媒体整理方式。" },
   { key: "permalinks", label: "固定链接", description: "产品、文章和资料的 URL 基础路径。" },
   { key: "privacy", label: "隐私", description: "隐私页面、Cookie 提示和数据说明。" },
@@ -394,6 +423,34 @@ const settingsSections: { key: SettingsSection; label: string; description: stri
   { key: "translation", label: "翻译设置", description: "多语言自动翻译。" },
   { key: "backup", label: "备份导入", description: "按模块导入导出整站数据。" }
 ];
+const defaultSettingsSections = settingsSections.map((item) => item.key);
+const defaultRolePermissions: Record<RoleKey, AdminRolePermissions> = {
+  "super-admin": {
+    allowedTabs: defaultAllowedTabsByRole["super-admin"],
+    settingsSections: defaultSettingsSections,
+    articleImportEnabled: true
+  },
+  admin: {
+    allowedTabs: defaultAllowedTabsByRole.admin,
+    settingsSections: defaultSettingsSections,
+    articleImportEnabled: true
+  },
+  editor: {
+    allowedTabs: defaultAllowedTabsByRole.editor,
+    settingsSections: [],
+    articleImportEnabled: false
+  },
+  sales: {
+    allowedTabs: defaultAllowedTabsByRole.sales,
+    settingsSections: [],
+    articleImportEnabled: false
+  },
+  viewer: {
+    allowedTabs: defaultAllowedTabsByRole.viewer,
+    settingsSections: [],
+    articleImportEnabled: false
+  }
+};
 const backupSectionOptions: { key: BackupSectionKey; label: string; description: string }[] = [
   { key: "products", label: "产品分类", description: "产品目录、分类关系、规格和图片 URL。" },
   { key: "pages", label: "页面", description: "独立页面、状态、正文和发布时间。" },
@@ -407,11 +464,12 @@ const backupSectionOptions: { key: BackupSectionKey; label: string; description:
   { key: "activeTheme", label: "主题", description: "当前前台主题。" },
   { key: "enabledLocales", label: "语言", description: "前台启用语言列表。" },
   { key: "users", label: "用户权限", description: "后台用户、角色、可访问页面和密码哈希。" },
+  { key: "rolePermissions", label: "用户组权限", description: "各用户组的后台页面、设置子页面和功能权限。" },
   { key: "aiSettings", label: "AI 配置", description: "模型供应商、Base URL、API Key 和品牌语气。" },
   { key: "aiCreditSettings", label: "AI 积分设置", description: "积分扣减和价格规则。" },
   { key: "aiUsageRecords", label: "AI 消耗记录", description: "用户 AI 调用和积分消耗明细。" }
 ];
-const sensitiveBackupSections = new Set<BackupSectionKey>(["users", "aiSettings", "aiCreditSettings", "aiUsageRecords"]);
+const sensitiveBackupSections = new Set<BackupSectionKey>(["users", "rolePermissions", "aiSettings", "aiCreditSettings", "aiUsageRecords"]);
 const defaultBackupSections: BackupSectionKey[] = [
   "products",
   "pages",
@@ -425,11 +483,20 @@ const defaultBackupSections: BackupSectionKey[] = [
   "enabledLocales"
 ];
 const homeSectionOptions: { key: HomeSectionKey; label: string; description: string }[] = [
+  { key: "navigation", label: "导航栏", description: "前台顶部品牌、菜单和语言入口。" },
+  { key: "hero", label: "首页首屏", description: "首页首屏海报、标题、按钮和指标。" },
   { key: "products", label: "产品目录", description: "首页产品分类卡片模块。" },
   { key: "factory", label: "工厂能力", description: "几何、涂层、包装等能力说明。" },
   { key: "markets", label: "出口市场", description: "多语言与 RFQ 清单说明模块。" },
   { key: "articles", label: "技术文章", description: "首页文章卡片模块。" },
   { key: "rfq", label: "询盘表单", description: "首页底部报价表单模块。" }
+];
+const imageLayoutOptions: { key: SiteTemplateImageLayout; label: string }[] = [
+  { key: "single", label: "单张大图" },
+  { key: "split", label: "双图并排" },
+  { key: "grid", label: "三列网格" },
+  { key: "mosaic", label: "拼贴展示" },
+  { key: "carousel", label: "图片轮播" }
 ];
 const homeProductSlugs = [
   "carbide-end-mills",
@@ -531,7 +598,14 @@ const emptyProductForm: ProductFormState = {
   slug: "",
   parentId: "",
   summaryZh: "",
-  summaryEn: ""
+  summaryEn: "",
+  seoTitleZh: "",
+  seoTitleEn: "",
+  seoDescriptionZh: "",
+  seoDescriptionEn: "",
+  seoOgImageUrl: "",
+  seoCanonicalUrl: "",
+  seoIndexable: true
 };
 const emptyNewUserForm: NewUserFormState = {
   name: "",
@@ -684,7 +758,14 @@ function productToForm(product: ProductCategory): ProductFormState {
     slug: product.slug,
     parentId: product.parentId ?? "",
     summaryZh: product.summary.zh ?? "",
-    summaryEn: product.summary.en
+    summaryEn: product.summary.en,
+    seoTitleZh: product.seo?.title?.zh ?? "",
+    seoTitleEn: product.seo?.title?.en ?? "",
+    seoDescriptionZh: product.seo?.description?.zh ?? "",
+    seoDescriptionEn: product.seo?.description?.en ?? "",
+    seoOgImageUrl: product.seo?.ogImageUrl ?? "",
+    seoCanonicalUrl: product.seo?.canonicalUrl ?? "",
+    seoIndexable: product.seo?.indexable ?? true
   };
 }
 
@@ -895,6 +976,56 @@ function createSingleLanguageTranslation(value: string) {
   return { en: value, zh: value };
 }
 
+function mergeSeoTranslation(en: string, zh: string) {
+  const titleEn = en.trim();
+  const titleZh = zh.trim();
+  if (!titleEn && !titleZh) return undefined;
+  return { en: titleEn || titleZh, zh: titleZh || titleEn };
+}
+
+function hasLocaleText(value: Partial<Record<LocaleCode, string>> | undefined, locale: LocaleCode) {
+  return Boolean(value?.[locale]?.trim());
+}
+
+function hasLocaleList(value: Partial<Record<LocaleCode, string[]>> | undefined, locale: LocaleCode) {
+  return Array.isArray(value?.[locale]) && (value?.[locale]?.length ?? 0) > 0;
+}
+
+function countSeoIssues(state: AdminState) {
+  let missingMetadata = 0;
+  let fallbackLocales = 0;
+  let noindexItems = 0;
+  let missingImages = 0;
+
+  state.products.forEach((product) => {
+    if (!product.seo?.title?.en || !product.seo?.description?.en) missingMetadata += 1;
+    if (product.seo?.indexable === false) noindexItems += 1;
+    if (!product.imageUrl && !product.seo?.ogImageUrl) missingImages += 1;
+    state.enabledLocales.forEach((locale) => {
+      if (!hasLocaleText(product.name, locale) || !hasLocaleText(product.summary, locale) || !hasLocaleList(product.applications, locale)) fallbackLocales += 1;
+    });
+  });
+
+  state.articles.filter((article) => article.status === "published").forEach((article) => {
+    if (!article.seo?.title?.en || !article.seo?.description?.en) missingMetadata += 1;
+    if (article.seo?.indexable === false) noindexItems += 1;
+    if (!article.coverImageUrl && !article.seo?.ogImageUrl) missingImages += 1;
+    state.enabledLocales.forEach((locale) => {
+      if (!hasLocaleText(article.title, locale) || !hasLocaleText(article.excerpt, locale) || (article.body && !hasLocaleText(article.body, locale))) fallbackLocales += 1;
+    });
+  });
+
+  state.pages.filter((page) => page.status === "published").forEach((page) => {
+    if (!page.seo?.title?.en || !page.seo?.description?.en) missingMetadata += 1;
+    if (page.seo?.indexable === false) noindexItems += 1;
+    state.enabledLocales.forEach((locale) => {
+      if (!hasLocaleText(page.title, locale) || !hasLocaleText(page.excerpt, locale) || !hasLocaleText(page.body, locale)) fallbackLocales += 1;
+    });
+  });
+
+  return { missingMetadata, fallbackLocales, noindexItems, missingImages };
+}
+
 function formatFileSize(size: number) {
   if (size < 1024) return `${size} B`;
   if (size < 1024 * 1024) return `${Math.round(size / 1024)} KB`;
@@ -1038,24 +1169,30 @@ function normalizeInitialTab(value?: string): Tab {
   return value && tabKeys.has(value as Tab) ? value as Tab : "overview";
 }
 
-function getAllowedTabsForUser(user?: AdminUser) {
-  const roleDefaults = defaultAllowedTabsByRole[user?.role ?? "viewer"] ?? defaultAllowedTabsByRole.viewer;
-  const allowedTabs = user?.allowedTabs?.filter((item): item is Tab => tabKeys.has(item as Tab) && item !== "account");
-  if (!allowedTabs || allowedTabs.length === 0) return roleDefaults;
+function getRolePermissions(role: RoleKey, rolePermissions?: AdminState["rolePermissions"]) {
+  const fallback = defaultRolePermissions[role] ?? defaultRolePermissions.viewer;
+  const current = rolePermissions?.[role];
+  const allowedTabs = current?.allowedTabs?.filter((item): item is Tab => tabKeys.has(item as Tab) && item !== "account") ?? fallback.allowedTabs;
+  const settingsSectionSet = new Set<SettingsSection>(defaultSettingsSections);
+  const settingsSectionsForRole = current?.settingsSections?.filter((item): item is SettingsSection => settingsSectionSet.has(item as SettingsSection)) ?? fallback.settingsSections ?? [];
 
-  if ((user?.role === "super-admin" || user?.role === "admin") && allowedTabs.includes("settings")) {
-    const nextTabs = [...allowedTabs];
-    const settingsIndex = nextTabs.indexOf("settings");
+  return {
+    allowedTabs: allowedTabs.length > 0 ? allowedTabs : ["overview"],
+    settingsSections: settingsSectionsForRole,
+    articleImportEnabled: current?.articleImportEnabled ?? fallback.articleImportEnabled ?? false
+  };
+}
 
-    (["navigation", "templates", "ai"] as Tab[]).forEach((requiredTab) => {
-      if (nextTabs.includes(requiredTab)) return;
-      nextTabs.splice(Math.max(0, settingsIndex), 0, requiredTab);
-    });
+function getAllowedTabsForUser(user?: AdminUser, rolePermissions?: AdminState["rolePermissions"]) {
+  const role = user?.role ?? "viewer";
+  const roleConfig = getRolePermissions(role, rolePermissions);
+  return roleConfig.allowedTabs;
+}
 
-    return nextTabs;
-  }
-
-  return allowedTabs;
+function getAllowedSettingsSectionsForUser(user?: AdminUser, rolePermissions?: AdminState["rolePermissions"]) {
+  const role = user?.role ?? "viewer";
+  const roleConfig = getRolePermissions(role, rolePermissions);
+  return roleConfig.settingsSections.length > 0 ? roleConfig.settingsSections : [];
 }
 
 export function AdminApp({ email, initialTab, locale }: { email: string; initialTab?: string; locale: LocaleCode }) {
@@ -1092,15 +1229,23 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
   const [mailDraftLeadId, setMailDraftLeadId] = useState<string | null>(null);
   const [contactForm, setContactForm] = useState<ContactFormState>(() => createContactForm());
   const [newUserForm, setNewUserForm] = useState<NewUserFormState>(emptyNewUserForm);
+  const [expandedRolePermissionId, setExpandedRolePermissionId] = useState<RoleKey | null>("admin");
   const [expandedUserPermissionsId, setExpandedUserPermissionsId] = useState<string | null>(null);
   const [resetUserPasswords, setResetUserPasswords] = useState<Record<string, string>>({});
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [accountPassword, setAccountPassword] = useState({ current: "", next: "", confirm: "" });
   const [frontendSettingsDirty, setFrontendSettingsDirty] = useState(false);
   const [newHeroSlideUrl, setNewHeroSlideUrl] = useState("");
+  const [customImageUrlDrafts, setCustomImageUrlDrafts] = useState<Record<string, string>>({});
   const [templateEditorMode, setTemplateEditorMode] = useState<TemplateEditorMode>("form");
+  const [templateVisualFullscreen, setTemplateVisualFullscreen] = useState(false);
   const [visualEditingKey, setVisualEditingKey] = useState<string | null>(null);
   const [visualDraftValue, setVisualDraftValue] = useState("");
+  const [visualBuilderDevice, setVisualBuilderDevice] = useState<VisualBuilderDevice>("desktop");
+  const [visualBuilderSidebarTab, setVisualBuilderSidebarTab] = useState<VisualBuilderSidebarTab>("properties");
+  const [selectedVisualModuleId, setSelectedVisualModuleId] = useState<string>("hero");
+  const [visualDraggingModuleId, setVisualDraggingModuleId] = useState<string | null>(null);
+  const [visualDropTarget, setVisualDropTarget] = useState<string | null>(null);
   const [aiContentForm, setAiContentForm] = useState<AiContentFormState>(emptyAiContentForm);
   const [aiWorkbenchSection, setAiWorkbenchSection] = useState<AiWorkbenchSection>("generate");
   const [aiWizardStep, setAiWizardStep] = useState<AiWizardStep>(1);
@@ -1150,6 +1295,14 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
     const isAiSurface = tab === "ai" || (tab === "settings" && settingsSection === "ai");
     if (!isAiSurface && aiTestStatus) setAiTestStatus("");
   }, [tab, settingsSection, aiTestStatus]);
+
+  useEffect(() => {
+    if (!state || tab !== "settings") return;
+    const allowedSections = getAllowedSettingsSectionsForUser(getCurrentUser(), state.rolePermissions);
+    if (allowedSections.length > 0 && !allowedSections.includes(settingsSection)) {
+      setSettingsSection(allowedSections[0] as SettingsSection);
+    }
+  }, [state, tab, settingsSection]);
 
   useEffect(() => {
     if (!aiTestStatus || aiTestStatus.includes("正在测试")) return;
@@ -1260,6 +1413,44 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
     setStatus("已保存");
   }
 
+  async function discardTemplateVisualEdits() {
+    setStatus("正在放弃未保存编辑...");
+    const response = await fetch("/api/admin/state");
+    if (!response.ok) {
+      setStatus("放弃编辑失败：请检查登录状态");
+      return;
+    }
+    const payload = (await response.json()) as AdminState;
+    const sessionUser = payload.users.find((user) => user.email.toLowerCase() === email.toLowerCase()) ?? payload.users[0];
+    setState(payload);
+    setCurrentUserId(sessionUser?.id ?? null);
+    setFrontendSettingsDirty(false);
+    setSelectedVisualModuleId("hero");
+    setVisualDropTarget(null);
+    setVisualDraggingModuleId(null);
+    setTemplateVisualFullscreen(false);
+    setTemplateEditorMode("form");
+    applyThemeToDocument(payload.activeTheme);
+    applySiteFontToDocument(payload.siteSettings.fontFamily);
+    setStatus("已放弃未保存编辑");
+  }
+
+  function openTemplateVisualEditor() {
+    setTemplateEditorMode("visual");
+    setTemplateVisualFullscreen(true);
+    window.setTimeout(() => {
+      document.querySelector(".template-visual-editor-shell")?.scrollIntoView({ block: "start", behavior: "smooth" });
+    }, 40);
+  }
+
+  function openTemplateFormEditor() {
+    setTemplateVisualFullscreen(false);
+    setTemplateEditorMode("form");
+    window.setTimeout(() => {
+      document.querySelector(".template-builder-panel")?.scrollIntoView({ block: "start", behavior: "smooth" });
+    }, 40);
+  }
+
   function toggleBackupSection(section: BackupSectionKey, target: "export" | "import") {
     const selected = target === "export" ? backupSections : backupImportSections;
     const setSelected = target === "export" ? setBackupSections : setBackupImportSections;
@@ -1365,7 +1556,10 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
 
   function canManageFrontendState(sourceState: AdminState | null = state) {
     const user = getCurrentUser(sourceState);
-    return Boolean(user && frontendManagerRoles.has(user.role));
+    if (!user) return false;
+    if (frontendManagerRoles.has(user.role)) return true;
+    const permissions = getRolePermissions(user.role, sourceState?.rolePermissions);
+    return permissions.allowedTabs.some((item) => ["navigation", "templates", "settings", "languages", "themes", "ai"].includes(item));
   }
 
   function guardFrontendSettingsAccess() {
@@ -1520,6 +1714,32 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
       ...state,
       users: state.users.map((user) => (
         user.id === userId ? { ...user, aiCredits: Number.isFinite(value) ? Math.max(0, value) : 0 } : user
+      ))
+    });
+  }
+
+  function updateUserArticleImportPermission(userId: string, checked: boolean) {
+    if (!state) return;
+    setState({
+      ...state,
+      users: state.users.map((user) => (
+        user.id === userId ? { ...user, articleImportEnabled: checked } : user
+      ))
+    });
+  }
+
+  function updateUserAllowedTab(userId: string, tabKey: Tab, checked: boolean) {
+    if (!state) return;
+    const targetUser = state.users.find((user) => user.id === userId);
+    const current = new Set(getAllowedTabsForUser(targetUser, state.rolePermissions));
+    if (checked) current.add(tabKey);
+    else current.delete(tabKey);
+    if (current.size === 0) current.add("overview");
+
+    setState({
+      ...state,
+      users: state.users.map((user) => (
+        user.id === userId ? { ...user, allowedTabs: Array.from(current) } : user
       ))
     });
   }
@@ -1772,6 +1992,369 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
     });
   }
 
+  function getNextTemplateModuleOrder(afterOrder?: number) {
+    if (!state) return 60;
+    if (typeof afterOrder === "number" && Number.isFinite(afterOrder)) return afterOrder + 5;
+    const fixedOrders = homeSectionOptions.map((section) => state.templateSettings.sectionOrder[section.key]);
+    const customOrders = state.templateSettings.customBlocks.map((block) => block.order);
+    return Math.max(0, ...fixedOrders, ...customOrders) + 10;
+  }
+
+  function getTemplateModuleSortItems(sourceState = state, options?: { visibleOnly?: boolean }) {
+    if (!sourceState) return [];
+    return [
+      ...homeSectionOptions
+        .filter((section) => !options?.visibleOnly || sourceState.templateSettings.visibleSections[section.key])
+        .map((section) => ({
+          id: section.key,
+          kind: "section" as const,
+          order: sourceState.templateSettings.sectionOrder[section.key]
+        })),
+      ...sourceState.templateSettings.customBlocks
+        .filter((block) => !options?.visibleOnly || block.enabled)
+        .map((block) => ({
+          id: block.id,
+          kind: "custom" as const,
+          order: block.order
+        }))
+    ].sort((a, b) => a.order - b.order);
+  }
+
+  function reorderTemplateModules(sourceModuleId: string, targetModuleId: string, placement: "before" | "after") {
+    if (!state || !guardFrontendSettingsAccess() || sourceModuleId === targetModuleId) return;
+    const modules = getTemplateModuleSortItems(state, { visibleOnly: true });
+    const sourceIndex = modules.findIndex((module) => module.id === sourceModuleId);
+    const targetIndex = modules.findIndex((module) => module.id === targetModuleId);
+    if (sourceIndex < 0 || targetIndex < 0) return;
+
+    const nextModules = modules.filter((module) => module.id !== sourceModuleId);
+    const adjustedTargetIndex = nextModules.findIndex((module) => module.id === targetModuleId);
+    if (adjustedTargetIndex < 0) return;
+    const insertIndex = placement === "before" ? adjustedTargetIndex : adjustedTargetIndex + 1;
+    nextModules.splice(insertIndex, 0, modules[sourceIndex]);
+
+    const nextSectionOrder = { ...state.templateSettings.sectionOrder };
+    const nextCustomBlocks = state.templateSettings.customBlocks.map((block) => ({ ...block }));
+    nextModules.forEach((module, index) => {
+      const nextOrder = (index + 1) * 10;
+      if (module.kind === "section") {
+        nextSectionOrder[module.id as HomeSectionKey] = nextOrder;
+        return;
+      }
+      const customBlock = nextCustomBlocks.find((block) => block.id === module.id);
+      if (customBlock) customBlock.order = nextOrder;
+    });
+
+    updateTemplateSettings({
+      sectionOrder: nextSectionOrder,
+      customBlocks: nextCustomBlocks
+    });
+    setSelectedVisualModuleId(sourceModuleId);
+    setStatus("模块顺序已更新，点击保存模板生效");
+  }
+
+  function setTemplateModuleOrder(moduleId: string, order: number) {
+    if (!state || !guardFrontendSettingsAccess()) return;
+    const nextOrder = Number.isFinite(order) ? order : getNextTemplateModuleOrder();
+    if (homeSectionOptions.some((section) => section.key === moduleId)) {
+      updateTemplateSettings({
+        sectionOrder: {
+          ...state.templateSettings.sectionOrder,
+          [moduleId]: nextOrder
+        }
+      });
+      return;
+    }
+
+    updateTemplateSettings({
+      customBlocks: state.templateSettings.customBlocks.map((block) => (
+        block.id === moduleId ? { ...block, order: nextOrder } : block
+      ))
+    });
+  }
+
+  function updateCustomTemplateBlock(blockId: string, patch: Partial<SiteTemplateCustomBlock>) {
+    if (!state || !guardFrontendSettingsAccess()) return;
+    updateTemplateSettings({
+      customBlocks: state.templateSettings.customBlocks.map((block) => (
+        block.id === blockId ? { ...block, ...patch } : block
+      ))
+    });
+  }
+
+  function addCustomTemplateBlock(type: SiteTemplateCustomBlockType, afterOrder?: number) {
+    if (!state || !guardFrontendSettingsAccess()) return;
+    const labels: Record<SiteTemplateCustomBlockType, string> = {
+      text: "自定义文字模块",
+      image: "自定义图片模块",
+      video: "自定义视频模块",
+      cta: "行动按钮模块"
+    };
+    const bodyLabels: Record<SiteTemplateCustomBlockType, string> = {
+      text: "双击这里编辑正文内容。",
+      image: "双击标题、说明或图片区域进行编辑。",
+      video: "粘贴 YouTube、Vimeo、Bilibili 或 MP4 视频链接。",
+      cta: "引导访客提交询盘或查看产品目录。"
+    };
+    const fallbackMediaUrl = type === "image" ? (heroImageFiles[0]?.url ?? "/assets/current-template/hero-tooling-range.jpg") : "";
+    const fallbackImageItem: SiteTemplateImageItem | undefined = type === "image" ? {
+      id: `custom-image-${Date.now()}`,
+      url: fallbackMediaUrl,
+      alt: { en: labels[type], zh: labels[type] },
+      caption: { en: "", zh: "" },
+      enabled: true,
+      order: 10
+    } : undefined;
+    const nextBlock: SiteTemplateCustomBlock = {
+      id: `custom-block-${Date.now()}`,
+      type,
+      eyebrow: {
+        en: type === "image" ? "Image" : type === "video" ? "Video" : type === "cta" ? "Action" : "Custom section",
+        zh: type === "image" ? "图片" : type === "video" ? "视频" : type === "cta" ? "行动" : "自定义模块"
+      },
+      title: { en: labels[type], zh: labels[type] },
+      body: { en: bodyLabels[type], zh: bodyLabels[type] },
+      mediaUrl: fallbackMediaUrl,
+      imageItems: fallbackImageItem ? [fallbackImageItem] : undefined,
+      imageLayout: "single",
+      imageCarouselAutoplay: true,
+      imageCarouselIntervalSeconds: 5,
+      buttonLabel: { en: type === "cta" ? "Send inquiry" : "Learn more", zh: type === "cta" ? "发送询盘" : "了解更多" },
+      linkUrl: type === "cta" ? "#rfq" : "",
+      openInNewTab: false,
+      align: type === "cta" ? "center" : "left",
+      layout: type === "image" || type === "video" ? "media-left" : "stacked",
+      theme: type === "cta" ? "dark" : "light",
+      spacing: "normal",
+      enabled: true,
+      order: getNextTemplateModuleOrder(afterOrder)
+    };
+
+	    updateTemplateSettings({
+	      customBlocks: [...state.templateSettings.customBlocks, nextBlock]
+	    });
+	    setSelectedVisualModuleId(nextBlock.id);
+	    setVisualBuilderSidebarTab("properties");
+	    setStatus("已添加自定义模块，编辑后点击保存模板生效");
+	  }
+
+  function getCustomBlockImages(block: SiteTemplateCustomBlock) {
+    const items = (block.imageItems ?? [])
+      .filter((item) => item.enabled && item.url.trim())
+      .sort((a, b) => a.order - b.order);
+
+    if (items.length > 0) return items;
+    if (!block.mediaUrl) return [];
+
+    return [{
+      id: `${block.id}-fallback-image`,
+      url: block.mediaUrl,
+      alt: block.title,
+      caption: { en: "", zh: "" },
+      enabled: true,
+      order: 10
+    }];
+  }
+
+  function createCustomBlockImageItem(block: SiteTemplateCustomBlock, imageUrl: string, label?: string): SiteTemplateImageItem {
+    const currentItems = block.imageItems ?? [];
+    const title = label || block.title.zh || block.title.en || "Custom image";
+
+    return {
+      id: `custom-image-${Date.now()}`,
+      url: imageUrl.trim(),
+      alt: { en: title, zh: title },
+      caption: { en: "", zh: "" },
+      enabled: true,
+      order: Math.max(0, ...currentItems.map((item) => item.order)) + 10
+    };
+  }
+
+  function updateCustomBlockImages(block: SiteTemplateCustomBlock, imageItems: SiteTemplateImageItem[]) {
+    const sortedItems = [...imageItems].sort((a, b) => a.order - b.order);
+    updateCustomTemplateBlock(block.id, {
+      imageItems: sortedItems,
+      mediaUrl: sortedItems.find((item) => item.enabled)?.url ?? sortedItems[0]?.url ?? ""
+    });
+  }
+
+  function addCustomImageFromUrl(block: SiteTemplateCustomBlock) {
+    const imageUrl = customImageUrlDrafts[block.id]?.trim() ?? "";
+    if (!imageUrl) {
+      setStatus("请先填写图片 URL");
+      return;
+    }
+
+    updateCustomBlockImages(block, [...(block.imageItems ?? getCustomBlockImages(block)), createCustomBlockImageItem(block, imageUrl)]);
+    setCustomImageUrlDrafts((current) => ({ ...current, [block.id]: "" }));
+    setStatus("图片已加入模块，点击保存模板后生效");
+  }
+
+  function addCustomImageFromMedia(block: SiteTemplateCustomBlock, file: UploadedFile) {
+    updateCustomBlockImages(block, [...(block.imageItems ?? getCustomBlockImages(block)), createCustomBlockImageItem(block, file.url, file.description?.zh ?? file.name)]);
+    setStatus("媒体库图片已加入模块，点击保存模板后生效");
+  }
+
+  function updateCustomImageItem(block: SiteTemplateCustomBlock, imageId: string, patch: Partial<SiteTemplateImageItem>) {
+    updateCustomBlockImages(block, (block.imageItems ?? getCustomBlockImages(block)).map((item) => (
+      item.id === imageId ? { ...item, ...patch } : item
+    )));
+  }
+
+  function removeCustomImageItem(block: SiteTemplateCustomBlock, imageId: string) {
+    updateCustomBlockImages(block, (block.imageItems ?? getCustomBlockImages(block)).filter((item) => item.id !== imageId));
+  }
+
+  function uploadCustomBlockImage(block: SiteTemplateCustomBlock, file: File | null) {
+    if (!state || !file) return;
+    if (!guardFrontendSettingsAccess()) return;
+    if (!file.type.startsWith("image/")) {
+      setStatus("请选择图片文件");
+      return;
+    }
+
+    const formData = new FormData();
+    formData.append("file", file);
+    setStatus("图片模块上传中...");
+    fetch("/api/admin/upload", { method: "POST", body: formData })
+      .then(async (response) => {
+        if (!response.ok) {
+          const payload = await response.json().catch(() => ({ error: "图片上传失败" }));
+          throw new Error(payload.error || "图片上传失败");
+        }
+        return response.json() as Promise<{ file: UploadedFile; state: AdminState }>;
+      })
+      .then(({ file: uploadedFile, state: savedState }) => {
+        const currentBlock = state.templateSettings.customBlocks.find((item) => item.id === block.id) ?? block;
+        const nextImageItems = [...(currentBlock.imageItems ?? getCustomBlockImages(currentBlock)), createCustomBlockImageItem(currentBlock, uploadedFile.url, uploadedFile.name)];
+        setState({
+          ...savedState,
+          templateSettings: {
+            ...state.templateSettings,
+            customBlocks: state.templateSettings.customBlocks.map((item) => (
+              item.id === block.id
+                ? {
+                  ...item,
+                  imageItems: nextImageItems,
+                  mediaUrl: nextImageItems.find((image) => image.enabled)?.url ?? nextImageItems[0]?.url ?? ""
+                }
+                : item
+            ))
+          }
+        });
+        setFrontendSettingsDirty(true);
+        setStatus("图片已上传并加入模块，点击保存模板后生效");
+      })
+      .catch((error) => setStatus(error instanceof Error ? error.message : "图片上传失败"));
+  }
+
+  function readVisualDragPayload(event: DragEvent<HTMLElement>): VisualBuilderDragPayload | null {
+    const rawValue = event.dataTransfer.getData("application/json") || event.dataTransfer.getData("text/plain");
+    if (!rawValue) return null;
+    try {
+      return JSON.parse(rawValue) as VisualBuilderDragPayload;
+    } catch {
+      return null;
+    }
+  }
+
+  function startVisualModuleDrag(event: DragEvent<HTMLElement>, moduleId: string) {
+    setVisualDraggingModuleId(moduleId);
+    event.dataTransfer.effectAllowed = "move";
+    const payload = JSON.stringify({ source: "module", moduleId } satisfies VisualBuilderDragPayload);
+    event.dataTransfer.setData("application/json", payload);
+    event.dataTransfer.setData("text/plain", payload);
+  }
+
+  function startVisualPaletteDrag(event: DragEvent<HTMLElement>, blockType: SiteTemplateCustomBlockType) {
+    event.dataTransfer.effectAllowed = "copy";
+    const payload = JSON.stringify({ source: "palette", blockType } satisfies VisualBuilderDragPayload);
+    event.dataTransfer.setData("application/json", payload);
+    event.dataTransfer.setData("text/plain", payload);
+  }
+
+  function dropVisualModule(event: DragEvent<HTMLElement>, afterOrder: number) {
+    event.preventDefault();
+    event.stopPropagation();
+    const payload = readVisualDragPayload(event);
+    setVisualDropTarget(null);
+    setVisualDraggingModuleId(null);
+    if (!payload) return;
+    if (payload.source === "palette" && payload.blockType) {
+      addCustomTemplateBlock(payload.blockType, afterOrder);
+      return;
+    }
+    if (payload.source === "module" && payload.moduleId) {
+      const targetModule = getTemplateModuleSortItems().find((module) => module.order === afterOrder);
+      if (targetModule) reorderTemplateModules(payload.moduleId, targetModule.id, "after");
+    }
+  }
+
+  function dropVisualModuleOnTarget(event: DragEvent<HTMLElement>, targetModuleId: string, placement: "before" | "after" = "after") {
+    event.preventDefault();
+    event.stopPropagation();
+    const payload = readVisualDragPayload(event);
+    setVisualDropTarget(null);
+    setVisualDraggingModuleId(null);
+    if (!payload) return;
+    if (payload.source === "palette" && payload.blockType) {
+      const targetModule = getTemplateModuleSortItems().find((module) => module.id === targetModuleId);
+      addCustomTemplateBlock(payload.blockType, targetModule?.order);
+      return;
+    }
+    if (payload.source === "module" && payload.moduleId) {
+      reorderTemplateModules(payload.moduleId, targetModuleId, placement);
+    }
+  }
+
+  function removeCustomTemplateBlock(blockId: string) {
+    if (!state || !guardFrontendSettingsAccess()) return;
+    updateTemplateSettings({
+      customBlocks: state.templateSettings.customBlocks.filter((block) => block.id !== blockId)
+    });
+    setSelectedVisualModuleId("hero");
+    setStatus("已删除自定义模块，点击保存模板生效");
+  }
+
+  function clearCustomTemplateBlocks() {
+    if (!state || !guardFrontendSettingsAccess()) return;
+    updateTemplateSettings({ customBlocks: [] });
+    setSelectedVisualModuleId("hero");
+    setStatus("已清空自定义模块，点击保存模板生效");
+  }
+
+  function moveTemplateModule(moduleId: HomeSectionKey | string, direction: "up" | "down") {
+    if (!state || !guardFrontendSettingsAccess()) return;
+    const modules = getTemplateModuleSortItems(state, { visibleOnly: true });
+    const currentIndex = modules.findIndex((module) => module.id === moduleId);
+    const targetIndex = direction === "up" ? currentIndex - 1 : currentIndex + 1;
+    const currentModule = modules[currentIndex];
+    const targetModule = modules[targetIndex];
+
+    if (!currentModule || !targetModule) return;
+    const nextModules = modules.filter((module) => module.id !== moduleId);
+    nextModules.splice(targetIndex, 0, currentModule);
+
+    const nextSectionOrder = { ...state.templateSettings.sectionOrder };
+    const nextCustomBlocks = state.templateSettings.customBlocks.map((block) => ({ ...block }));
+    const setOrder = (module: typeof currentModule, order: number) => {
+      if (module.kind === "section") {
+        nextSectionOrder[module.id as HomeSectionKey] = order;
+        return;
+      }
+      const customBlock = nextCustomBlocks.find((block) => block.id === module.id);
+      if (customBlock) customBlock.order = order;
+    };
+
+    nextModules.forEach((module, index) => setOrder(module, (index + 1) * 10));
+    updateTemplateSettings({
+      sectionOrder: nextSectionOrder,
+      customBlocks: nextCustomBlocks
+    });
+    setSelectedVisualModuleId(String(moduleId));
+    setStatus("模块顺序已更新，点击保存编辑生效");
+  }
+
   function createHeroSlide(imageUrl: string, label = "Homepage hero slide"): SiteHeroSlide {
     const trimmedUrl = imageUrl.trim();
     const currentOrders = state?.templateSettings.heroSlides.map((slide) => slide.order) ?? [];
@@ -1852,7 +2435,15 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
       parentId: productForm.parentId || undefined,
       applications: existingProduct?.applications ?? { en: ["Export catalog"], zh: ["外贸目录"] },
       specs: existingProduct?.specs ?? [],
-      themeFit: existingProduct?.themeFit ?? [state.activeTheme]
+      themeFit: existingProduct?.themeFit ?? [state.activeTheme],
+      seo: {
+        ...(existingProduct?.seo ?? {}),
+        title: mergeSeoTranslation(productForm.seoTitleEn, productForm.seoTitleZh),
+        description: mergeSeoTranslation(productForm.seoDescriptionEn, productForm.seoDescriptionZh),
+        ogImageUrl: productForm.seoOgImageUrl.trim() || undefined,
+        canonicalUrl: productForm.seoCanonicalUrl.trim() || undefined,
+        indexable: productForm.seoIndexable
+      }
     };
     const exists = Boolean(editingProductId);
     const products = exists
@@ -1960,7 +2551,6 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
         name,
         email: nextEmail,
         role: newUserForm.role,
-        allowedTabs: defaultAllowedTabsByRole[newUserForm.role],
         aiCredits: newUserForm.aiCredits,
         password
       })
@@ -1978,18 +2568,52 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
       .catch((error) => setStatus(error instanceof Error ? error.message : "新增用户失败"));
   }
 
-  function updateUserAllowedTab(userId: string, tabKey: Tab, checked: boolean) {
+  function updateRolePermission(role: RoleKey, patch: Partial<AdminRolePermissions>) {
     if (!state) return;
+    const current = getRolePermissions(role, state.rolePermissions);
+    const nextRolePermissions = {
+      ...(state.rolePermissions ?? {}),
+      [role]: {
+        ...current,
+        ...patch
+      }
+    };
+
     setState({
       ...state,
-      users: state.users.map((user) => {
-        if (user.id !== userId) return user;
-        const current = new Set(getAllowedTabsForUser(user));
-        if (checked) current.add(tabKey);
-        else current.delete(tabKey);
-        if (current.size === 0) current.add("overview");
-        return { ...user, allowedTabs: Array.from(current) };
-      })
+      rolePermissions: nextRolePermissions
+    });
+  }
+
+  function updateRoleAllowedTab(role: RoleKey, tabKey: Tab, checked: boolean) {
+    const current = new Set(getRolePermissions(role, state?.rolePermissions).allowedTabs);
+    if (checked) current.add(tabKey);
+    else current.delete(tabKey);
+    if (current.size === 0) current.add("overview");
+    const existingSettingsSections = getRolePermissions(role, state?.rolePermissions).settingsSections;
+    const settingsSectionsForRole = tabKey === "settings"
+      ? checked
+        ? existingSettingsSections.length > 0 ? existingSettingsSections : ["general"]
+        : []
+      : existingSettingsSections;
+
+    updateRolePermission(role, {
+      allowedTabs: Array.from(current),
+      settingsSections: settingsSectionsForRole
+    });
+  }
+
+  function updateRoleSettingsSection(role: RoleKey, section: SettingsSection, checked: boolean) {
+    const currentRolePermissions = getRolePermissions(role, state?.rolePermissions);
+    const current = new Set(currentRolePermissions.settingsSections);
+    if (checked) current.add(section);
+    else current.delete(section);
+    const allowedTabs = new Set(currentRolePermissions.allowedTabs);
+    if (current.size > 0) allowedTabs.add("settings");
+    else allowedTabs.delete("settings");
+    updateRolePermission(role, {
+      settingsSections: Array.from(current),
+      allowedTabs: allowedTabs.size > 0 ? Array.from(allowedTabs) : ["overview"]
     });
   }
 
@@ -3524,12 +4148,22 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
   const accountInitial = (currentUserName || email).slice(0, 1).toUpperCase();
   const canResetUserPasswords = currentUser?.role === "super-admin";
   const selectableBackupSectionCount = backupSectionOptions.filter((option) => canResetUserPasswords || !sensitiveBackupSections.has(option.key)).length;
-  const allowedTabsForCurrentUser = new Set(getAllowedTabsForUser(currentUser));
+  const allowedTabsForCurrentUser = new Set(getAllowedTabsForUser(currentUser, state.rolePermissions));
+  const allowedSettingsSectionKeys = getAllowedSettingsSectionsForUser(currentUser, state.rolePermissions);
+  const visibleSettingsSections = settingsSections.filter((item) => allowedSettingsSectionKeys.includes(item.key));
+  const canViewCurrentSettingsSection = allowedSettingsSectionKeys.includes(settingsSection);
+  const seoIssues = countSeoIssues(state);
+  const publicIndexingEnabled = process.env.NEXT_PUBLIC_SITE_INDEXABLE === "true";
   const visibleSidebarTabs = tabs.filter((item) => allowedTabsForCurrentUser.has(item.key));
   const canManageFrontendSettings = canManageFrontendState();
+  const canImportArticles = getRolePermissions(currentUser?.role ?? "viewer", state.rolePermissions).articleImportEnabled;
   const selectedMailLead = state.leads.find((lead) => lead.id === mailDraftLeadId) ?? null;
   const selectedMailDraft = selectedMailLead ? buildLeadReplyDraft(selectedMailLead) : null;
-  const canRunAutoTranslation = Boolean(currentUser && frontendManagerRoles.has(currentUser.role));
+  const canRunAutoTranslation = Boolean(currentUser && (
+    frontendManagerRoles.has(currentUser.role)
+    || allowedTabsForCurrentUser.has("ai")
+    || allowedSettingsSectionKeys.includes("translation")
+  ));
   const translationRunning = translationStatus.startsWith("正在");
   const translationLocaleOptions = state.enabledLocales.length > 0
     ? locales.filter((localeOption) => state.enabledLocales.includes(localeOption.code) || localeOption.code === "zh" || localeOption.code === "en")
@@ -3607,6 +4241,26 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
     labelKey: `heroMetric${index}Label`
   }));
   const visualChecklistKeys = ["marketsChecklist1", "marketsChecklist2", "marketsChecklist3"];
+  const visualBuilderModules = [
+    ...homeSectionOptions.map((section) => ({
+      id: section.key,
+      kind: "section" as VisualBuilderModuleKind,
+      label: section.label,
+      typeLabel: "首页模块",
+      enabled: templateSettings.visibleSections[section.key],
+      order: templateSettings.sectionOrder[section.key]
+    })),
+    ...templateSettings.customBlocks.map((block) => ({
+      id: block.id,
+      kind: "custom" as VisualBuilderModuleKind,
+      label: block.title.zh || block.title.en,
+      typeLabel: block.type === "image" ? "图片模块" : block.type === "video" ? "视频模块" : block.type === "cta" ? "按钮模块" : "文字模块",
+      enabled: block.enabled,
+      order: block.order
+    }))
+  ].sort((a, b) => a.order - b.order);
+  const selectedCustomBlock = templateSettings.customBlocks.find((block) => block.id === selectedVisualModuleId) ?? null;
+  const selectedCoreSection = homeSectionOptions.find((section) => section.key === selectedVisualModuleId) ?? null;
 
   function renderVisualTextTarget(options: VisualEditableTextOptions) {
     const targetClassName = ["visual-edit-target", options.className].filter(Boolean).join(" ");
@@ -3631,7 +4285,7 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
       );
 
       return (
-        <div className="visual-inline-editor" onDoubleClick={(event) => event.stopPropagation()}>
+        <div className="visual-inline-editor" key={options.editorKey} onDoubleClick={(event) => event.stopPropagation()}>
           {inputControl}
           <div className="visual-inline-actions">
             <button type="button" onClick={() => commitVisualInlineEdit(options.onCommit, options.allowEmpty)}>确定</button>
@@ -3641,12 +4295,12 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
       );
     }
 
-    if (options.element === "h1") return <h1 className={targetClassName} title="双击编辑" onDoubleClick={openEditor}>{textValue}</h1>;
-    if (options.element === "h3") return <h3 className={targetClassName} title="双击编辑" onDoubleClick={openEditor}>{textValue}</h3>;
-    if (options.element === "p") return <p className={targetClassName} title="双击编辑" onDoubleClick={openEditor}>{textValue}</p>;
-    if (options.element === "strong") return <strong className={targetClassName} title="双击编辑" onDoubleClick={openEditor}>{textValue}</strong>;
-    if (options.element === "li") return <li className={targetClassName} title="双击编辑" onDoubleClick={openEditor}>{textValue}</li>;
-    return <span className={targetClassName} title="双击编辑" onDoubleClick={openEditor}>{textValue}</span>;
+    if (options.element === "h1") return <h1 className={targetClassName} key={options.editorKey} title="双击编辑" onDoubleClick={openEditor}>{textValue}</h1>;
+    if (options.element === "h3") return <h3 className={targetClassName} key={options.editorKey} title="双击编辑" onDoubleClick={openEditor}>{textValue}</h3>;
+    if (options.element === "p") return <p className={targetClassName} key={options.editorKey} title="双击编辑" onDoubleClick={openEditor}>{textValue}</p>;
+    if (options.element === "strong") return <strong className={targetClassName} key={options.editorKey} title="双击编辑" onDoubleClick={openEditor}>{textValue}</strong>;
+    if (options.element === "li") return <li className={targetClassName} key={options.editorKey} title="双击编辑" onDoubleClick={openEditor}>{textValue}</li>;
+    return <span className={targetClassName} key={options.editorKey} title="双击编辑" onDoubleClick={openEditor}>{textValue}</span>;
   }
 
   function renderVisualImageTarget(options: VisualEditableImageOptions) {
@@ -3683,6 +4337,89 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
             ) : null}
             <div className="visual-inline-actions">
               <button type="button" onClick={() => commitVisualInlineEdit(options.onCommit, true)}>确定</button>
+              <button type="button" onClick={cancelVisualInlineEdit}>取消</button>
+            </div>
+          </div>
+        ) : null}
+      </div>
+    );
+  }
+
+  function renderVisualCustomImageSet(block: SiteTemplateCustomBlock) {
+    const images = getCustomBlockImages(block);
+    const layout = block.imageLayout ?? "single";
+    const visibleImages = layout === "single" ? images.slice(0, 1) : images;
+
+    return (
+      <div
+        className={`visual-custom-image-set layout-${layout}`}
+        title="在右侧属性面板管理图片排列"
+        onDoubleClick={(event) => {
+          event.stopPropagation();
+          setSelectedVisualModuleId(block.id);
+          setVisualBuilderSidebarTab("properties");
+        }}
+      >
+        {visibleImages.length > 0 ? visibleImages.map((item, index) => (
+          <figure className="visual-custom-image-frame" key={item.id}>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={item.url} alt={item.alt?.zh || item.alt?.en || block.title.zh || block.title.en} />
+            {item.caption?.zh || item.caption?.en ? <figcaption>{item.caption.zh || item.caption.en}</figcaption> : null}
+            {layout === "carousel" && index === 0 ? <span className="visual-image-badge"><ImageIcon size={14} />轮播</span> : null}
+          </figure>
+        )) : (
+          <div className="visual-custom-image-empty"><ImageIcon size={24} />从属性面板添加图片</div>
+        )}
+        {layout === "carousel" && visibleImages.length > 1 ? (
+          <div className="visual-custom-carousel-dots">
+            {visibleImages.map((item, index) => <span className={index === 0 ? "active" : ""} key={item.id} />)}
+          </div>
+        ) : null}
+      </div>
+    );
+  }
+
+  function renderVisualVideoTarget(block: SiteTemplateCustomBlock) {
+    const videoUrl = block.mediaUrl ?? "";
+    const videoFiles = (state?.uploadedFiles ?? [])
+      .filter((file) => file.mimeType.toLowerCase().startsWith("video/") || /\.(mp4|webm|ogg|mov)$/i.test(file.name))
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+    const editing = visualEditingKey === `custom-video-${block.id}`;
+
+    return (
+      <div className="visual-video-target" onDoubleClick={(event) => startVisualInlineEdit(`custom-video-${block.id}`, videoUrl, event)}>
+        {videoUrl ? (
+          /\.(mp4|webm|ogg)(\?.*)?$/i.test(videoUrl) ? (
+            <video src={videoUrl} controls preload="metadata" />
+          ) : (
+            <iframe src={videoUrl} title={block.title.zh || block.title.en} allow="autoplay; fullscreen; picture-in-picture" allowFullScreen />
+          )
+        ) : (
+          <div className="visual-video-placeholder"><Video size={24} />双击添加视频链接</div>
+        )}
+        <span className="visual-image-badge"><Video size={14} />视频</span>
+        {editing ? (
+          <div className="visual-image-editor" onDoubleClick={(event) => event.stopPropagation()}>
+            <input
+              autoFocus
+              placeholder="粘贴视频 URL，如 MP4、YouTube、Vimeo、Bilibili"
+              value={visualDraftValue}
+              onChange={(event) => setVisualDraftValue(event.target.value)}
+              onKeyDown={(event) => handleVisualInlineKeyDown(event, (value) => updateCustomTemplateBlock(block.id, { mediaUrl: value }), true)}
+            />
+            {videoFiles.length > 0 ? (
+              <select value="" onChange={(event) => {
+                const selectedFile = videoFiles.find((file) => file.id === event.target.value);
+                if (!selectedFile) return;
+                updateCustomTemplateBlock(block.id, { mediaUrl: selectedFile.url });
+                cancelVisualInlineEdit();
+              }}>
+                <option value="">从媒体库选择视频</option>
+                {videoFiles.map((file) => <option key={file.id} value={file.id}>{file.name}</option>)}
+              </select>
+            ) : null}
+            <div className="visual-inline-actions">
+              <button type="button" onClick={() => commitVisualInlineEdit((value) => updateCustomTemplateBlock(block.id, { mediaUrl: value }), true)}>确定</button>
               <button type="button" onClick={cancelVisualInlineEdit}>取消</button>
             </div>
           </div>
@@ -3728,10 +4465,333 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
     );
   }
 
-  const visualSectionNodes = orderedTemplateSections
-    .filter((section) => templateSettings.visibleSections[section.key])
-    .map((section) => {
-      if (section.key === "products") {
+  function renderVisualSelectedPanel() {
+    if (selectedVisualModuleId === "hero") {
+      return (
+        <div className="visual-properties-panel">
+          <div>
+            <strong>首屏属性</strong>
+            <span>编辑首页首屏标题、说明、按钮和背景显示。</span>
+          </div>
+          <label>主标题
+            <textarea value={templateSettings.heroTitle.zh || templateSettings.heroTitle.en} onChange={(event) => updateTemplateText("heroTitle", "zh", event.target.value)} />
+          </label>
+          <label>说明
+            <textarea value={templateSettings.heroBody.zh || templateSettings.heroBody.en} onChange={(event) => updateTemplateText("heroBody", "zh", event.target.value)} />
+          </label>
+          <label className="checkline">
+            <input disabled={!canManageFrontendSettings} type="checkbox" checked={templateSettings.heroCarouselEnabled} onChange={(event) => updateTemplateSettings({ heroCarouselEnabled: event.target.checked })} />
+            轮播背景
+          </label>
+          <label className="checkline">
+            <input disabled={!canManageFrontendSettings} type="checkbox" checked={templateSettings.showHeroMetrics} onChange={(event) => updateTemplateSettings({ showHeroMetrics: event.target.checked })} />
+            首屏指标
+          </label>
+        </div>
+      );
+    }
+
+    if (selectedCoreSection) {
+      return (
+        <div className="visual-properties-panel">
+          <div>
+            <strong>{selectedCoreSection.label}</strong>
+            <span>这是系统首页模块，可控制显示状态和排序。</span>
+          </div>
+          <label className="checkline">
+            <input disabled={!canManageFrontendSettings} type="checkbox" checked={templateSettings.visibleSections[selectedCoreSection.key]} onChange={(event) => updateTemplateSectionVisibility(selectedCoreSection.key, event.target.checked)} />
+            显示此模块
+          </label>
+          <label>排序
+            <input disabled={!canManageFrontendSettings} type="number" value={templateSettings.sectionOrder[selectedCoreSection.key]} onChange={(event) => updateTemplateSectionOrder(selectedCoreSection.key, Number(event.target.value))} />
+          </label>
+        </div>
+      );
+    }
+
+    if (selectedCustomBlock) {
+      return (
+        <div className="visual-properties-panel">
+          <div>
+            <strong>{selectedCustomBlock.type === "image" ? "图片模块" : selectedCustomBlock.type === "video" ? "视频模块" : selectedCustomBlock.type === "cta" ? "按钮模块" : "文字模块"}</strong>
+            <span>编辑当前选中模块的内容、布局、背景和链接。</span>
+          </div>
+          <label>眉标
+            <input value={selectedCustomBlock.eyebrow?.zh || selectedCustomBlock.eyebrow?.en || ""} onChange={(event) => updateCustomTemplateBlock(selectedCustomBlock.id, { eyebrow: { ...(selectedCustomBlock.eyebrow ?? { en: "", zh: "" }), zh: event.target.value, en: selectedCustomBlock.eyebrow?.en || event.target.value } })} />
+          </label>
+          <label>标题
+            <input value={selectedCustomBlock.title.zh || selectedCustomBlock.title.en} onChange={(event) => updateCustomTemplateBlock(selectedCustomBlock.id, { title: { ...selectedCustomBlock.title, zh: event.target.value, en: selectedCustomBlock.title.en || event.target.value } })} />
+          </label>
+          <label>正文
+            <textarea value={selectedCustomBlock.body.zh || selectedCustomBlock.body.en} onChange={(event) => updateCustomTemplateBlock(selectedCustomBlock.id, { body: { ...selectedCustomBlock.body, zh: event.target.value, en: selectedCustomBlock.body.en || event.target.value } })} />
+          </label>
+          {selectedCustomBlock.type === "image" || selectedCustomBlock.type === "video" ? (
+            <label>{selectedCustomBlock.type === "image" ? "图片 URL" : "视频 URL"}
+              <input value={selectedCustomBlock.mediaUrl ?? ""} onChange={(event) => updateCustomTemplateBlock(selectedCustomBlock.id, { mediaUrl: event.target.value })} />
+            </label>
+          ) : null}
+          {selectedCustomBlock.type === "image" ? (
+            <div className="visual-image-settings">
+              <label>图片排列
+                <select value={selectedCustomBlock.imageLayout ?? "single"} onChange={(event) => updateCustomTemplateBlock(selectedCustomBlock.id, { imageLayout: event.target.value as SiteTemplateImageLayout })}>
+                  {imageLayoutOptions.map((option) => <option key={option.key} value={option.key}>{option.label}</option>)}
+                </select>
+              </label>
+              <div className="visual-image-settings-row">
+                <label className="checkline">
+                  <input disabled={!canManageFrontendSettings || selectedCustomBlock.imageLayout !== "carousel"} type="checkbox" checked={selectedCustomBlock.imageCarouselAutoplay ?? true} onChange={(event) => updateCustomTemplateBlock(selectedCustomBlock.id, { imageCarouselAutoplay: event.target.checked })} />
+                  自动轮播
+                </label>
+                <label>间隔秒数
+                  <input disabled={!canManageFrontendSettings || selectedCustomBlock.imageLayout !== "carousel"} min={3} max={15} type="number" value={selectedCustomBlock.imageCarouselIntervalSeconds ?? 5} onChange={(event) => updateCustomTemplateBlock(selectedCustomBlock.id, { imageCarouselIntervalSeconds: Number(event.target.value) || 5 })} />
+                </label>
+              </div>
+              <div className="visual-image-add-row">
+                <input
+                  disabled={!canManageFrontendSettings}
+                  placeholder="/assets/current-template/example.jpg 或 https://..."
+                  value={customImageUrlDrafts[selectedCustomBlock.id] ?? ""}
+                  onChange={(event) => setCustomImageUrlDrafts((current) => ({ ...current, [selectedCustomBlock.id]: event.target.value }))}
+                />
+                <button disabled={!canManageFrontendSettings} type="button" onClick={() => addCustomImageFromUrl(selectedCustomBlock)}>添加 URL</button>
+              </div>
+              <div className="visual-image-add-row">
+                <select disabled={!canManageFrontendSettings || heroImageFiles.length === 0} value="" onChange={(event) => {
+                  const selectedFile = heroImageFiles.find((file) => file.id === event.target.value);
+                  if (selectedFile) addCustomImageFromMedia(selectedCustomBlock, selectedFile);
+                }}>
+                  <option value="">{heroImageFiles.length > 0 ? "从媒体库选择图片" : "媒体库暂无图片"}</option>
+                  {heroImageFiles.map((file) => <option key={file.id} value={file.id}>{file.name}</option>)}
+                </select>
+                <label className={canManageFrontendSettings ? "visual-image-upload" : "visual-image-upload disabled"}>
+                  上传图片
+                  <input
+                    accept="image/*"
+                    disabled={!canManageFrontendSettings}
+                    type="file"
+                    onChange={(event) => {
+                      uploadCustomBlockImage(selectedCustomBlock, event.currentTarget.files?.[0] ?? null);
+                      event.currentTarget.value = "";
+                    }}
+                  />
+                </label>
+              </div>
+              <div className="visual-image-item-list">
+                {(selectedCustomBlock.imageItems ?? getCustomBlockImages(selectedCustomBlock)).map((item) => (
+                  <article className={item.enabled ? "visual-image-item" : "visual-image-item disabled"} key={item.id}>
+                    <div className="visual-image-item-thumb">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={item.url} alt={item.alt?.zh || item.alt?.en || selectedCustomBlock.title.zh || selectedCustomBlock.title.en} />
+                    </div>
+                    <div className="visual-image-item-fields">
+                      <input disabled={!canManageFrontendSettings} value={item.url} onChange={(event) => updateCustomImageItem(selectedCustomBlock, item.id, { url: event.target.value })} />
+                      <input disabled={!canManageFrontendSettings} placeholder="图片说明" value={item.caption?.zh || item.caption?.en || ""} onChange={(event) => updateCustomImageItem(selectedCustomBlock, item.id, { caption: { ...(item.caption ?? { en: "", zh: "" }), zh: event.target.value, en: item.caption?.en || event.target.value } })} />
+                    </div>
+                    <div className="visual-image-item-actions">
+                      <label className="checkline"><input disabled={!canManageFrontendSettings} type="checkbox" checked={item.enabled} onChange={(event) => updateCustomImageItem(selectedCustomBlock, item.id, { enabled: event.target.checked })} />显示</label>
+                      <button disabled={!canManageFrontendSettings} type="button" onClick={() => removeCustomImageItem(selectedCustomBlock, item.id)}>删除</button>
+                    </div>
+                  </article>
+                ))}
+                {(selectedCustomBlock.imageItems ?? getCustomBlockImages(selectedCustomBlock)).length === 0 ? <span className="visual-muted">还没有添加图片。</span> : null}
+              </div>
+            </div>
+          ) : null}
+          {selectedCustomBlock.type === "cta" ? (
+            <>
+              <label>按钮文字
+                <input value={selectedCustomBlock.buttonLabel?.zh || selectedCustomBlock.buttonLabel?.en || "发送询盘"} onChange={(event) => updateCustomTemplateBlock(selectedCustomBlock.id, { buttonLabel: { ...(selectedCustomBlock.buttonLabel ?? { en: "", zh: "" }), zh: event.target.value, en: selectedCustomBlock.buttonLabel?.en || event.target.value } })} />
+              </label>
+              <label>按钮链接
+                <input value={selectedCustomBlock.linkUrl || "#rfq"} onChange={(event) => updateCustomTemplateBlock(selectedCustomBlock.id, { linkUrl: event.target.value })} />
+              </label>
+              <label className="checkline">
+                <input disabled={!canManageFrontendSettings} type="checkbox" checked={selectedCustomBlock.openInNewTab ?? false} onChange={(event) => updateCustomTemplateBlock(selectedCustomBlock.id, { openInNewTab: event.target.checked })} />
+                新窗口打开
+              </label>
+            </>
+          ) : null}
+          <label>布局
+            <select value={selectedCustomBlock.layout ?? (selectedCustomBlock.type === "image" || selectedCustomBlock.type === "video" ? "media-left" : "stacked")} onChange={(event) => updateCustomTemplateBlock(selectedCustomBlock.id, { layout: event.target.value as SiteTemplateCustomBlock["layout"] })}>
+              <option value="stacked">上下排列</option>
+              <option value="media-left">媒体在左</option>
+              <option value="media-right">媒体在右</option>
+            </select>
+          </label>
+          <label>对齐
+            <select value={selectedCustomBlock.align ?? "left"} onChange={(event) => updateCustomTemplateBlock(selectedCustomBlock.id, { align: event.target.value as SiteTemplateCustomBlock["align"] })}>
+              <option value="left">左对齐</option>
+              <option value="center">居中</option>
+            </select>
+          </label>
+          <label>背景
+            <select value={selectedCustomBlock.theme ?? (selectedCustomBlock.type === "cta" ? "dark" : "light")} onChange={(event) => updateCustomTemplateBlock(selectedCustomBlock.id, { theme: event.target.value as SiteTemplateCustomBlock["theme"] })}>
+              <option value="light">白色</option>
+              <option value="tint">浅色强调</option>
+              <option value="dark">深色强调</option>
+            </select>
+          </label>
+          <label>间距
+            <select value={selectedCustomBlock.spacing ?? "normal"} onChange={(event) => updateCustomTemplateBlock(selectedCustomBlock.id, { spacing: event.target.value as SiteTemplateCustomBlock["spacing"] })}>
+              <option value="compact">紧凑</option>
+              <option value="normal">标准</option>
+              <option value="large">宽松</option>
+            </select>
+          </label>
+          <label className="checkline">
+            <input disabled={!canManageFrontendSettings} type="checkbox" checked={selectedCustomBlock.enabled} onChange={(event) => updateCustomTemplateBlock(selectedCustomBlock.id, { enabled: event.target.checked })} />
+            显示此模块
+          </label>
+          <button className="danger" disabled={!canManageFrontendSettings} type="button" onClick={() => removeCustomTemplateBlock(selectedCustomBlock.id)}>删除模块</button>
+        </div>
+      );
+    }
+
+    return (
+      <div className="visual-properties-panel empty">
+        <strong>选择模块</strong>
+        <span>点击画布或左侧模块列表后，在这里编辑属性。</span>
+      </div>
+    );
+  }
+
+	  const visualCoreSectionNodes = orderedTemplateSections
+	    .filter((section) => templateSettings.visibleSections[section.key])
+	    .map((section) => {
+	      if (section.key === "navigation") {
+	        const visualNavigationItems = sortedNavigation.filter((item) => item.enabled && !item.parentId);
+	        return (
+	          <section
+	            className={`visual-front-navigation${selectedVisualModuleId === "navigation" ? " selected" : ""}`}
+	            key={section.key}
+	            onClick={() => {
+	              setSelectedVisualModuleId("navigation");
+	              setVisualBuilderSidebarTab("properties");
+	            }}
+	          >
+	            <div className="visual-front-navigation-inner">
+	              <div className="visual-front-brand">
+	                <span className="visual-front-brand-mark"><ShieldCheck size={20} /></span>
+	                {renderVisualTextTarget({
+	                  editorKey: "site-title-navigation",
+	                  value: state.siteSettings.title || "KeyproTools",
+	                  element: "strong",
+	                  onCommit: (value) => updateSiteSettings({ title: value })
+	                })}
+	              </div>
+	              <div className="visual-front-nav-links">
+	                {visualNavigationItems.map((item) => (
+	                  <Fragment key={item.id}>
+	                    {renderVisualTextTarget({
+	                      editorKey: `navigation-label-${item.id}`,
+	                      value: item.label[locale] || item.label.en,
+	                      element: "span",
+	                      className: "visual-front-nav-link",
+	                      onCommit: (value) => updateNavigationItem(item.id, {
+	                        label: {
+	                          ...item.label,
+	                          [locale]: value,
+	                          en: locale === "en" ? value : item.label.en || value
+	                        }
+	                      })
+	                    })}
+	                  </Fragment>
+	                ))}
+	                {visualNavigationItems.length === 0 ? <span className="visual-muted">暂无启用导航项</span> : null}
+	              </div>
+	              <div className="visual-front-header-actions">
+	                <span className="visual-front-language-select">
+	                  {locales.find((item) => item.code === locale)?.flag ?? "🌐"} {locales.find((item) => item.code === locale)?.nativeName ?? locale}
+	                </span>
+	                {renderVisualTextTarget({
+	                  editorKey: "navigation-primary-cta",
+	                  value: templateSettings.primaryCtaLabel[locale] || templateSettings.primaryCtaLabel.en,
+	                  element: "span",
+	                  className: "visual-front-nav-cta",
+	                  onCommit: (value) => updateTemplateText("primaryCtaLabel", locale === "zh" ? "zh" : "en", value)
+	                })}
+	              </div>
+	            </div>
+	          </section>
+	        );
+	      }
+
+	      if (section.key === "hero") {
+	        return (
+	          <section
+	            className={`visual-front-hero ${templateSettings.homeTemplate}${selectedVisualModuleId === "hero" ? " selected" : ""}`}
+	            key={section.key}
+	            style={visualHeroImageStyle}
+	            onClick={() => {
+	              setSelectedVisualModuleId("hero");
+	              setVisualBuilderSidebarTab("properties");
+	            }}
+	            onDoubleClick={(event) => startVisualInlineEdit("hero-background", visualHeroImage, event)}
+	          >
+	            {renderVisualHeroBackgroundEditor()}
+	            {renderVisualTextTarget({
+	              editorKey: "hero-kicker",
+	              value: templateSettings.heroKicker.zh || templateSettings.heroKicker.en,
+	              element: "span",
+	              className: "visual-eyebrow",
+	              onCommit: (value) => updateTemplateText("heroKicker", "zh", value)
+	            })}
+	            {renderVisualTextTarget({
+	              editorKey: "hero-title",
+	              value: templateSettings.heroTitle.zh || templateSettings.heroTitle.en,
+	              element: "h1",
+	              multiline: true,
+	              onCommit: (value) => updateTemplateText("heroTitle", "zh", value)
+	            })}
+	            {renderVisualTextTarget({
+	              editorKey: "hero-body",
+	              value: templateSettings.heroBody.zh || templateSettings.heroBody.en,
+	              element: "p",
+	              className: "visual-hero-copy",
+	              multiline: true,
+	              onCommit: (value) => updateTemplateText("heroBody", "zh", value)
+	            })}
+	            <div className="visual-hero-actions">
+	              {renderVisualTextTarget({
+	                editorKey: "hero-primary-cta",
+	                value: templateSettings.primaryCtaLabel.zh || templateSettings.primaryCtaLabel.en,
+	                element: "span",
+	                className: "visual-cta primary",
+	                onCommit: (value) => updateTemplateText("primaryCtaLabel", "zh", value)
+	              })}
+	              {renderVisualTextTarget({
+	                editorKey: "hero-secondary-cta",
+	                value: templateSettings.secondaryCtaLabel.zh || templateSettings.secondaryCtaLabel.en,
+	                element: "span",
+	                className: "visual-cta secondary",
+	                onCommit: (value) => updateTemplateText("secondaryCtaLabel", "zh", value)
+	              })}
+	            </div>
+	            {templateSettings.showHeroMetrics ? (
+	              <div className="visual-metrics">
+	                {visualMetrics.map((item) => (
+	                  <div className="visual-metric-card" key={item.valueKey}>
+	                    {renderVisualTextTarget({
+	                      editorKey: `text-${item.valueKey}`,
+	                      value: visualText(item.valueKey, "指标"),
+	                      element: "strong",
+	                      onCommit: (value) => updateTemplateTextBlock(item.valueKey, "zh", value)
+	                    })}
+	                    {renderVisualTextTarget({
+	                      editorKey: `text-${item.labelKey}`,
+	                      value: visualText(item.labelKey, "说明"),
+	                      element: "span",
+	                      onCommit: (value) => updateTemplateTextBlock(item.labelKey, "zh", value)
+	                    })}
+	                  </div>
+	                ))}
+	              </div>
+	            ) : null}
+	          </section>
+	        );
+	      }
+
+	      if (section.key === "products") {
         return (
           <section className="visual-front-section" key={section.key}>
             <div className="visual-section-head">
@@ -3974,137 +5034,275 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
         </section>
       );
     });
+  const visualCustomSectionNodes = templateSettings.customBlocks
+    .filter((block) => block.enabled)
+    .map((block) => ({
+      key: block.id,
+      order: block.order,
+      node: (
+        <section className={`visual-front-section custom-module ${block.type} theme-${block.theme ?? (block.type === "cta" ? "dark" : "light")} align-${block.align ?? "left"} layout-${block.layout ?? (block.type === "image" || block.type === "video" ? "media-left" : "stacked")} spacing-${block.spacing ?? "normal"}`} key={block.id}>
+          <div className="visual-custom-module-bar">
+            <span>{block.type === "image" ? "图片模块" : block.type === "video" ? "视频模块" : block.type === "cta" ? "按钮模块" : "文字模块"}</span>
+            <div>
+              <button disabled={!canManageFrontendSettings} type="button" onClick={() => moveTemplateModule(block.id, "up")} title="上移"><MoveUp size={14} /></button>
+              <button disabled={!canManageFrontendSettings} type="button" onClick={() => moveTemplateModule(block.id, "down")} title="下移"><MoveDown size={14} /></button>
+              <button disabled={!canManageFrontendSettings} type="button" onClick={() => updateCustomTemplateBlock(block.id, { enabled: false })}>隐藏</button>
+              <button className="danger" disabled={!canManageFrontendSettings} type="button" onClick={() => removeCustomTemplateBlock(block.id)}>删除</button>
+            </div>
+          </div>
+          <div className="visual-custom-module-body">
+            {block.type === "image" ? renderVisualCustomImageSet(block) : null}
+            {block.type === "video" ? renderVisualVideoTarget(block) : null}
+            <div className="visual-custom-copy">
+              {renderVisualTextTarget({
+                editorKey: `custom-eyebrow-${block.id}`,
+                value: block.eyebrow?.zh || block.eyebrow?.en || (block.type === "image" ? "图片" : block.type === "video" ? "视频" : block.type === "cta" ? "行动" : "自定义模块"),
+                element: "span",
+                className: "eyebrow",
+                onCommit: (value) => updateCustomTemplateBlock(block.id, { eyebrow: { ...(block.eyebrow ?? { en: "", zh: "" }), zh: value, en: block.eyebrow?.en || value } })
+              })}
+              {renderVisualTextTarget({
+                editorKey: `custom-title-${block.id}`,
+                value: block.title.zh || block.title.en,
+                element: "h3",
+                multiline: true,
+                onCommit: (value) => updateCustomTemplateBlock(block.id, { title: { ...block.title, zh: value, en: block.title.en || value } })
+              })}
+              {renderVisualTextTarget({
+                editorKey: `custom-body-${block.id}`,
+                value: block.body.zh || block.body.en,
+                element: "p",
+                multiline: true,
+                allowEmpty: true,
+                onCommit: (value) => updateCustomTemplateBlock(block.id, { body: { ...block.body, zh: value, en: block.body.en || value } })
+              })}
+              {block.type === "cta" ? (
+                <span className="visual-rfq-button" title="在左侧属性面板编辑链接">
+                  {block.buttonLabel?.zh || block.buttonLabel?.en || block.title.zh || block.title.en}
+                </span>
+              ) : null}
+            </div>
+          </div>
+        </section>
+      )
+    }));
+  const orderedVisualSectionItems = [...visualCoreSectionNodes.map((node) => {
+    const key = node.key as HomeSectionKey;
+    return { key, order: templateSettings.sectionOrder[key], node };
+  }), ...visualCustomSectionNodes]
+    .sort((a, b) => a.order - b.order);
+  const renderVisualAddModuleBar = (afterOrder: number, label: string, uniqueKey: string) => (
+    <div
+      className={visualDropTarget === `after-${afterOrder}` ? "visual-add-inline active" : "visual-add-inline"}
+      key={`visual-add-${uniqueKey}`}
+      onDragEnter={() => setVisualDropTarget(`after-${afterOrder}`)}
+      onDragOver={(event) => {
+        event.preventDefault();
+        event.dataTransfer.dropEffect = visualDraggingModuleId ? "move" : "copy";
+        setVisualDropTarget(`after-${afterOrder}`);
+      }}
+      onDragLeave={() => setVisualDropTarget(null)}
+      onDrop={(event) => dropVisualModule(event, afterOrder)}
+    >
+      <span><PlusCircle size={15} />{label}</span>
+      <button disabled={!canManageFrontendSettings} type="button" onClick={() => addCustomTemplateBlock("text", afterOrder)}><Type size={14} />文字</button>
+      <button disabled={!canManageFrontendSettings} type="button" onClick={() => addCustomTemplateBlock("image", afterOrder)}><ImageIcon size={14} />图片</button>
+      <button disabled={!canManageFrontendSettings} type="button" onClick={() => addCustomTemplateBlock("video", afterOrder)}><Video size={14} />视频</button>
+      <button disabled={!canManageFrontendSettings} type="button" onClick={() => addCustomTemplateBlock("cta", afterOrder)}><SendToBack size={14} />按钮</button>
+    </div>
+  );
+	  const visualSectionNodes = orderedVisualSectionItems.map((item, index) => (
+	    <Fragment key={`module-group-${String(item.key)}`}>
+		    <div
+	      className={[
+	        "visual-canvas-module",
+		        selectedVisualModuleId === item.key ? "selected" : "",
+		        visualDropTarget === `module-${item.key}` ? "drop-target" : ""
+		      ].filter(Boolean).join(" ")}
+		      draggable={canManageFrontendSettings}
+		      key={`canvas-${item.key}`}
+			      onClick={() => {
+			        setSelectedVisualModuleId(String(item.key));
+			        setVisualBuilderSidebarTab("properties");
+			      }}
+		      onDragEnter={() => setVisualDropTarget(`module-${item.key}`)}
+	      onDragOver={(event) => {
+	        event.preventDefault();
+		        event.dataTransfer.dropEffect = visualDraggingModuleId ? "move" : "copy";
+		        setVisualDropTarget(`module-${item.key}`);
+		      }}
+		      onDragStart={(event) => startVisualModuleDrag(event, String(item.key))}
+			      onDrop={(event) => {
+			        const rect = event.currentTarget.getBoundingClientRect();
+			        const placement = event.clientY < rect.top + rect.height / 2 ? "before" : "after";
+			        dropVisualModuleOnTarget(event, String(item.key), placement);
+			      }}
+		      onDragEnd={() => {
+		        setVisualDraggingModuleId(null);
+		        setVisualDropTarget(null);
+		      }}
+		    >
+		      <div className="visual-canvas-toolbar">
+		        <span
+		          className="visual-canvas-handle"
+		          draggable={canManageFrontendSettings}
+		          onDragStart={(event) => startVisualModuleDrag(event, String(item.key))}
+			        >
+			          <MoveUp size={13} />拖拽模块
+			        </span>
+			        <button
+			          disabled={!canManageFrontendSettings}
+			          type="button"
+			          onClick={(event) => {
+			            event.stopPropagation();
+			            moveTemplateModule(String(item.key), "up");
+			          }}
+			          title="上移"
+			        >
+			          <MoveUp size={13} />上移
+			        </button>
+			        <button
+			          disabled={!canManageFrontendSettings}
+			          type="button"
+			          onClick={(event) => {
+			            event.stopPropagation();
+			            moveTemplateModule(String(item.key), "down");
+			          }}
+			          title="下移"
+			        >
+			          <MoveDown size={13} />下移
+			        </button>
+			        {homeSectionOptions.some((section) => section.key === item.key) ? (
+		          <button
+		            className="danger"
+		            disabled={!canManageFrontendSettings}
+		            type="button"
+		            onClick={(event) => {
+		              event.stopPropagation();
+		              updateTemplateSectionVisibility(item.key as HomeSectionKey, false);
+		              setStatus("已隐藏首页模块，点击保存编辑生效");
+		            }}
+		          >
+		            <Trash2 size={13} />删除
+		          </button>
+		        ) : (
+		          <button
+		            className="danger"
+		            disabled={!canManageFrontendSettings}
+		            type="button"
+		            onClick={(event) => {
+		              event.stopPropagation();
+		              removeCustomTemplateBlock(String(item.key));
+		            }}
+		          >
+		            <Trash2 size={13} />删除
+		          </button>
+		        )}
+		      </div>
+		      {item.node}
+		    </div>
+      {renderVisualAddModuleBar(item.order, index === orderedVisualSectionItems.length - 1 ? "在页面底部添加模块" : "在这里添加模块", `${String(item.key)}-${index}-${item.order}`)}
+    </Fragment>
+  ));
   const templateVisualEditorPanel = (
-    <section className="template-visual-editor-shell">
+    <section className={templateVisualFullscreen ? "template-visual-editor-shell fullscreen" : "template-visual-editor-shell"}>
       <div className="visual-editor-topbar">
         <div>
           <span className="eyebrow">Advanced editor</span>
           <h2>前台所见即所得编辑</h2>
-        </div>
-        <div className="visual-editor-actions">
-          <button type="button" onClick={() => setTemplateEditorMode("form")}>
-            <LayoutPanelTop size={16} />表单编辑
-          </button>
-          <button
-            disabled={!canManageFrontendSettings || !frontendSettingsDirty}
-            type="button"
-            onClick={() => {
-              if (guardFrontendSettingsAccess()) void save();
-            }}
-          >
-            <Save size={16} />{frontendSettingsDirty ? "保存模板" : "已保存"}
-          </button>
-          <Link href={`/${locale}`} target="_blank" rel="noopener noreferrer">打开前台</Link>
-        </div>
-      </div>
-
-      <div className="visual-editor-stage">
-        <aside className="visual-editor-sidebar" aria-label="首页模块控制">
-          <strong>页面模块</strong>
-          <div className="visual-module-list">
-            {orderedTemplateSections.map((section) => (
+	        </div>
+	        <div className="visual-editor-actions">
+	          <div className="visual-sidebar-tabs" aria-label="Builder panel">
+	            {([
+	              ["components", "组件"],
+	              ["properties", "属性"]
+	            ] as [VisualBuilderSidebarTab, string][]).map(([tabKey, label]) => (
+	              <button
+	                className={visualBuilderSidebarTab === tabKey ? "active" : ""}
+	                key={tabKey}
+	                type="button"
+	                onClick={() => setVisualBuilderSidebarTab(tabKey)}
+	              >
+	                {label}
+	              </button>
+	            ))}
+	          </div>
+	          <div className="visual-device-toggle" aria-label="预览设备">
+            {(["desktop", "tablet", "mobile"] as VisualBuilderDevice[]).map((device) => (
               <button
-                className={templateSettings.visibleSections[section.key] ? "enabled" : ""}
-                disabled={!canManageFrontendSettings}
-                key={section.key}
+                className={visualBuilderDevice === device ? "active" : ""}
+                key={device}
                 type="button"
-                onClick={() => updateTemplateSectionVisibility(section.key, !templateSettings.visibleSections[section.key])}
+                onClick={() => setVisualBuilderDevice(device)}
               >
-                <span>{section.label}</span>
-                <small>{templateSettings.visibleSections[section.key] ? "显示" : "隐藏"}</small>
+                {device === "desktop" ? "桌面" : device === "tablet" ? "平板" : "手机"}
               </button>
             ))}
           </div>
-          <div className="visual-editor-counter">
-            <span>首页产品</span>
-            <button disabled={!canManageFrontendSettings || templateSettings.homeProductCount <= 1} type="button" onClick={() => updateTemplateSettings({ homeProductCount: Math.max(1, templateSettings.homeProductCount - 1) })}>-</button>
-            <strong>{templateSettings.homeProductCount}</strong>
-            <button disabled={!canManageFrontendSettings || templateSettings.homeProductCount >= 12} type="button" onClick={() => updateTemplateSettings({ homeProductCount: Math.min(12, templateSettings.homeProductCount + 1) })}>+</button>
-          </div>
-          <div className="visual-editor-counter">
-            <span>首页文章</span>
-            <button disabled={!canManageFrontendSettings || templateSettings.homeArticleCount <= 0} type="button" onClick={() => updateTemplateSettings({ homeArticleCount: Math.max(0, templateSettings.homeArticleCount - 1) })}>-</button>
-            <strong>{templateSettings.homeArticleCount}</strong>
-            <button disabled={!canManageFrontendSettings || templateSettings.homeArticleCount >= 12} type="button" onClick={() => updateTemplateSettings({ homeArticleCount: Math.min(12, templateSettings.homeArticleCount + 1) })}>+</button>
-          </div>
-          <label className="checkline">
-            <input disabled={!canManageFrontendSettings} type="checkbox" checked={templateSettings.heroCarouselEnabled} onChange={(event) => updateTemplateSettings({ heroCarouselEnabled: event.target.checked })} />
-            轮播背景
-          </label>
-          <label className="checkline">
-            <input disabled={!canManageFrontendSettings} type="checkbox" checked={templateSettings.showHeroMetrics} onChange={(event) => updateTemplateSettings({ showHeroMetrics: event.target.checked })} />
-            首屏指标
-          </label>
-        </aside>
+          <button type="button" onClick={() => setTemplateVisualFullscreen((current) => !current)}>
+            {templateVisualFullscreen ? <Minimize2 size={16} /> : <Maximize2 size={16} />}{templateVisualFullscreen ? "退出全屏" : "全屏编辑"}
+          </button>
+	          <button type="button" onClick={openTemplateFormEditor}>
+	            <LayoutPanelTop size={16} />表单编辑
+	          </button>
+	          <button
+	            className="visual-editor-save"
+	            disabled={!canManageFrontendSettings || !frontendSettingsDirty}
+	            type="button"
+	            onClick={() => {
+	              if (guardFrontendSettingsAccess()) void save();
+	            }}
+	          >
+	            <Save size={16} />{frontendSettingsDirty ? "保存编辑" : "已保存"}
+	          </button>
+	          <button
+	            className="visual-editor-discard"
+	            disabled={!canManageFrontendSettings || !frontendSettingsDirty}
+	            type="button"
+	            onClick={() => {
+	              if (guardFrontendSettingsAccess()) void discardTemplateVisualEdits();
+	            }}
+	          >
+	            <RefreshCw size={16} />放弃编辑
+	          </button>
+	          <button
+	            type="button"
+	            onClick={() => {
+	              setTemplateVisualFullscreen(false);
+	              setTemplateEditorMode("form");
+	              setVisualDropTarget(null);
+	              setVisualDraggingModuleId(null);
+	            }}
+	          >
+	            <X size={16} />关闭
+	          </button>
+	          <Link href={`/${locale}`} target="_blank" rel="noopener noreferrer">打开前台</Link>
+	        </div>
+      </div>
 
-        <div className="visual-front-page" aria-label="首页可视化编辑预览">
-          <section
-            className={`visual-front-hero ${templateSettings.homeTemplate}`}
-            style={visualHeroImageStyle}
-            onDoubleClick={(event) => startVisualInlineEdit("hero-background", visualHeroImage, event)}
-          >
-            {renderVisualHeroBackgroundEditor()}
-            {renderVisualTextTarget({
-              editorKey: "hero-kicker",
-              value: templateSettings.heroKicker.zh || templateSettings.heroKicker.en,
-              element: "span",
-              className: "visual-eyebrow",
-              onCommit: (value) => updateTemplateText("heroKicker", "zh", value)
-            })}
-            {renderVisualTextTarget({
-              editorKey: "hero-title",
-              value: templateSettings.heroTitle.zh || templateSettings.heroTitle.en,
-              element: "h1",
-              multiline: true,
-              onCommit: (value) => updateTemplateText("heroTitle", "zh", value)
-            })}
-            {renderVisualTextTarget({
-              editorKey: "hero-body",
-              value: templateSettings.heroBody.zh || templateSettings.heroBody.en,
-              element: "p",
-              className: "visual-hero-copy",
-              multiline: true,
-              onCommit: (value) => updateTemplateText("heroBody", "zh", value)
-            })}
-            <div className="visual-hero-actions">
-              {renderVisualTextTarget({
-                editorKey: "hero-primary-cta",
-                value: templateSettings.primaryCtaLabel.zh || templateSettings.primaryCtaLabel.en,
-                element: "span",
-                className: "visual-cta primary",
-                onCommit: (value) => updateTemplateText("primaryCtaLabel", "zh", value)
-              })}
-              {renderVisualTextTarget({
-                editorKey: "hero-secondary-cta",
-                value: templateSettings.secondaryCtaLabel.zh || templateSettings.secondaryCtaLabel.en,
-                element: "span",
-                className: "visual-cta secondary",
-                onCommit: (value) => updateTemplateText("secondaryCtaLabel", "zh", value)
-              })}
-            </div>
-            {templateSettings.showHeroMetrics ? (
-              <div className="visual-metrics">
-                {visualMetrics.map((item) => (
-                  <div className="visual-metric-card" key={item.valueKey}>
-                    {renderVisualTextTarget({
-                      editorKey: `text-${item.valueKey}`,
-                      value: visualText(item.valueKey, "指标"),
-                      element: "strong",
-                      onCommit: (value) => updateTemplateTextBlock(item.valueKey, "zh", value)
-                    })}
-                    {renderVisualTextTarget({
-                      editorKey: `text-${item.labelKey}`,
-                      value: visualText(item.labelKey, "说明"),
-                      element: "span",
-                      onCommit: (value) => updateTemplateTextBlock(item.labelKey, "zh", value)
-                    })}
-                  </div>
-                ))}
-              </div>
-            ) : null}
-          </section>
-          {visualSectionNodes}
-        </div>
+		      {visualBuilderSidebarTab === "components" ? (
+		        <div className="visual-component-shelf" aria-label="添加编辑模块">
+		          <span>组件库</span>
+		          <button draggable disabled={!canManageFrontendSettings} type="button" onClick={() => addCustomTemplateBlock("text")} onDragStart={(event) => startVisualPaletteDrag(event, "text")}><Type size={14} />文字</button>
+		          <button draggable disabled={!canManageFrontendSettings} type="button" onClick={() => addCustomTemplateBlock("image")} onDragStart={(event) => startVisualPaletteDrag(event, "image")}><ImageIcon size={14} />图片</button>
+		          <button draggable disabled={!canManageFrontendSettings} type="button" onClick={() => addCustomTemplateBlock("video")} onDragStart={(event) => startVisualPaletteDrag(event, "video")}><Video size={14} />视频</button>
+		          <button draggable disabled={!canManageFrontendSettings} type="button" onClick={() => addCustomTemplateBlock("cta")} onDragStart={(event) => startVisualPaletteDrag(event, "cta")}><SendToBack size={14} />按钮</button>
+		          {templateSettings.customBlocks.length > 0 ? (
+		            <button className="danger" disabled={!canManageFrontendSettings} type="button" onClick={clearCustomTemplateBlocks}>
+		              <Trash2 size={14} />清空自定义模块
+		            </button>
+		          ) : null}
+		        </div>
+		      ) : null}
+		      {visualBuilderSidebarTab === "properties" ? (
+		        <div className="visual-properties-shelf">
+		          {renderVisualSelectedPanel()}
+		        </div>
+		      ) : null}
+		      <div className="visual-editor-stage">
+		        <div className={`visual-front-page device-${visualBuilderDevice}`} aria-label="首页可视化编辑预览">
+		          {visualSectionNodes}
+		        </div>
       </div>
     </section>
   );
@@ -4353,6 +5551,23 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
                     <textarea value={productForm.summaryZh} onChange={(event) => setProductForm({ ...productForm, summaryZh: event.target.value })} />
                     <small>部分主题会在分类卡片或产品页显示描述。</small>
                   </label>
+                  <label>SEO 标题
+                    <input value={productForm.seoTitleZh} onChange={(event) => setProductForm({ ...productForm, seoTitleZh: event.target.value })} />
+                    <small>留空时自动使用分类名称；正式上线前建议按语种补齐。</small>
+                  </label>
+                  <label>SEO 描述
+                    <textarea value={productForm.seoDescriptionZh} onChange={(event) => setProductForm({ ...productForm, seoDescriptionZh: event.target.value })} />
+                    <small>建议 80-160 字，说明规格、应用、采购价值和 RFQ 信息。</small>
+                  </label>
+                  <label>OG 图片 URL
+                    <input value={productForm.seoOgImageUrl} onChange={(event) => setProductForm({ ...productForm, seoOgImageUrl: event.target.value })} />
+                    <small>社媒分享图；留空时使用产品图片。</small>
+                  </label>
+                  <label>Canonical URL
+                    <input value={productForm.seoCanonicalUrl} onChange={(event) => setProductForm({ ...productForm, seoCanonicalUrl: event.target.value })} />
+                    <small>通常留空，由系统自动生成当前语种 URL。</small>
+                  </label>
+                  <label className="checkline"><input type="checkbox" checked={productForm.seoIndexable} onChange={(event) => setProductForm({ ...productForm, seoIndexable: event.target.checked })} />允许进入 sitemap / 被索引</label>
                   <div className="wp-taxonomy-actions">
                     <button type="button" onClick={submitProductForm}>{editingProductId ? "更新分类" : "添加新分类"}</button>
                     {editingProductId ? <button type="button" onClick={resetProductForm}>取消编辑</button> : null}
@@ -4602,6 +5817,43 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
                       </section>
 
                       <section className="wp-side-box">
+                        <h2>SEO</h2>
+                        <label>SEO 标题
+                          <input
+                            value={activePage.seo?.title?.zh ?? ""}
+                            onChange={(event) => updateActivePage({
+                              seo: {
+                                ...(activePage.seo ?? {}),
+                                title: { en: activePage.seo?.title?.en || event.target.value, zh: event.target.value }
+                              }
+                            })}
+                          />
+                        </label>
+                        <label>SEO 描述
+                          <textarea
+                            value={activePage.seo?.description?.zh ?? ""}
+                            onChange={(event) => updateActivePage({
+                              seo: {
+                                ...(activePage.seo ?? {}),
+                                description: { en: activePage.seo?.description?.en || event.target.value, zh: event.target.value }
+                              }
+                            })}
+                          />
+                        </label>
+                        <label>OG 图片 URL
+                          <input value={activePage.seo?.ogImageUrl ?? ""} onChange={(event) => updateActivePage({ seo: { ...(activePage.seo ?? {}), ogImageUrl: event.target.value } })} />
+                        </label>
+                        <label>Canonical URL
+                          <input value={activePage.seo?.canonicalUrl ?? ""} onChange={(event) => updateActivePage({ seo: { ...(activePage.seo ?? {}), canonicalUrl: event.target.value } })} />
+                        </label>
+                        <label className="checkline">
+                          <input type="checkbox" checked={activePage.seo?.indexable !== false} onChange={(event) => updateActivePage({ seo: { ...(activePage.seo ?? {}), indexable: event.target.checked } })} />
+                          允许进入 sitemap / 被索引
+                        </label>
+                        <span>留空时系统会用页面标题和摘要自动生成。</span>
+                      </section>
+
+                      <section className="wp-side-box">
                         <h2>固定链接</h2>
                         <label>Slug<input value={activePage.slug} onChange={(event) => updateActivePage({ slug: slugify(event.target.value) })} /></label>
                         <span>发布地址：/{locale}/pages/{activePage.slug || "page-slug"}</span>
@@ -4663,28 +5915,30 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
 
               {articleMode === "list" ? (
                 <div className="wp-list-screen">
-                  <div className="article-import-panel">
-                    <div>
-                      <strong>批量导入文章</strong>
-                      <span>下载 CSV 模板后填写标题、分类、状态和正文，导入后会自动保存到前台文章数据。</span>
+                  {canImportArticles ? (
+                    <div className="article-import-panel">
+                      <div>
+                        <strong>批量导入文章</strong>
+                        <span>下载 CSV 模板后填写标题、分类、状态和正文，导入后会自动保存到前台文章数据。</span>
+                      </div>
+                      <div className="article-import-actions">
+                        <button type="button" onClick={downloadArticleImportTemplate}>
+                          下载导入模板
+                        </button>
+                        <label className="article-import-upload">
+                          导入 CSV
+                          <input
+                            type="file"
+                            accept=".csv,text/csv"
+                            onChange={(event) => {
+                              importArticlesFromCsv(event.currentTarget.files?.[0] ?? null);
+                              event.currentTarget.value = "";
+                            }}
+                          />
+                        </label>
+                      </div>
                     </div>
-                    <div className="article-import-actions">
-                      <button type="button" onClick={downloadArticleImportTemplate}>
-                        下载导入模板
-                      </button>
-                      <label className="article-import-upload">
-                        导入 CSV
-                        <input
-                          type="file"
-                          accept=".csv,text/csv"
-                          onChange={(event) => {
-                            importArticlesFromCsv(event.currentTarget.files?.[0] ?? null);
-                            event.currentTarget.value = "";
-                          }}
-                        />
-                      </label>
-                    </div>
-                  </div>
+                  ) : null}
 
                   <div className="wp-counts">
                     <button type="button" onClick={() => setArticleStatusFilter("all")}>全部 ({articleCounts.all})</button>
@@ -5001,6 +6255,43 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
                             {articleProductCategoryOptions.map((category) => <option key={category.value} value={category.value}>{category.label}</option>)}
                           </select>
                         </label>
+                      </section>
+
+                      <section className="wp-side-box">
+                        <h2>SEO</h2>
+                        <label>SEO 标题
+                          <input
+                            value={activeArticle.seo?.title?.zh ?? ""}
+                            onChange={(event) => updateActiveArticle({
+                              seo: {
+                                ...(activeArticle.seo ?? {}),
+                                title: { en: activeArticle.seo?.title?.en || event.target.value, zh: event.target.value }
+                              }
+                            })}
+                          />
+                        </label>
+                        <label>SEO 描述
+                          <textarea
+                            value={activeArticle.seo?.description?.zh ?? ""}
+                            onChange={(event) => updateActiveArticle({
+                              seo: {
+                                ...(activeArticle.seo ?? {}),
+                                description: { en: activeArticle.seo?.description?.en || event.target.value, zh: event.target.value }
+                              }
+                            })}
+                          />
+                        </label>
+                        <label>OG 图片 URL
+                          <input value={activeArticle.seo?.ogImageUrl ?? ""} onChange={(event) => updateActiveArticle({ seo: { ...(activeArticle.seo ?? {}), ogImageUrl: event.target.value } })} />
+                        </label>
+                        <label>Canonical URL
+                          <input value={activeArticle.seo?.canonicalUrl ?? ""} onChange={(event) => updateActiveArticle({ seo: { ...(activeArticle.seo ?? {}), canonicalUrl: event.target.value } })} />
+                        </label>
+                        <label className="checkline">
+                          <input type="checkbox" checked={activeArticle.seo?.indexable !== false} onChange={(event) => updateActiveArticle({ seo: { ...(activeArticle.seo ?? {}), indexable: event.target.checked } })} />
+                          允许进入 sitemap / 被索引
+                        </label>
+                        <span>留空时系统会用文章标题、摘要和特色图自动生成。</span>
                       </section>
 
                       <section className="wp-side-box">
@@ -5411,7 +6702,7 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
                   </label>
                   <label>角色权限
                     <select value={newUserForm.role} onChange={(event) => setNewUserForm({ ...newUserForm, role: event.target.value as RoleKey })}>
-                      {roleOptions.map((role) => <option key={role} value={role}>{role}</option>)}
+                      {roleOptions.map((role) => <option key={role} value={role}>{roleLabels[role]}</option>)}
                     </select>
                   </label>
                   <label>初始密码
@@ -5439,87 +6730,136 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
                       <span>{user.email}</span>
                       <span className="user-credit-badge">{formatNumber(user.aiCredits ?? 0)} 积分</span>
                       <select
+                        aria-label={`${user.name} 用户组`}
                         value={user.role}
                         onChange={(event) => {
                           const nextRole = event.target.value as RoleKey;
                           setState({
                             ...state,
-                            users: state.users.map((item) => item.id === user.id ? { ...item, role: nextRole, allowedTabs: defaultAllowedTabsByRole[nextRole] } : item)
+                            users: state.users.map((item) => item.id === user.id ? { ...item, role: nextRole } : item)
                           });
                         }}
                       >
-                        {roleOptions.map((role) => <option key={role}>{role}</option>)}
+                        {roleOptions.map((role) => <option key={role} value={role}>{roleLabels[role]}</option>)}
                       </select>
                       <label className="checkline"><input type="checkbox" checked={user.active} onChange={(event) => setState({ ...state, users: state.users.map((item) => item.id === user.id ? { ...item, active: event.target.checked } : item) })} />启用</label>
-                      <button type="button" onClick={() => setExpandedUserPermissionsId(expandedUserPermissionsId === user.id ? null : user.id)}>
-                        编辑权限
-                      </button>
                     </div>
-                    {expandedUserPermissionsId === user.id ? (
+                    {canResetUserPasswords ? (
+                      <div className="user-password-reset">
+                        <label>AI 积分
+                          <input
+                            type="number"
+                            min="0"
+                            step="1"
+                            value={user.aiCredits ?? 0}
+                            onChange={(event) => updateUserAiCredits(user.id, Number(event.target.value))}
+                          />
+                        </label>
+                        <label>重置密码
+                          <input
+                            type="password"
+                            placeholder="输入至少 8 位新密码"
+                            value={resetUserPasswords[user.id] ?? ""}
+                            onChange={(event) => setResetUserPasswords((current) => ({ ...current, [user.id]: event.target.value }))}
+                          />
+                        </label>
+                        <button type="button" onClick={() => resetAdminUserPassword(user.id)}>重置密码</button>
+                      </div>
+                    ) : null}
+                  </article>
+                ))}
+              </div>
+              <section className="user-group-permission-panel">
+                <div className="settings-panel-head with-action">
+                  <div>
+                    <h2>用户组权限</h2>
+                    <span>用户只需要选择所属用户组；后台页面、设置子页面和功能权限在这里按用户组统一配置。</span>
+                  </div>
+                </div>
+                <div className="user-role-grid">
+                  {roleOptions.map((role) => {
+                    const permissions = getRolePermissions(role, state.rolePermissions);
+                    const expanded = expandedRolePermissionId === role;
+
+                    return (
+                      <article className="user-role-card" key={role}>
+                        <button type="button" className="user-role-card-head" onClick={() => setExpandedRolePermissionId(expanded ? null : role)}>
+                          <span>
+                            <strong>{roleLabels[role]}</strong>
+                            <small>{permissions.allowedTabs.length} 个后台页面 · {permissions.settingsSections.length} 个设置子页面</small>
+                          </span>
+                          <span>{expanded ? "收起" : "编辑权限"}</span>
+                        </button>
+                        {expanded ? (
                       <div className="user-permission-editor">
                         <div>
-                          <strong>可访问页面</strong>
-                          <span>勾选后该用户侧栏只显示对应后台页面；账号设置始终可访问。</span>
-                        </div>
-                        <div className="user-credit-editor">
-                          <div>
-                            <strong>AI 积分</strong>
-                            <span>AI 自动翻译会按 Token 消耗积分。只有最高管理员可以调整余额。</span>
-                          </div>
-                          <label>当前余额
-                            <input
-                              disabled={!canResetUserPasswords}
-                              type="number"
-                              min="0"
-                              step="1"
-                              value={user.aiCredits ?? 0}
-                              onChange={(event) => updateUserAiCredits(user.id, Number(event.target.value))}
-                            />
-                          </label>
+                          <strong>后台页面</strong>
+                          <span>勾选后该用户组成员的左侧菜单只显示对应页面；账号设置始终可访问。</span>
                         </div>
                         <div className="user-permission-grid">
                           {adminPageAccessOptions.map((item) => (
                             <label className="checkline" key={item.key}>
                               <input
                                 type="checkbox"
-                                checked={getAllowedTabsForUser(user).includes(item.key)}
-                                onChange={(event) => updateUserAllowedTab(user.id, item.key, event.target.checked)}
+                                checked={permissions.allowedTabs.includes(item.key)}
+                                onChange={(event) => updateRoleAllowedTab(role, item.key, event.target.checked)}
                               />
                               {item.label}
                             </label>
                           ))}
                         </div>
-                        {canResetUserPasswords ? (
-                          <div className="user-password-reset">
-                            <label>重置密码
-                              <input
-                                type="password"
-                                placeholder="输入至少 8 位新密码"
-                                value={resetUserPasswords[user.id] ?? ""}
-                                onChange={(event) => setResetUserPasswords((current) => ({ ...current, [user.id]: event.target.value }))}
-                              />
-                            </label>
-                            <button type="button" onClick={() => resetAdminUserPassword(user.id)}>重置密码</button>
+                        <div className="user-settings-permissions">
+                          <div>
+                            <strong>设置子页面</strong>
+                            <span>用于单独控制“设置”页面里面的常规、撰写、媒体、AI、备份等子页面。</span>
                           </div>
-                        ) : null}
+                          <div className="user-permission-grid compact">
+                            {settingsSections.map((item) => (
+                            <label className="checkline" key={item.key}>
+                              <input
+                                type="checkbox"
+                                checked={permissions.settingsSections.includes(item.key)}
+                                onChange={(event) => updateRoleSettingsSection(role, item.key, event.target.checked)}
+                              />
+                              {item.label}
+                            </label>
+                          ))}
+                          </div>
+                        </div>
+                        <div className="user-feature-permissions">
+                          <div>
+                            <strong>功能权限</strong>
+                            <span>控制不会单独出现在侧栏里的功能。</span>
+                          </div>
+                          <label className="checkline">
+                            <input
+                              type="checkbox"
+                              checked={permissions.articleImportEnabled}
+                              onChange={(event) => updateRolePermission(role, { articleImportEnabled: event.target.checked })}
+                            />
+                            允许批量导入文章
+                          </label>
+                        </div>
                       </div>
-                    ) : null}
-                  </article>
-                ))}
-              </div>
+                        ) : null}
+                      </article>
+                    );
+                  })}
+                </div>
+              </section>
             </>
           ) : null}
 
           {tab === "navigation" ? (
             <>
-              {!canManageFrontendSettings ? <p className="settings-lock-note">当前账号没有前台设置权限。请使用 Super Admin 或 Admin 账号修改导航栏。</p> : null}
+              {!canManageFrontendSettings ? <p className="settings-lock-note">当前账号没有前台设置权限。请在用户组权限中开放对应权限后修改导航栏。</p> : null}
               {navigationSettingsPanel}
             </>
           ) : null}
 
           {tab === "templates" ? (
             <>
-              {!canManageFrontendSettings ? <p className="settings-lock-note">当前账号没有前台模板权限。请使用 Super Admin 或 Admin 账号修改模板。</p> : null}
+              {!canManageFrontendSettings ? <p className="settings-lock-note">当前账号没有前台模板权限。请在用户组权限中开放对应权限后修改模板。</p> : null}
 
               <section className="settings-panel template-builder-panel">
                 <div className="settings-panel-head with-action">
@@ -5532,14 +6872,14 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
                       <button
                         className={templateEditorMode === "form" ? "template-mode-button active" : "template-mode-button"}
                         type="button"
-                        onClick={() => setTemplateEditorMode("form")}
+	                        onClick={openTemplateFormEditor}
                       >
                         <LayoutPanelTop size={15} />表单编辑
                       </button>
                       <button
                         className={templateEditorMode === "visual" ? "template-mode-button active" : "template-mode-button"}
                         type="button"
-                        onClick={() => setTemplateEditorMode("visual")}
+	                        onClick={openTemplateVisualEditor}
                       >
                         <Sparkles size={15} />高级编辑
                       </button>
@@ -5725,11 +7065,11 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
 
           {tab === "settings" ? (
             <>
-              {!canManageFrontendSettings ? <p className="settings-lock-note">当前账号没有前台设置权限。请使用 Super Admin 或 Admin 账号修改设置。</p> : null}
+              {!canManageFrontendSettings ? <p className="settings-lock-note">当前账号没有前台设置权限。请在用户组权限中开放对应权限后修改设置。</p> : null}
 
               <div className="wp-settings-screen">
                 <aside className="wp-settings-menu" aria-label="设置分组">
-                  {settingsSections.map((item) => (
+                  {visibleSettingsSections.map((item) => (
                     <button className={settingsSection === item.key ? "active" : ""} key={item.key} type="button" onClick={() => setSettingsSection(item.key)}>
                       <strong>{item.label}</strong>
                       <span>{item.description}</span>
@@ -5738,7 +7078,9 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
                 </aside>
 
                 <section className="settings-panel wp-settings-panel">
-                  {settingsSection === "general" ? (
+                  {visibleSettingsSections.length === 0 ? <div className="empty-state">当前用户组没有可访问的设置子页面。</div> : null}
+
+                  {canViewCurrentSettingsSection && settingsSection === "general" ? (
                     <>
                       <div className="settings-panel-head with-action">
                         <div><h2>常规选项</h2><span>对应 WordPress 常规设置：标题、网址、管理员邮箱、语言和时区。</span></div>
@@ -5808,14 +7150,14 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
                         <label className="checkline"><input disabled={!canManageFrontendSettings} type="checkbox" checked={state.siteSettings.allowRegistration} onChange={(event) => updateSiteSettings({ allowRegistration: event.target.checked })} />任何人都可以注册</label>
                         <label>新用户默认角色
                           <select disabled={!canManageFrontendSettings} value={state.siteSettings.defaultUserRole} onChange={(event) => updateSiteSettings({ defaultUserRole: event.target.value as RoleKey })}>
-                            {roleOptions.map((role) => <option key={role} value={role}>{role}</option>)}
+                            {roleOptions.map((role) => <option key={role} value={role}>{roleLabels[role]}</option>)}
                           </select>
                         </label>
                       </div>
                     </>
                   ) : null}
 
-                  {settingsSection === "writing" ? (
+                  {canViewCurrentSettingsSection && settingsSection === "writing" ? (
                     <>
                       <div className="settings-panel-head with-action">
                         <div><h2>撰写设置</h2><span>设置新文章的默认产品分类和默认保存状态。</span></div>
@@ -5837,7 +7179,7 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
                     </>
                   ) : null}
 
-                  {settingsSection === "reading" ? (
+                  {canViewCurrentSettingsSection && settingsSection === "reading" ? (
                     <>
                       <div className="settings-panel-head with-action">
                         <div><h2>阅读设置</h2><span>控制首页文章展示、列表数量和搜索引擎可见性。</span></div>
@@ -5851,7 +7193,42 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
                     </>
                   ) : null}
 
-                  {settingsSection === "media" ? (
+                  {canViewCurrentSettingsSection && settingsSection === "seo" ? (
+                    <>
+                      <div className="settings-panel-head with-action">
+                        <div><h2>SEO 设置与完整度</h2><span>开发阶段先生成站内 SEO 信号，不提交任何站长平台。</span></div>
+                        {settingsSaveAction}
+                      </div>
+                      <div className="wp-settings-form">
+                        <label>站点地址（Canonical 根域名）
+                          <input disabled={!canManageFrontendSettings} value={state.siteSettings.siteUrl} onChange={(event) => updateSiteSettings({ siteUrl: event.target.value })} />
+                        </label>
+                        <label className="checkline"><input disabled={!canManageFrontendSettings} type="checkbox" checked={state.siteSettings.searchEngineVisible} onChange={(event) => updateSiteSettings({ searchEngineVisible: event.target.checked })} />后台允许搜索引擎索引本站</label>
+                        <div className="settings-field">
+                          <span>当前索引模式</span>
+                          <strong>{publicIndexingEnabled && state.siteSettings.searchEngineVisible ? "正式可索引" : "开发保护：noindex / robots 禁止抓取"}</strong>
+                          <small>正式上线前再设置环境变量 NEXT_PUBLIC_SITE_INDEXABLE=true；后台开关和环境变量必须同时开启才允许索引。</small>
+                        </div>
+                        <div className="settings-field">
+                          <span>系统入口</span>
+                          <strong>/robots.txt · /sitemap.xml</strong>
+                          <small>后台、登录页和 API 不进入 sitemap，并始终 noindex。</small>
+                        </div>
+                      </div>
+                      <div className="admin-stat-grid">
+                        <div><strong>{seoIssues.missingMetadata}</strong><span>缺少 SEO 标题/描述</span></div>
+                        <div><strong>{seoIssues.fallbackLocales}</strong><span>多语种内容 fallback</span></div>
+                        <div><strong>{seoIssues.missingImages}</strong><span>缺少分享图片</span></div>
+                        <div><strong>{seoIssues.noindexItems}</strong><span>手动关闭索引</span></div>
+                      </div>
+                      <section className="file-upload-panel">
+                        <strong>上线前检查</strong>
+                        <span>补齐各语种标题、描述、正文和图片后，再切换正式域名与索引开关。未补齐当前语种内容的页面不会进入 sitemap，前台 metadata 会自动 noindex。</span>
+                      </section>
+                    </>
+                  ) : null}
+
+                  {canViewCurrentSettingsSection && settingsSection === "media" ? (
                     <>
                       <div className="settings-panel-head with-action">
                         <div><h2>媒体设置</h2><span>管理上传图片尺寸和文件整理方式。</span></div>
@@ -5869,7 +7246,7 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
                     </>
                   ) : null}
 
-                  {settingsSection === "permalinks" ? (
+                  {canViewCurrentSettingsSection && settingsSection === "permalinks" ? (
                     <>
                       <div className="settings-panel-head with-action">
                         <div><h2>固定链接设置</h2><span>设置前台产品、文章和资料下载路径的基础别名。</span></div>
@@ -5883,7 +7260,7 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
                     </>
                   ) : null}
 
-                  {settingsSection === "privacy" ? (
+                  {canViewCurrentSettingsSection && settingsSection === "privacy" ? (
                     <>
                       <div className="settings-panel-head with-action">
                         <div><h2>隐私设置</h2><span>设置隐私页面、Cookie 提示和询盘数据使用说明。</span></div>
@@ -5897,7 +7274,7 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
                     </>
                   ) : null}
 
-                  {settingsSection === "ai" ? (
+                  {canViewCurrentSettingsSection && settingsSection === "ai" ? (
                     <div className="ai-settings-in-settings">
                       <section className="settings-panel ai-settings-panel">
                         <div className="settings-panel-head with-action">
@@ -6084,7 +7461,7 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
                     </div>
                   ) : null}
 
-                  {settingsSection === "translation" ? (
+                  {canViewCurrentSettingsSection && settingsSection === "translation" ? (
                     <section className="settings-panel ai-translate-panel">
                       <div className="settings-panel-head with-action">
                         <div>
@@ -6096,7 +7473,7 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
                           自动补齐翻译
                         </button>
                       </div>
-                      {!canRunAutoTranslation ? <p className="settings-lock-note">当前账号没有自动翻译权限。请使用 Super Admin 或 Admin 账号执行。</p> : null}
+                      {!canRunAutoTranslation ? <p className="settings-lock-note">当前账号没有自动翻译权限。请在用户组权限中开放对应权限后执行。</p> : null}
                       <div className="ai-translate-grid">
                         <label>翻译范围
                           <select value={translationScope} onChange={(event) => setTranslationScope(event.target.value as TranslationScope)}>
@@ -6129,7 +7506,7 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
                     </section>
                   ) : null}
 
-                  {settingsSection === "backup" ? (
+                  {canViewCurrentSettingsSection && settingsSection === "backup" ? (
                     <section className="settings-panel site-backup-panel">
                       <div className="settings-panel-head">
                         <div>
@@ -6137,7 +7514,7 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
                           <span>导出或导入后台数据，按模块选择内容，避免备份文件过大。</span>
                         </div>
                       </div>
-                      {!canManageFrontendSettings ? <p className="settings-lock-note">当前账号没有备份权限。请使用 Super Admin 或 Admin 账号操作。</p> : null}
+                      {!canManageFrontendSettings ? <p className="settings-lock-note">当前账号没有备份权限。请在用户组权限中开放对应权限后操作。</p> : null}
                       <div className="site-backup-grid">
                         <article className="admin-edit-card site-backup-card">
                           <div className="site-backup-card-head">
@@ -6308,7 +7685,7 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
 
           {tab === "languages" ? (
             <>
-              {!canManageFrontendSettings ? <p className="settings-lock-note">当前账号没有前台设置权限。请使用 Super Admin 或 Admin 账号修改语言。</p> : null}
+              {!canManageFrontendSettings ? <p className="settings-lock-note">当前账号没有前台设置权限。请在用户组权限中开放对应权限后修改语言。</p> : null}
               {languageSettingsPanel}
             </>
           ) : null}
@@ -6390,7 +7767,7 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
                   <div className="account-info-list">
                     <div><span>后台名称</span><strong>KeyproTools Admin</strong></div>
                     <div><span>登录邮箱</span><strong>{currentEmail}</strong></div>
-                    <div><span>当前角色</span><strong>{currentUser?.role ?? "admin"}</strong></div>
+                    <div><span>当前角色</span><strong>{roleLabels[currentUser?.role ?? "admin"]}</strong></div>
                     <div><span>账号状态</span><strong>{currentUser?.active ? "启用" : "停用"}</strong></div>
                     <div><span>后台状态</span><strong>{status}</strong></div>
                     <div><span>更新时间</span><strong>{new Date(state.updatedAt).toLocaleString()}</strong></div>

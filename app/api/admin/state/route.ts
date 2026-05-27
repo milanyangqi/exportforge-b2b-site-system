@@ -4,6 +4,14 @@ import { preserveUserPasswordHashes, readAdminState, sanitizeAdminState, writeAd
 import type { AdminState, RoleKey } from "@/types/site";
 
 const frontendManagerRoles = new Set<RoleKey>(["super-admin", "admin"]);
+const frontendManagerTabs = new Set(["navigation", "templates", "settings", "languages", "themes", "ai"]);
+
+function canSaveFrontendSettings(state: AdminState, role: RoleKey | undefined) {
+  if (!role) return false;
+  if (frontendManagerRoles.has(role)) return true;
+  const permissions = state.rolePermissions?.[role];
+  return Boolean(permissions?.allowedTabs?.some((tab) => frontendManagerTabs.has(tab)));
+}
 
 function creditControlChanged(nextState: AdminState, existingState: AdminState) {
   const nextBalances = (nextState.users ?? []).map((user) => ({ id: user.id, email: user.email, aiCredits: user.aiCredits ?? 0 }));
@@ -38,7 +46,7 @@ export async function PUT(request: Request) {
     || JSON.stringify(state.siteSettings ?? {}) !== JSON.stringify(existingState.siteSettings ?? {})
     || JSON.stringify(state.templateSettings ?? {}) !== JSON.stringify(existingState.templateSettings ?? {});
 
-  if (frontendSettingsChanged && !frontendManagerRoles.has(currentUser?.role ?? "viewer")) {
+  if (frontendSettingsChanged && !canSaveFrontendSettings(existingState, currentUser?.role)) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 

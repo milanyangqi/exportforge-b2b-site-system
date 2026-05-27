@@ -84,6 +84,7 @@ export function Header({
   const [currentEnabledLocales, setCurrentEnabledLocales] = useState(enabledLocales);
   const navigationTree = useMemo(() => buildNavigationTree(currentNavigation), [currentNavigation]);
   const isAdminPath = pathname?.startsWith(`/${locale}/admin`);
+  const isLocaleHomePath = pathname === `/${locale}` || pathname === `/${locale}/`;
 
   useEffect(() => {
     setCurrentBrandName(brandName);
@@ -120,6 +121,8 @@ export function Header({
       window.removeEventListener("focus", refreshPublicShell);
     };
   }, [pathname]);
+
+  if (isLocaleHomePath) return null;
 
   return (
     <header className="site-header">

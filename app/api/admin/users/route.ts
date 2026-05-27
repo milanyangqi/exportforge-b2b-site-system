@@ -13,6 +13,7 @@ type CreateUserPayload = {
   password?: string;
   allowedTabs?: string[];
   aiCredits?: number;
+  articleImportEnabled?: boolean;
 };
 
 type ResetPasswordPayload = {
@@ -60,6 +61,7 @@ export async function POST(request: Request) {
     active: true,
     aiCredits: Number.isFinite(aiCredits) && aiCredits > 0 ? aiCredits : 0,
     allowedTabs: Array.isArray(body.allowedTabs) ? body.allowedTabs : undefined,
+    articleImportEnabled: typeof body.articleImportEnabled === "boolean" ? body.articleImportEnabled : role === "super-admin" || role === "admin",
     passwordHash: hashPassword(password)
   };
   const savedState = await writeAdminState({

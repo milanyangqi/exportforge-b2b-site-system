@@ -1,13 +1,15 @@
-import { Fragment } from "react";
+import { Fragment, type CSSProperties } from "react";
+import { ShieldCheck } from "lucide-react";
 import { IndustrialVisual } from "@/components/IndustrialVisual";
 import { HeroPosterCarousel } from "@/components/HeroPosterCarousel";
+import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { ProductGrid } from "@/components/ProductGrid";
 import { RfqForm } from "@/components/RfqForm";
 import { locales } from "@/config/locales";
 import { themes } from "@/config/themes";
 import { siteSettings } from "@/data/site";
 import { t, ui } from "@/lib/i18n";
-import type { AdminState, HomeSectionKey, LocaleCode, ProductCategory } from "@/types/site";
+import type { AdminState, HomeSectionKey, LocaleCode, ProductCategory, SiteTemplateCustomBlock } from "@/types/site";
 
 export function ActiveTemplate({ locale, state }: { locale: LocaleCode; state: AdminState }) {
   const activeTheme = themes[state.activeTheme] ?? themes.industrial;
@@ -30,11 +32,128 @@ export function ActiveTemplate({ locale, state }: { locale: LocaleCode; state: A
   const additionalHomeProducts = state.products.filter((product) => !preferredHomeProductSlugs.has(product.slug));
   const homeProducts = [...preferredHomeProducts, ...additionalHomeProducts].slice(0, templateSettings.homeProductCount);
   const visibleLocales = locales.filter((item) => state.enabledLocales.includes(item.code));
+  const homeNavigation = [...state.navigation]
+    .filter((item) => item.enabled && !item.parentId)
+    .sort((a, b) => a.order - b.order);
   const templateText = (key: string, fallback: string) => {
     const value = templateSettings.textBlocks[key];
     return value ? t(value, locale) : fallback;
   };
-  const homeSections = [
+  const getCustomBlockImages = (block: SiteTemplateCustomBlock) => {
+    const images = (block.imageItems ?? [])
+      .filter((item) => item.enabled && item.url.trim())
+      .sort((a, b) => a.order - b.order);
+
+    if (images.length > 0) return images;
+    return block.mediaUrl ? [{
+      id: `${block.id}-fallback-image`,
+      url: block.mediaUrl,
+      alt: block.title,
+      caption: { en: "", zh: "" },
+      enabled: true,
+      order: 10
+    }] : [];
+  };
+  const renderCustomBlockImages = (block: SiteTemplateCustomBlock, title: string) => {
+    const layout = block.imageLayout ?? "single";
+    const images = layout === "single" ? getCustomBlockImages(block).slice(0, 1) : getCustomBlockImages(block);
+    if (images.length === 0) return null;
+
+    return (
+      <div
+        className={`custom-template-image-set layout-${layout}${block.imageCarouselAutoplay ?? true ? " autoplay" : ""}`}
+        style={{ "--custom-carousel-duration": `${Math.max(3, Math.min(15, block.imageCarouselIntervalSeconds ?? 5))}s` } as CSSProperties}
+      >
+        {images.map((item) => (
+          <figure className="custom-template-media" key={item.id}>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={item.url} alt={item.alt ? t(item.alt, locale) : title} loading="lazy" />
+            {item.caption && t(item.caption, locale) ? <figcaption>{t(item.caption, locale)}</figcaption> : null}
+          </figure>
+        ))}
+        {layout === "carousel" && images.length > 1 ? (
+          <div className="custom-template-carousel-dots" aria-hidden="true">
+            {images.map((item, index) => <span className={index === 0 ? "active" : ""} key={item.id} />)}
+          </div>
+        ) : null}
+      </div>
+    );
+  };
+  const renderCustomBlockVideo = (mediaUrl: string, title: string) => {
+    if (!mediaUrl) return null;
+    const isDirectVideo = /\.(mp4|webm|ogg)(\?.*)?$/i.test(mediaUrl);
+
+    return (
+      <figure className="custom-template-media video">
+        {isDirectVideo ? (
+          <video src={mediaUrl} controls preload="metadata" />
+        ) : (
+          <iframe src={mediaUrl} title={title} allow="autoplay; fullscreen; picture-in-picture" allowFullScreen />
+        )}
+      </figure>
+    );
+  };
+  const coreHomeSections = [
+    {
+      key: "navigation" as HomeSectionKey,
+      order: templateSettings.sectionOrder.navigation,
+      node: (
+        <section className="template-home-navigation" aria-label="Home navigation">
+          <div className="template-home-nav-inner">
+            <a className="template-home-brand" href={`/${locale}`}>
+              <span className="template-home-brand-mark" aria-hidden="true"><ShieldCheck size={22} /></span>
+              <span>{state.siteSettings.title || "KeyproTools"}</span>
+            </a>
+            <nav className="template-home-nav-links" aria-label="Primary navigation">
+              {homeNavigation.map((item) => (
+                <a href={item.href} target={item.openInNewTab ? "_blank" : undefined} rel={item.openInNewTab ? "noopener noreferrer" : undefined} key={item.id}>
+                  {t(item.label, locale)}
+                </a>
+              ))}
+            </nav>
+            <div className="template-home-header-actions">
+              <LanguageSwitcher locale={locale} enabledLocales={state.enabledLocales} />
+              <a className="template-home-nav-cta" href="#rfq">{t(templateSettings.primaryCtaLabel, locale) || t(ui.quote, locale)}</a>
+            </div>
+          </div>
+        </section>
+      )
+    },
+    {
+      key: "hero" as HomeSectionKey,
+      order: templateSettings.sectionOrder.hero,
+      node: (
+        <section className={`hero-section home-template-${templateSettings.homeTemplate}${templateSettings.showHeroVisual ? "" : " hero-no-visual"}`}>
+          {templateSettings.heroCarouselEnabled ? (
+            <HeroPosterCarousel
+              enabled={templateSettings.heroCarouselAutoplay}
+              intervalSeconds={templateSettings.heroCarouselIntervalSeconds}
+              slides={templateSettings.heroSlides}
+            />
+          ) : null}
+          <div className="hero-poster-overlay" aria-hidden="true" />
+          <div className="hero-inner">
+            <div className="hero-copy">
+              <span className="eyebrow">{t(templateSettings.heroKicker, locale) || t(ui.heroKicker, locale)}</span>
+              <h1>{t(templateSettings.heroTitle, locale) || t(ui.heroTitle, locale)}</h1>
+              <p>{t(templateSettings.heroBody, locale) || t(ui.heroBody, locale)}</p>
+              <div className="hero-actions">
+                <a className="button primary" href="#rfq">{t(templateSettings.primaryCtaLabel, locale) || t(ui.quote, locale)}</a>
+                <a className="button secondary" href={`/${locale}/products`}>{t(templateSettings.secondaryCtaLabel, locale) || t(ui.navProducts, locale)}</a>
+              </div>
+              {templateSettings.showHeroMetrics ? (
+                <div className="metrics">
+                  <div><strong>{templateText("heroMetric1Value", "0.2-25mm")}</strong><span>{templateText("heroMetric1Label", "End mill diameter range")}</span></div>
+                  <div><strong>{templateText("heroMetric2Value", "HSS / M35 / Carbide")}</strong><span>{templateText("heroMetric2Label", "Drill bit supply")}</span></div>
+                  <div><strong>{templateText("heroMetric3Value", "OEM")}</strong><span>{templateText("heroMetric3Label", "Laser marking and packing")}</span></div>
+                </div>
+              ) : null}
+            </div>
+            {templateSettings.showHeroVisual ? <IndustrialVisual /> : null}
+          </div>
+        </section>
+      )
+    },
     {
       key: "products" as HomeSectionKey,
       order: templateSettings.sectionOrder.products,
@@ -154,41 +273,49 @@ export function ActiveTemplate({ locale, state }: { locale: LocaleCode; state: A
         </section>
       )
     }
-  ].sort((a, b) => a.order - b.order);
+  ];
+  const customHomeSections = templateSettings.customBlocks
+    .filter((block) => block.enabled)
+    .map((block) => {
+      const eyebrow = (block.eyebrow ? t(block.eyebrow, locale) : "") || (block.type === "video" ? "Video" : block.type === "image" ? "Image" : block.type === "cta" ? "Action" : "Custom section");
+      const title = t(block.title, locale);
+      const body = t(block.body, locale);
+      const buttonLabel = (block.buttonLabel ? t(block.buttonLabel, locale) : "") || title;
+      const media = block.type === "image"
+        ? renderCustomBlockImages(block, title)
+        : block.type === "video" ? renderCustomBlockVideo(block.mediaUrl ?? "", title) : null;
+      const isExternalLink = Boolean(block.openInNewTab);
+
+      return {
+        key: block.id,
+        order: block.order,
+        node: (
+          <section className={`section custom-template-section custom-template-${block.type} theme-${block.theme ?? (block.type === "cta" ? "dark" : "light")} align-${block.align ?? "left"} layout-${block.layout ?? (block.type === "image" || block.type === "video" ? "media-left" : "stacked")} spacing-${block.spacing ?? "normal"}`}>
+            <div className="custom-template-inner">
+              {block.type !== "text" && block.type !== "cta" && block.layout !== "media-right" ? media : null}
+              <div className="custom-template-copy">
+                {eyebrow ? <span className="eyebrow">{eyebrow}</span> : null}
+                <h2>{title}</h2>
+                {body ? <p>{body}</p> : null}
+                {block.type === "cta" ? (
+                  <a className="button primary" href={block.linkUrl || "#rfq"} target={isExternalLink ? "_blank" : undefined} rel={isExternalLink ? "noopener noreferrer" : undefined}>
+                    {buttonLabel}
+                  </a>
+                ) : null}
+              </div>
+              {block.type !== "text" && block.type !== "cta" && block.layout === "media-right" ? media : null}
+            </div>
+          </section>
+        )
+      };
+    });
+  const homeSections = [...coreHomeSections, ...customHomeSections].sort((a, b) => a.order - b.order);
 
   return (
     <main>
-      <section className={`hero-section home-template-${templateSettings.homeTemplate}${templateSettings.showHeroVisual ? "" : " hero-no-visual"}`}>
-        {templateSettings.heroCarouselEnabled ? (
-          <HeroPosterCarousel
-            enabled={templateSettings.heroCarouselAutoplay}
-            intervalSeconds={templateSettings.heroCarouselIntervalSeconds}
-            slides={templateSettings.heroSlides}
-          />
-        ) : null}
-        <div className="hero-poster-overlay" aria-hidden="true" />
-        <div className="hero-inner">
-          <div className="hero-copy">
-            <span className="eyebrow">{t(templateSettings.heroKicker, locale) || t(ui.heroKicker, locale)}</span>
-            <h1>{t(templateSettings.heroTitle, locale) || t(ui.heroTitle, locale)}</h1>
-            <p>{t(templateSettings.heroBody, locale) || t(ui.heroBody, locale)}</p>
-            <div className="hero-actions">
-              <a className="button primary" href="#rfq">{t(templateSettings.primaryCtaLabel, locale) || t(ui.quote, locale)}</a>
-              <a className="button secondary" href={`/${locale}/products`}>{t(templateSettings.secondaryCtaLabel, locale) || t(ui.navProducts, locale)}</a>
-            </div>
-            {templateSettings.showHeroMetrics ? (
-              <div className="metrics">
-                <div><strong>{templateText("heroMetric1Value", "0.2-25mm")}</strong><span>{templateText("heroMetric1Label", "End mill diameter range")}</span></div>
-                <div><strong>{templateText("heroMetric2Value", "HSS / M35 / Carbide")}</strong><span>{templateText("heroMetric2Label", "Drill bit supply")}</span></div>
-                <div><strong>{templateText("heroMetric3Value", "OEM")}</strong><span>{templateText("heroMetric3Label", "Laser marking and packing")}</span></div>
-              </div>
-            ) : null}
-          </div>
-          {templateSettings.showHeroVisual ? <IndustrialVisual /> : null}
-        </div>
-      </section>
-
-      {homeSections.map((section) => templateSettings.visibleSections[section.key] ? <Fragment key={section.key}>{section.node}</Fragment> : null)}
+      {homeSections.map((section) => "key" in section && section.key in templateSettings.visibleSections
+        ? templateSettings.visibleSections[section.key as HomeSectionKey] ? <Fragment key={section.key}>{section.node}</Fragment> : null
+        : <Fragment key={section.key}>{section.node}</Fragment>)}
     </main>
   );
 }

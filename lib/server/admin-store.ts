@@ -1,6 +1,6 @@
 import { articles, contactChannels, defaultEnabledLocales, defaultNavigation, productCategories, siteSettings, uploadedFiles } from "@/data/site";
 import { isLocale } from "@/config/locales";
-import type { AdminState, HomeSectionKey, HomeTemplateKey, LocaleCode, SiteHeroSlide, SiteNavigationItem, SiteSettings, SiteTemplateSettings, Translation } from "@/types/site";
+import type { AdminRolePermissions, AdminState, HomeSectionKey, HomeTemplateKey, LocaleCode, RoleKey, SiteHeroSlide, SiteNavigationItem, SiteSettings, SiteTemplateCustomBlock, SiteTemplateImageItem, SiteTemplateSettings, Translation } from "@/types/site";
 
 type KvNamespace = {
   get(key: string): Promise<string | null>;
@@ -26,10 +26,39 @@ type CloudflareContext = {
 const stateKey = "admin-state";
 const uploadKeyPrefix = "upload:";
 const currentTemplateContentVersion = "current-template-keyprotools-v1";
+const adminTabKeys = new Set(["overview", "products", "pages", "articles", "files", "leads", "mail", "contacts", "navigation", "users", "collect", "templates", "settings", "languages", "themes", "ai"]);
+const settingsSectionKeys = new Set(["general", "writing", "reading", "seo", "media", "permalinks", "privacy", "ai", "translation", "backup"]);
+const defaultRolePermissions: Record<RoleKey, AdminRolePermissions> = {
+  "super-admin": {
+    allowedTabs: Array.from(adminTabKeys),
+    settingsSections: Array.from(settingsSectionKeys),
+    articleImportEnabled: true
+  },
+  admin: {
+    allowedTabs: ["overview", "products", "pages", "articles", "files", "leads", "mail", "contacts", "navigation", "collect", "templates", "settings", "languages", "themes", "ai"],
+    settingsSections: Array.from(settingsSectionKeys),
+    articleImportEnabled: true
+  },
+  editor: {
+    allowedTabs: ["overview", "products", "pages", "articles", "files", "collect", "ai"],
+    settingsSections: [],
+    articleImportEnabled: false
+  },
+  sales: {
+    allowedTabs: ["overview", "products", "leads", "mail", "contacts"],
+    settingsSections: [],
+    articleImportEnabled: false
+  },
+  viewer: {
+    allowedTabs: ["overview", "products", "articles", "files"],
+    settingsSections: [],
+    articleImportEnabled: false
+  }
+};
 const legacyTemplateAssetPath = "/assets/tools/";
 const currentTemplateAssetPath = "/assets/current-template/";
 const homeTemplateKeys = new Set<HomeTemplateKey>(["industrial-showcase", "catalog-focus", "rfq-focus"]);
-const homeSectionKeys: HomeSectionKey[] = ["products", "factory", "markets", "articles", "rfq"];
+const homeSectionKeys: HomeSectionKey[] = ["navigation", "hero", "products", "factory", "markets", "articles", "rfq"];
 const defaultHeroSlides: SiteHeroSlide[] = [
   {
     id: "hero-tooling-range",
@@ -172,6 +201,8 @@ const defaultTemplateSettings: SiteTemplateSettings = {
   homeProductCount: 6,
   homeArticleCount: 6,
   visibleSections: {
+    navigation: true,
+    hero: true,
     products: true,
     factory: true,
     markets: true,
@@ -179,13 +210,16 @@ const defaultTemplateSettings: SiteTemplateSettings = {
     rfq: true
   },
   sectionOrder: {
-    products: 10,
-    factory: 20,
-    markets: 30,
-    articles: 40,
-    rfq: 50
+    navigation: 10,
+    hero: 20,
+    products: 30,
+    factory: 40,
+    markets: 50,
+    articles: 60,
+    rfq: 70
   },
-  textBlocks: defaultTemplateTextBlocks
+  textBlocks: defaultTemplateTextBlocks,
+  customBlocks: []
 };
 
 function sanitizeStoredFileId(id: string) {
@@ -217,6 +251,7 @@ export function createDefaultAdminState(): AdminState {
         role: "super-admin",
         active: true,
         aiCredits: 100000,
+        articleImportEnabled: true,
         jobTitle: "Owner"
       },
       {
@@ -226,9 +261,11 @@ export function createDefaultAdminState(): AdminState {
         role: "sales",
         active: true,
         aiCredits: 20000,
+        articleImportEnabled: false,
         jobTitle: "Sales"
       }
     ],
+    rolePermissions: defaultRolePermissions,
     aiSettings: {
       provider: process.env.AI_PROVIDER ?? "openai-compatible",
       model: process.env.AI_MODEL ?? "gpt-4.1-mini",
@@ -320,8 +357,33 @@ function normalizeAdminUsers(users?: AdminState["users"]): AdminState["users"] {
     ...user,
     aiCredits: Number.isFinite(Number(user.aiCredits))
       ? Math.max(0, Number(user.aiCredits))
-      : user.role === "super-admin" ? 100000 : 0
+      : user.role === "super-admin" ? 100000 : 0,
+    articleImportEnabled: typeof user.articleImportEnabled === "boolean"
+      ? user.articleImportEnabled
+      : user.role === "super-admin" || user.role === "admin"
   }));
+}
+
+function normalizeRolePermissions(rolePermissions?: AdminState["rolePermissions"]): AdminState["rolePermissions"] {
+  return (Object.keys(defaultRolePermissions) as RoleKey[]).reduce<Partial<Record<RoleKey, AdminRolePermissions>>>((permissions, role) => {
+    const fallback = defaultRolePermissions[role];
+    const current = rolePermissions?.[role];
+    const allowedTabs = Array.isArray(current?.allowedTabs)
+      ? current.allowedTabs.filter((item) => adminTabKeys.has(item))
+      : fallback.allowedTabs;
+    const settingsSections = Array.isArray(current?.settingsSections)
+      ? current.settingsSections.filter((item) => settingsSectionKeys.has(item))
+      : fallback.settingsSections ?? [];
+
+    permissions[role] = {
+      allowedTabs: allowedTabs.length > 0 ? allowedTabs : ["overview"],
+      settingsSections,
+      articleImportEnabled: typeof current?.articleImportEnabled === "boolean"
+        ? current.articleImportEnabled
+        : fallback.articleImportEnabled ?? false
+    };
+    return permissions;
+  }, {});
 }
 
 function normalizeTranslation(value: Partial<Translation> | undefined, fallback: Translation): Translation {
@@ -342,6 +404,40 @@ function normalizeTemplateTextBlocks(settings?: Partial<Record<string, Partial<T
     blocks[key] = normalizeTranslation(settings?.[key], fallback);
     return blocks;
   }, {});
+}
+
+function normalizeCustomBlockImageItems(block: Partial<SiteTemplateCustomBlock>, index: number): SiteTemplateImageItem[] {
+  const rawItems = Array.isArray(block.imageItems) ? block.imageItems : [];
+  const normalizedItems = rawItems
+    .map((item, itemIndex): SiteTemplateImageItem | null => {
+      const url = normalizeCurrentTemplateAssetUrl(item.url);
+      if (!url.trim()) return null;
+
+      return {
+        id: item.id || `custom-image-${index}-${itemIndex}`,
+        url,
+        alt: normalizeTranslation(item.alt, block.title ?? { en: "Custom image", zh: "自定义图片" }),
+        caption: normalizeTranslation(item.caption, { en: "", zh: "" }),
+        enabled: item.enabled ?? true,
+        order: Number.isFinite(item.order) ? Math.trunc(item.order) : (itemIndex + 1) * 10
+      };
+    })
+    .filter((item): item is SiteTemplateImageItem => Boolean(item))
+    .sort((a, b) => a.order - b.order);
+
+  const fallbackUrl = normalizeCurrentTemplateAssetUrl(block.mediaUrl);
+  if (normalizedItems.length === 0 && fallbackUrl.trim()) {
+    normalizedItems.push({
+      id: `custom-image-${index}-primary`,
+      url: fallbackUrl,
+      alt: normalizeTranslation(block.title, { en: "Custom image", zh: "自定义图片" }),
+      caption: normalizeTranslation(undefined, { en: "", zh: "" }),
+      enabled: true,
+      order: 10
+    });
+  }
+
+  return normalizedItems;
 }
 
 function normalizeTemplateSettings(settings?: Partial<SiteTemplateSettings>): SiteTemplateSettings {
@@ -368,6 +464,45 @@ function normalizeTemplateSettings(settings?: Partial<SiteTemplateSettings>): Si
     }))
     .filter((slide) => slide.imageUrl.trim())
     .sort((a, b) => a.order - b.order);
+  const rawCustomBlocks = Array.isArray(settings?.customBlocks) ? settings.customBlocks : [];
+  const customBlocks = rawCustomBlocks
+    .map((block, index): SiteTemplateCustomBlock | null => {
+      const type = block.type === "image" || block.type === "video" || block.type === "text" || block.type === "cta" ? block.type : null;
+      if (!type) return null;
+      const fallbackTitle = type === "image" ? "Image module" : type === "video" ? "Video module" : type === "cta" ? "CTA module" : "Text module";
+      const rawOrder = block.order;
+      const imageItems = type === "image" ? normalizeCustomBlockImageItems(block, index) : undefined;
+      const rawImageInterval = block.imageCarouselIntervalSeconds;
+
+      return {
+        id: block.id || `custom-block-${index}`,
+        type,
+        eyebrow: normalizeTranslation(block.eyebrow, {
+          en: type === "video" ? "Video" : type === "image" ? "Image" : type === "cta" ? "Action" : "Custom section",
+          zh: type === "video" ? "视频" : type === "image" ? "图片" : type === "cta" ? "行动" : "自定义模块"
+        }),
+        title: normalizeTranslation(block.title, { en: fallbackTitle, zh: fallbackTitle }),
+        body: normalizeTranslation(block.body, { en: "", zh: "" }),
+        mediaUrl: normalizeCurrentTemplateAssetUrl(block.mediaUrl || imageItems?.find((item) => item.enabled)?.url),
+        imageItems,
+        imageLayout: block.imageLayout === "split" || block.imageLayout === "grid" || block.imageLayout === "mosaic" || block.imageLayout === "carousel" || block.imageLayout === "single" ? block.imageLayout : "single",
+        imageCarouselAutoplay: block.imageCarouselAutoplay ?? true,
+        imageCarouselIntervalSeconds: Number.isFinite(rawImageInterval)
+          ? Math.max(3, Math.min(15, Math.trunc(rawImageInterval as number)))
+          : 5,
+        buttonLabel: normalizeTranslation(block.buttonLabel, { en: "Learn more", zh: "了解更多" }),
+        linkUrl: block.linkUrl || "",
+        openInNewTab: block.openInNewTab ?? false,
+        align: block.align === "center" ? "center" : "left",
+        layout: block.layout === "media-left" || block.layout === "media-right" || block.layout === "stacked" ? block.layout : (type === "image" || type === "video" ? "media-left" : "stacked"),
+        theme: block.theme === "tint" || block.theme === "dark" || block.theme === "light" ? block.theme : (type === "cta" ? "dark" : "light"),
+        spacing: block.spacing === "compact" || block.spacing === "large" || block.spacing === "normal" ? block.spacing : "normal",
+        enabled: block.enabled ?? true,
+        order: Number.isFinite(rawOrder) ? Math.trunc(rawOrder as number) : 60 + index * 10
+      };
+    })
+    .filter((block): block is SiteTemplateCustomBlock => Boolean(block))
+    .sort((a, b) => a.order - b.order);
 
   return {
     homeTemplate: settings?.homeTemplate && homeTemplateKeys.has(settings.homeTemplate) ? settings.homeTemplate : defaultTemplateSettings.homeTemplate,
@@ -388,7 +523,8 @@ function normalizeTemplateSettings(settings?: Partial<SiteTemplateSettings>): Si
     homeArticleCount: Number.isFinite(articleCount) ? Math.max(0, Math.min(12, Math.trunc(articleCount as number))) : defaultTemplateSettings.homeArticleCount,
     visibleSections,
     sectionOrder,
-    textBlocks: normalizeTemplateTextBlocks(settings?.textBlocks)
+    textBlocks: normalizeTemplateTextBlocks(settings?.textBlocks),
+    customBlocks
   };
 }
 
@@ -604,6 +740,7 @@ function normalizeAdminState(parsed: AdminState): AdminState {
       url: normalizeCurrentTemplateAssetUrl(file.url)
     })),
     users: normalizeAdminUsers(parsed.users),
+    rolePermissions: normalizeRolePermissions(parsed.rolePermissions),
     activeTheme: parsed.activeTheme ?? "industrial",
     enabledLocales: normalizeEnabledLocales(parsed.enabledLocales),
     navigation: normalizeNavigation(navigationSource),
