@@ -1,4 +1,6 @@
 import type { Metadata } from "next";
+import "@mdxeditor/editor/style.css";
+import "@puckeditor/core/puck.css";
 import "@/styles/globals.css";
 import "@/styles/active-template.css";
 

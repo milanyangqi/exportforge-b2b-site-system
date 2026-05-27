@@ -1,4 +1,5 @@
 import type { LucideIcon } from "lucide-react";
+import type { Data as PuckData } from "@puckeditor/core";
 
 export type LocaleCode =
   | "en"
@@ -354,6 +355,37 @@ export type SiteTemplateSettings = {
   customBlocks: SiteTemplateCustomBlock[];
 };
 
+export type PageLayoutKey =
+  | "home"
+  | "products-index"
+  | "product-detail"
+  | "articles-index"
+  | "article-detail"
+  | "files-index"
+  | "contact"
+  | `page:${string}`;
+
+export type VisualPageLayoutData = PuckData<Record<string, Record<string, unknown>>>;
+
+export type SitePageLayout = {
+  key: PageLayoutKey;
+  label: string;
+  data: VisualPageLayoutData;
+  updatedAt: string;
+  publishedAt?: string;
+};
+
+export type TemplatePackagePayload = {
+  format: "exportforge-template-package";
+  version: 1;
+  createdAt: string;
+  pageLayouts: SitePageLayout[];
+  templateSettings: SiteTemplateSettings;
+  activeTheme: ThemeKey;
+  navigation?: SiteNavigationItem[];
+  uploadedFiles?: UploadedFile[];
+};
+
 export type AdminState = {
   products: ProductCategory[];
   pages: SitePage[];
@@ -368,6 +400,7 @@ export type AdminState = {
   navigation: SiteNavigationItem[];
   siteSettings: SiteSettings;
   templateSettings: SiteTemplateSettings;
+  pageLayouts: SitePageLayout[];
   aiSettings: AiSettings;
   aiCreditSettings: AiCreditSettings;
   aiUsageRecords: AiUsageRecord[];

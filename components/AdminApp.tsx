@@ -3,6 +3,7 @@
 import { Fragment, type CSSProperties, type DragEvent, type KeyboardEvent, type MouseEvent, useEffect, useMemo, useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import { PuckTemplateEditor } from "@/components/PuckTemplateEditor";
 import {
   Bot,
   Bold,
@@ -59,6 +60,7 @@ import {
 } from "lucide-react";
 import { locales } from "@/config/locales";
 import { themes } from "@/config/themes";
+import { AdminMarkdownEditor, type AdminMarkdownEditorHandle } from "@/components/AdminMarkdownEditor";
 import type { AdminRolePermissions, AdminState, AdminUser, Article, ContactChannel, ContactChannelType, HomeSectionKey, LeadStatus, LocaleCode, ProductCategory, RoleKey, SiteHeroSlide, SiteNavigationItem, SitePage, SiteTemplateCustomBlock, SiteTemplateCustomBlockType, SiteTemplateImageItem, SiteTemplateImageLayout, SiteTemplateSettings, ThemeKey, Translation, UploadedFile } from "@/types/site";
 
 type Tab = "overview" | "products" | "pages" | "articles" | "files" | "leads" | "mail" | "contacts" | "navigation" | "users" | "collect" | "templates" | "settings" | "languages" | "themes" | "account" | "ai";
@@ -76,7 +78,7 @@ type AiWizardStep = 1 | 2 | 3 | 4 | 5;
 type TranslationScope = "all" | "article" | "page" | "products" | "templates" | "navigation";
 type TranslationSourceChoice = "auto" | LocaleCode;
 type TranslationTargetChoice = "all" | LocaleCode;
-type BackupSectionKey = keyof Pick<AdminState, "products" | "pages" | "articles" | "leads" | "contactChannels" | "uploadedFiles" | "users" | "rolePermissions" | "navigation" | "siteSettings" | "templateSettings" | "aiSettings" | "aiCreditSettings" | "aiUsageRecords" | "activeTheme" | "enabledLocales">;
+type BackupSectionKey = keyof Pick<AdminState, "products" | "pages" | "articles" | "leads" | "contactChannels" | "uploadedFiles" | "users" | "rolePermissions" | "navigation" | "siteSettings" | "templateSettings" | "pageLayouts" | "aiSettings" | "aiCreditSettings" | "aiUsageRecords" | "activeTheme" | "enabledLocales">;
 type TemplateEditorMode = "form" | "visual";
 type VideoDialogTarget = "article" | "page";
 type VisualBuilderDevice = "desktop" | "tablet" | "mobile";
@@ -461,6 +463,7 @@ const backupSectionOptions: { key: BackupSectionKey; label: string; description:
   { key: "navigation", label: "导航栏", description: "前台菜单、子菜单、启用和排序。" },
   { key: "siteSettings", label: "常规设置", description: "站点标题、URL、语言、固定链接和隐私设置。" },
   { key: "templateSettings", label: "首页模板设置", description: "首屏、轮播、模块显示和首页数量。" },
+  { key: "pageLayouts", label: "Puck 页面布局", description: "前台页面的 Puck 可视化区块、排序和发布状态。" },
   { key: "activeTheme", label: "主题", description: "当前前台主题。" },
   { key: "enabledLocales", label: "语言", description: "前台启用语言列表。" },
   { key: "users", label: "用户权限", description: "后台用户、角色、可访问页面和密码哈希。" },
@@ -479,6 +482,7 @@ const defaultBackupSections: BackupSectionKey[] = [
   "navigation",
   "siteSettings",
   "templateSettings",
+  "pageLayouts",
   "activeTheme",
   "enabledLocales"
 ];
@@ -1222,7 +1226,7 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
   const [mediaTypeFilter, setMediaTypeFilter] = useState<MediaTypeFilter>("all");
   const [mediaTimeFilter, setMediaTimeFilter] = useState<MediaTimeFilter>("all");
   const [mediaQuery, setMediaQuery] = useState("");
-  const [articleMediaPickerOpen, setArticleMediaPickerOpen] = useState(false);
+  const [mediaPickerTarget, setMediaPickerTarget] = useState<VideoDialogTarget | null>(null);
   const [videoDialogTarget, setVideoDialogTarget] = useState<VideoDialogTarget | null>(null);
   const [videoDialogUrl, setVideoDialogUrl] = useState("");
   const [replacingArticleVideoUrl, setReplacingArticleVideoUrl] = useState<string | null>(null);
@@ -1271,6 +1275,8 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
   const [backupStatus, setBackupStatus] = useState("选择要导出的数据模块，生成 JSON 后可用于恢复。");
   const [clockNow, setClockNow] = useState<Date | null>(null);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const articleMarkdownEditorRef = useRef<AdminMarkdownEditorHandle | null>(null);
+  const pageMarkdownEditorRef = useRef<AdminMarkdownEditorHandle | null>(null);
   const visualEditorRef = useRef<HTMLDivElement | null>(null);
   const visualEditorInputRef = useRef(false);
   const visualEditorArticleKeyRef = useRef("");
@@ -2855,19 +2861,46 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
     updateActivePage({ body: createSingleLanguageTranslation(value) });
   }
 
-  function insertTextIntoPageBody(insertText: string) {
-    if (!activePage) return;
-    const editor = document.getElementById("page-body-editor") as HTMLTextAreaElement | null;
-    const currentBody = pickLocalizedText(activePage.body, locale);
-    const start = editor?.selectionStart ?? currentBody.length;
-    const end = editor?.selectionEnd ?? currentBody.length;
-    const nextBody = `${currentBody.slice(0, start)}${insertText}${currentBody.slice(end)}`;
+  function mergeUploadedFilesFromSavedState(savedState: AdminState, articleCoverFallback?: { articleId: string; imageUrl: string }) {
+    setState((currentState) => {
+      if (!currentState) return savedState;
 
-    updatePageBody(nextBody);
-    window.requestAnimationFrame(() => {
-      editor?.focus();
-      if (editor instanceof HTMLTextAreaElement) editor.setSelectionRange(start + insertText.length, start + insertText.length);
+      return {
+        ...currentState,
+        uploadedFiles: savedState.uploadedFiles,
+        articles: articleCoverFallback
+          ? currentState.articles.map((article) => (
+            (article.id ?? article.slug) === articleCoverFallback.articleId
+              ? { ...article, coverImageUrl: article.coverImageUrl || articleCoverFallback.imageUrl }
+              : article
+          ))
+          : currentState.articles
+      };
     });
+  }
+
+  function fallbackAppendMarkdownToBody(target: VideoDialogTarget, markdown: string) {
+    if (target === "page") {
+      if (!activePage) return;
+      const currentBody = pickLocalizedText(activePage.body, locale);
+      updatePageBody(`${currentBody.trimEnd()}${currentBody.trim() ? "\n\n" : ""}${markdown.trim()}\n\n`);
+      return;
+    }
+
+    if (!activeArticle) return;
+    const currentBody = activeArticleBody;
+    updateArticleBody(`${currentBody.trimEnd()}${currentBody.trim() ? "\n\n" : ""}${markdown.trim()}\n\n`);
+  }
+
+  function insertMarkdownIntoActiveEditor(target: VideoDialogTarget, markdown: string) {
+    const editor = target === "page" ? pageMarkdownEditorRef.current : articleMarkdownEditorRef.current;
+
+    if (!editor) {
+      fallbackAppendMarkdownToBody(target, markdown);
+      return;
+    }
+
+    editor.focus(() => editor.insertMarkdown(markdown), { defaultSelection: "rootEnd" });
   }
 
   function openVideoDialog(target: VideoDialogTarget, currentUrl = "") {
@@ -2901,10 +2934,7 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
     const block = buildVideoEmbedFromUrl(videoDialogUrl);
     if (!block || !videoDialogTarget) return;
 
-    if (videoDialogTarget === "page") {
-      insertTextIntoPageBody(`\n\n${block}\n\n`);
-      setStatus("视频链接已插入页面正文，保存或发布后前台会显示视频");
-    } else if (replacingArticleVideoUrl) {
+    if (videoDialogTarget === "article" && replacingArticleVideoUrl) {
       const nextBody = activeArticleBody.split(/\n{2,}/).map((bodyBlock) => {
         const video = parseVideoMarkdownBlock(bodyBlock);
         return video?.url === replacingArticleVideoUrl ? block : bodyBlock;
@@ -2912,8 +2942,8 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
       updateArticleBody(nextBody);
       setStatus("视频链接已替换，保存或发布后前台会显示新视频");
     } else {
-      appendArticleBlock(block);
-      setStatus("视频链接已插入文章正文，保存或发布后前台会显示视频");
+      insertMarkdownIntoActiveEditor(videoDialogTarget, `\n\n${block}\n\n`);
+      setStatus(videoDialogTarget === "page" ? "视频链接已插入页面正文，保存或发布后前台会显示视频" : "视频链接已插入文章正文，保存或发布后前台会显示视频");
     }
 
     closeVideoDialog();
@@ -3864,11 +3894,11 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
 
   function clearArticleBody() {
     if (!activeArticle) return;
-    if (visualEditorRef.current) visualEditorRef.current.innerHTML = "";
+    articleMarkdownEditorRef.current?.setMarkdown("");
     updateArticleBody("");
     setStatus("正文已清空，点击保存或发布后生效");
     window.requestAnimationFrame(() => {
-      document.getElementById("article-body-editor")?.focus();
+      articleMarkdownEditorRef.current?.focus();
     });
   }
 
@@ -3894,17 +3924,50 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
     setStatus("已清理正文格式，点击保存或发布后生效");
   }
 
-  function uploadArticleImage(file: File | null, insertIntoBody = false) {
+  function uploadMarkdownEditorImage(target: VideoDialogTarget, file: File) {
+    if (!file.type.startsWith("image/")) {
+      const message = "请选择图片文件";
+      setStatus(message);
+      return Promise.reject(new Error(message));
+    }
+
+    const targetArticleId = target === "article" && activeArticle ? activeArticle.id ?? activeArticle.slug : "";
+    const shouldSetArticleCover = Boolean(targetArticleId && !activeArticle?.coverImageUrl);
+    const formData = new FormData();
+
+    formData.append("file", file);
+    setStatus("图片上传中...");
+
+    return fetch("/api/admin/upload", { method: "POST", body: formData })
+      .then(async (response) => {
+        if (!response.ok) {
+          const payload = await response.json().catch(() => ({ error: "图片上传失败" }));
+          throw new Error(payload.error || "图片上传失败");
+        }
+        return response.json() as Promise<{ file: UploadedFile; state: AdminState }>;
+      })
+      .then(({ file: uploadedFile, state: savedState }) => {
+        mergeUploadedFilesFromSavedState(
+          savedState,
+          shouldSetArticleCover ? { articleId: targetArticleId, imageUrl: uploadedFile.url } : undefined
+        );
+        setStatus(target === "article" ? "图片已上传并插入文章正文，点击保存或发布后生效" : "图片已上传并插入页面正文，点击保存或发布后生效");
+        return uploadedFile.url;
+      })
+      .catch((error) => {
+        const message = error instanceof Error ? error.message : "图片上传失败";
+        setStatus(message);
+        throw error;
+      });
+  }
+
+  function uploadArticleImage(file: File | null) {
     if (!file || !activeArticle) return;
     if (!file.type.startsWith("image/")) {
       setStatus("请选择文章图片文件");
       return;
     }
     const targetId = activeArticle.id ?? activeArticle.slug;
-    const editor = document.getElementById("article-body-editor") as HTMLTextAreaElement | null;
-    const currentBody = activeArticleBody;
-    const start = editor?.selectionStart ?? currentBody.length;
-    const end = editor?.selectionEnd ?? currentBody.length;
     const formData = new FormData();
 
     formData.append("file", file);
@@ -3918,33 +3981,8 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
         return response.json() as Promise<{ file: UploadedFile; state: AdminState }>;
       })
       .then(({ file: uploadedFile, state: savedState }) => {
-        const imageMarkdown = `\n\n![${sanitizeMarkdownLabel(uploadedFile.name || activeArticle.title.zh || activeArticle.title.en || "文章图片")}](${uploadedFile.url})\n\n`;
-        const nextState = {
-          ...savedState,
-          articles: savedState.articles.map((article) => {
-            if ((article.id ?? article.slug) !== targetId) return article;
-            const nextArticle: Article = {
-              ...article,
-              coverImageUrl: article.coverImageUrl || uploadedFile.url
-            };
-
-            if (insertIntoBody) {
-              nextArticle.body = createSingleLanguageTranslation(`${currentBody.slice(0, start)}${imageMarkdown}${currentBody.slice(end)}`);
-            }
-
-            return nextArticle;
-          })
-        };
-
-        setState(nextState);
-        if (insertIntoBody) {
-          window.requestAnimationFrame(() => {
-            const cursor = start + imageMarkdown.length;
-            editor?.focus();
-            if (editor instanceof HTMLTextAreaElement) editor.setSelectionRange(cursor, cursor);
-          });
-        }
-        setStatus(insertIntoBody ? "图片已上传并插入正文，点击保存或发布后生效" : "特色图片已上传，点击保存或发布后生效");
+        mergeUploadedFilesFromSavedState(savedState, { articleId: targetId, imageUrl: uploadedFile.url });
+        setStatus("特色图片已上传，点击保存或发布后生效");
       })
       .catch((error) => setStatus(error instanceof Error ? error.message : "图片上传失败"));
   }
@@ -3975,7 +4013,7 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
     };
   }
 
-  function uploadSiteFile(file: File | null, insertIntoArticle = false) {
+  function uploadSiteFile(file: File | null, insertTarget?: VideoDialogTarget) {
     if (!state || !file) return;
     const formData = new FormData();
 
@@ -3990,13 +4028,11 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
         return response.json() as Promise<{ file: UploadedFile; state: AdminState }>;
       })
       .then(({ file: uploadedFile, state: savedState }) => {
-        if (insertIntoArticle && activeArticle) {
-          const nextState = appendFileToActiveArticle(uploadedFile, savedState);
-          setState(nextState ?? savedState);
-        } else {
-          setState(savedState);
+        mergeUploadedFilesFromSavedState(savedState);
+        if (insertTarget) {
+          insertMarkdownIntoActiveEditor(insertTarget, buildArticleMediaMarkup(uploadedFile));
         }
-        setStatus(insertIntoArticle ? "媒体已上传并插入正文，点击保存或发布后生效" : "媒体已上传并保存");
+        setStatus(insertTarget ? "媒体已上传并插入正文，点击保存或发布后生效" : "媒体已上传并保存");
       })
       .catch((error) => setStatus(error instanceof Error ? error.message : "媒体上传失败"));
   }
@@ -4069,12 +4105,11 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
       .catch((error) => setStatus(error instanceof Error ? error.message : "轮播图片上传失败"));
   }
 
-  function insertExistingFileIntoArticle(file: UploadedFile) {
-    const nextState = appendFileToActiveArticle(file);
-    if (!nextState) return;
+  function insertExistingFileIntoContent(file: UploadedFile) {
+    if (!mediaPickerTarget) return;
 
-    setState(nextState);
-    setArticleMediaPickerOpen(false);
+    insertMarkdownIntoActiveEditor(mediaPickerTarget, buildArticleMediaMarkup(file));
+    setMediaPickerTarget(null);
     setStatus(getMediaType(file) === "image" ? "图片已插入正文，点击保存或发布后生效" : "媒体链接已插入正文，点击保存或发布后生效");
   }
 
@@ -4261,6 +4296,11 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
   ].sort((a, b) => a.order - b.order);
   const selectedCustomBlock = templateSettings.customBlocks.find((block) => block.id === selectedVisualModuleId) ?? null;
   const selectedCoreSection = homeSectionOptions.find((section) => section.key === selectedVisualModuleId) ?? null;
+  const selectedVisualModuleLabel = selectedCoreSection?.label
+    ?? (selectedCustomBlock?.type === "image" ? "图片模块"
+      : selectedCustomBlock?.type === "video" ? "视频模块"
+        : selectedCustomBlock?.type === "cta" ? "按钮模块"
+          : selectedCustomBlock ? "文字模块" : "未选择模块");
 
   function renderVisualTextTarget(options: VisualEditableTextOptions) {
     const targetClassName = ["visual-edit-target", options.className].filter(Boolean).join(" ");
@@ -5111,6 +5151,20 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
       <button disabled={!canManageFrontendSettings} type="button" onClick={() => addCustomTemplateBlock("cta", afterOrder)}><SendToBack size={14} />按钮</button>
     </div>
   );
+  const renderVisualLayerLabel = (moduleId: string) => {
+    const coreSection = homeSectionOptions.find((section) => section.key === moduleId);
+    if (coreSection) return coreSection.label;
+    const customBlock = templateSettings.customBlocks.find((block) => block.id === moduleId);
+    if (!customBlock) return moduleId;
+    return customBlock.title.zh || customBlock.title.en || (customBlock.type === "image" ? "图片模块" : customBlock.type === "video" ? "视频模块" : customBlock.type === "cta" ? "按钮模块" : "文字模块");
+  };
+  const renderVisualLayerType = (moduleId: string) => {
+    const coreSection = homeSectionOptions.find((section) => section.key === moduleId);
+    if (coreSection) return "系统模块";
+    const customBlock = templateSettings.customBlocks.find((block) => block.id === moduleId);
+    if (!customBlock) return "模块";
+    return customBlock.type === "image" ? "图片" : customBlock.type === "video" ? "视频" : customBlock.type === "cta" ? "按钮" : "文字";
+  };
 	  const visualSectionNodes = orderedVisualSectionItems.map((item, index) => (
 	    <Fragment key={`module-group-${String(item.key)}`}>
 		    <div
@@ -5204,108 +5258,6 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
       {renderVisualAddModuleBar(item.order, index === orderedVisualSectionItems.length - 1 ? "在页面底部添加模块" : "在这里添加模块", `${String(item.key)}-${index}-${item.order}`)}
     </Fragment>
   ));
-  const templateVisualEditorPanel = (
-    <section className={templateVisualFullscreen ? "template-visual-editor-shell fullscreen" : "template-visual-editor-shell"}>
-      <div className="visual-editor-topbar">
-        <div>
-          <span className="eyebrow">Advanced editor</span>
-          <h2>前台所见即所得编辑</h2>
-	        </div>
-	        <div className="visual-editor-actions">
-	          <div className="visual-sidebar-tabs" aria-label="Builder panel">
-	            {([
-	              ["components", "组件"],
-	              ["properties", "属性"]
-	            ] as [VisualBuilderSidebarTab, string][]).map(([tabKey, label]) => (
-	              <button
-	                className={visualBuilderSidebarTab === tabKey ? "active" : ""}
-	                key={tabKey}
-	                type="button"
-	                onClick={() => setVisualBuilderSidebarTab(tabKey)}
-	              >
-	                {label}
-	              </button>
-	            ))}
-	          </div>
-	          <div className="visual-device-toggle" aria-label="预览设备">
-            {(["desktop", "tablet", "mobile"] as VisualBuilderDevice[]).map((device) => (
-              <button
-                className={visualBuilderDevice === device ? "active" : ""}
-                key={device}
-                type="button"
-                onClick={() => setVisualBuilderDevice(device)}
-              >
-                {device === "desktop" ? "桌面" : device === "tablet" ? "平板" : "手机"}
-              </button>
-            ))}
-          </div>
-          <button type="button" onClick={() => setTemplateVisualFullscreen((current) => !current)}>
-            {templateVisualFullscreen ? <Minimize2 size={16} /> : <Maximize2 size={16} />}{templateVisualFullscreen ? "退出全屏" : "全屏编辑"}
-          </button>
-	          <button type="button" onClick={openTemplateFormEditor}>
-	            <LayoutPanelTop size={16} />表单编辑
-	          </button>
-	          <button
-	            className="visual-editor-save"
-	            disabled={!canManageFrontendSettings || !frontendSettingsDirty}
-	            type="button"
-	            onClick={() => {
-	              if (guardFrontendSettingsAccess()) void save();
-	            }}
-	          >
-	            <Save size={16} />{frontendSettingsDirty ? "保存编辑" : "已保存"}
-	          </button>
-	          <button
-	            className="visual-editor-discard"
-	            disabled={!canManageFrontendSettings || !frontendSettingsDirty}
-	            type="button"
-	            onClick={() => {
-	              if (guardFrontendSettingsAccess()) void discardTemplateVisualEdits();
-	            }}
-	          >
-	            <RefreshCw size={16} />放弃编辑
-	          </button>
-	          <button
-	            type="button"
-	            onClick={() => {
-	              setTemplateVisualFullscreen(false);
-	              setTemplateEditorMode("form");
-	              setVisualDropTarget(null);
-	              setVisualDraggingModuleId(null);
-	            }}
-	          >
-	            <X size={16} />关闭
-	          </button>
-	          <Link href={`/${locale}`} target="_blank" rel="noopener noreferrer">打开前台</Link>
-	        </div>
-      </div>
-
-		      {visualBuilderSidebarTab === "components" ? (
-		        <div className="visual-component-shelf" aria-label="添加编辑模块">
-		          <span>组件库</span>
-		          <button draggable disabled={!canManageFrontendSettings} type="button" onClick={() => addCustomTemplateBlock("text")} onDragStart={(event) => startVisualPaletteDrag(event, "text")}><Type size={14} />文字</button>
-		          <button draggable disabled={!canManageFrontendSettings} type="button" onClick={() => addCustomTemplateBlock("image")} onDragStart={(event) => startVisualPaletteDrag(event, "image")}><ImageIcon size={14} />图片</button>
-		          <button draggable disabled={!canManageFrontendSettings} type="button" onClick={() => addCustomTemplateBlock("video")} onDragStart={(event) => startVisualPaletteDrag(event, "video")}><Video size={14} />视频</button>
-		          <button draggable disabled={!canManageFrontendSettings} type="button" onClick={() => addCustomTemplateBlock("cta")} onDragStart={(event) => startVisualPaletteDrag(event, "cta")}><SendToBack size={14} />按钮</button>
-		          {templateSettings.customBlocks.length > 0 ? (
-		            <button className="danger" disabled={!canManageFrontendSettings} type="button" onClick={clearCustomTemplateBlocks}>
-		              <Trash2 size={14} />清空自定义模块
-		            </button>
-		          ) : null}
-		        </div>
-		      ) : null}
-		      {visualBuilderSidebarTab === "properties" ? (
-		        <div className="visual-properties-shelf">
-		          {renderVisualSelectedPanel()}
-		        </div>
-		      ) : null}
-		      <div className="visual-editor-stage">
-		        <div className={`visual-front-page device-${visualBuilderDevice}`} aria-label="首页可视化编辑预览">
-		          {visualSectionNodes}
-		        </div>
-      </div>
-    </section>
-  );
   const settingsSaveAction = (
     <div className="settings-actions">
       <button type="button" disabled={!canManageFrontendSettings} onClick={() => {
@@ -5321,6 +5273,54 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
       .filter((item): item is typeof locales[number] => Boolean(item)),
     ...locales.filter((item) => !state.enabledLocales.includes(item.code as LocaleCode))
   ];
+  const mediaPickerDialog = mediaPickerTarget ? (
+    <div className="media-picker-overlay" role="presentation" onMouseDown={(event) => {
+      if (event.target === event.currentTarget) setMediaPickerTarget(null);
+    }}>
+      <section className="media-picker-modal" role="dialog" aria-modal="true" aria-label="选择媒体文件">
+        <div className="media-picker-head">
+          <div>
+            <h2>选择媒体文件</h2>
+            <span>{mediaPickerTarget === "page" ? "从媒体库选择文件插入当前页面正文。" : "从媒体库选择文件插入当前文章正文。"}</span>
+          </div>
+          <button type="button" aria-label="关闭媒体库" onClick={() => setMediaPickerTarget(null)}>
+            <X size={18} />
+          </button>
+        </div>
+        <div className="media-picker-toolbar">
+          <select value={mediaTypeFilter} onChange={(event) => setMediaTypeFilter(event.target.value as MediaTypeFilter)}>
+            {mediaTypeOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
+          </select>
+          <select value={mediaTimeFilter} onChange={(event) => setMediaTimeFilter(event.target.value as MediaTimeFilter)}>
+            {mediaTimeOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
+          </select>
+          <input placeholder="搜索文件名或类型" value={mediaQuery} onChange={(event) => setMediaQuery(event.target.value)} />
+          <span>{filteredMediaFiles.length} / {state.uploadedFiles.length}</span>
+        </div>
+        <div className="media-picker-grid">
+          {filteredMediaFiles.map((file) => {
+            const isImage = getMediaType(file) === "image";
+
+            return (
+              <button type="button" className="media-picker-item" key={file.id} onClick={() => insertExistingFileIntoContent(file)}>
+                <span className="media-picker-thumb">
+                  {isImage ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={file.url} alt={file.name} />
+                  ) : (
+                    <Paperclip size={24} />
+                  )}
+                </span>
+                <strong>{file.name}</strong>
+                <small>{getMediaTypeLabel(file)} · {formatFileSize(file.size)}</small>
+              </button>
+            );
+          })}
+          {filteredMediaFiles.length === 0 ? <div className="media-picker-empty">没有找到匹配的媒体文件。</div> : null}
+        </div>
+      </section>
+    </div>
+  ) : null;
   const sidebarClassName = "admin-sidebar";
   const languageSettingsPanel = (
     <section className="settings-panel">
@@ -5766,18 +5766,33 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
                         onChange={(event) => updatePageTitle(event.target.value)}
                       />
                       <label>页面摘要<textarea className="wp-excerpt" value={activePage.excerpt.zh ?? activePage.excerpt.en ?? ""} onChange={(event) => updatePageExcerpt(event.target.value)} /></label>
-                      <div className="article-editor-toolbar page-editor-toolbar" aria-label="页面编辑器工具栏">
-                        <button title="插入视频链接" aria-label="插入视频链接" type="button" onClick={() => openVideoDialog("page")}><Video size={16} /></button>
-                      </div>
-                      <label>页面正文
-                        <textarea
-                          id="page-body-editor"
-                          className="wp-body page-body-editor"
-                          rows={24}
+                      <div className="admin-markdown-field">
+                        <span className="admin-markdown-label">页面正文</span>
+                        <div className="admin-editor-quickbar" aria-label="页面编辑器快捷工具">
+                          <button title="插入视频链接" aria-label="插入视频链接" type="button" onClick={() => openVideoDialog("page")}><Video size={16} />视频</button>
+                          <label className="article-image-inline-upload" title="上传并插入媒体">
+                            <Paperclip size={16} />
+                            媒体
+                            <input
+                              type="file"
+                              onChange={(event) => {
+                                uploadSiteFile(event.currentTarget.files?.[0] ?? null, "page");
+                                event.currentTarget.value = "";
+                              }}
+                            />
+                          </label>
+                          <button disabled={state.uploadedFiles.length === 0} title="从媒体库插入" type="button" onClick={() => setMediaPickerTarget("page")}><Library size={16} />媒体库</button>
+                          <button title="清空正文" type="button" onClick={() => updatePageBody("")}><Trash2 size={16} />清空</button>
+                        </div>
+                        <AdminMarkdownEditor
+                          editorId={`page-${activePage.id ?? activePage.slug}-${locale}`}
+                          onChange={updatePageBody}
+                          onImageUpload={(file) => uploadMarkdownEditorImage("page", file)}
+                          placeholder="在这里填写页面内容。"
+                          ref={pageMarkdownEditorRef}
                           value={pickLocalizedText(activePage.body, locale)}
-                          onChange={(event) => updatePageBody(event.target.value)}
                         />
-                      </label>
+                      </div>
                     </article>
 
                     <aside className="wp-editor-side">
@@ -6056,116 +6071,32 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
                         onChange={(event) => updateArticleTitle(event.target.value)}
                       />
                       <label>摘要<textarea className="wp-excerpt" value={activeArticle.excerpt.zh ?? activeArticle.excerpt.en ?? ""} onChange={(event) => updateArticleExcerpt(event.target.value)} /></label>
-                      <div className="article-editor-shell">
-                        <div className="article-editor-viewbar" aria-label="编辑器模式">
-                          <button
-                            className={articleEditorView === "visual" ? "active" : ""}
-                            type="button"
-                            onClick={() => setArticleEditorView("visual")}
-                          >
-                            可视化
-                          </button>
-                          <button
-                            className={articleEditorView === "code" ? "active" : ""}
-                            type="button"
-                            onClick={() => setArticleEditorView("code")}
-                          >
-                            代码
-                          </button>
-                        </div>
-                        <div className="article-editor-toolbar" aria-label="文章编辑器工具栏">
-                          <select
-                            aria-label="段落格式"
-                            className="article-format-select"
-                            defaultValue=""
-                            onChange={(event) => {
-                              const value = event.currentTarget.value;
-                              if (value === "p") insertArticleParagraphTemplate();
-                              if (value === "h1") insertArticleMarkup("# ", "", "主标题");
-                              if (value === "h2") insertArticleMarkup("## ", "", "小标题");
-                              if (value === "h3") insertArticleMarkup("### ", "", "小标题");
-                              if (value === "h4") insertArticleMarkup("#### ", "", "段落标题");
-                              event.currentTarget.value = "";
-                            }}
-                          >
-                            <option value="">段落</option>
-                            <option value="p">段落模板</option>
-                            <option value="h1">标题 H1</option>
-                            <option value="h2">标题 H2</option>
-                            <option value="h3">标题 H3</option>
-                            <option value="h4">标题 H4</option>
-                          </select>
-                          <button title="标题 H1" type="button" onClick={() => insertArticleMarkup("# ", "", "主标题")}><Heading1 size={16} /></button>
-                          <button title="标题 H2" type="button" onClick={() => insertArticleMarkup("## ", "", "小标题")}><Heading2 size={16} /></button>
-                          <button title="标题 H3" type="button" onClick={() => insertArticleMarkup("### ", "", "小标题")}><Heading3 size={16} /></button>
-                          <span className="article-toolbar-separator" />
-                          <button title="加粗" type="button" onClick={() => insertArticleMarkup("**", "**", "加粗文字")}><Bold size={16} /></button>
-                          <button title="斜体" type="button" onClick={() => insertArticleMarkup("*", "*", "斜体文字")}><Italic size={16} /></button>
-                          <button title="删除线" type="button" onClick={() => insertArticleMarkup("~~", "~~", "删除线文字")}><Strikethrough size={16} /></button>
-                          <button title="下划线" type="button" onClick={() => insertArticleMarkup("<u>", "</u>", "下划线文字")}><Underline size={16} /></button>
-                          <button title="上标" type="button" onClick={() => insertArticleMarkup("<sup>", "</sup>", "上标")}><Superscript size={16} /></button>
-                          <button title="下标" type="button" onClick={() => insertArticleMarkup("<sub>", "</sub>", "下标")}><Subscript size={16} /></button>
-                          <span className="article-toolbar-separator" />
-                          <button title="项目列表" type="button" onClick={() => insertArticleMarkup("- ", "", "列表项")}><List size={16} /></button>
-                          <button title="编号列表" type="button" onClick={() => insertArticleMarkup("1. ", "", "编号项")}><ListOrdered size={16} /></button>
-                          <button title="引用" type="button" onClick={() => insertArticleMarkup("> ", "", "引用内容")}><Quote size={16} /></button>
-                          <button title="链接" type="button" onClick={() => insertArticleMarkup("[", "](https://example.com)", "链接文字")}><Link2 size={16} /></button>
-                          <span className="article-toolbar-separator" />
-                          <button title="插入视频链接" aria-label="插入视频链接" type="button" onClick={() => openVideoDialog("article")}><Video size={16} /></button>
-                          <span className="article-toolbar-separator" />
-                          <button title="分隔线" type="button" onClick={() => insertTextIntoArticleBody("\n\n---\n\n")}><Minus size={16} /></button>
-                          <button title="表格" type="button" onClick={insertArticleTableTemplate}><Table2 size={16} /></button>
-                          <button title="提示块" type="button" onClick={insertArticleCalloutTemplate}><Pilcrow size={16} /></button>
-                          <button title="行内代码" type="button" onClick={() => insertArticleMarkup("`", "`", "代码")}><Code2 size={16} /></button>
-                          <button title="代码块" type="button" onClick={() => insertArticleMarkup("\n\n```text\n", "\n```\n\n", "代码块")}><Code2 size={16} /></button>
-                          <label className="article-image-inline-upload" title="插入图片">
-                            <ImageIcon size={16} />
-                            <input
-                              type="file"
-                              accept="image/*"
-                              onChange={(event) => {
-                                uploadArticleImage(event.currentTarget.files?.[0] ?? null, true);
-                                event.currentTarget.value = "";
-                              }}
-                            />
-                          </label>
-                          <label className="article-image-inline-upload" title="插入媒体">
+                      <div className="admin-markdown-field">
+                        <span className="admin-markdown-label">文章正文</span>
+                        <div className="admin-editor-quickbar" aria-label="文章编辑器快捷工具">
+                          <button title="插入视频链接" aria-label="插入视频链接" type="button" onClick={() => openVideoDialog("article")}><Video size={16} />视频</button>
+                          <label className="article-image-inline-upload" title="上传并插入媒体">
                             <Paperclip size={16} />
+                            媒体
                             <input
                               type="file"
                               onChange={(event) => {
-                                uploadSiteFile(event.currentTarget.files?.[0] ?? null, true);
+                                uploadSiteFile(event.currentTarget.files?.[0] ?? null, "article");
                                 event.currentTarget.value = "";
                               }}
                             />
                           </label>
-                          <button title="待办列表" type="button" onClick={insertArticleChecklistTemplate}>待办</button>
-                          <button title="清除格式" type="button" onClick={clearArticleFormatting}>清除</button>
-                          <button title="清空正文" type="button" onClick={clearArticleBody}><Trash2 size={16} /></button>
+                          <button disabled={state.uploadedFiles.length === 0} title="从媒体库插入" type="button" onClick={() => setMediaPickerTarget("article")}><Library size={16} />媒体库</button>
+                          <button title="清空正文" type="button" onClick={clearArticleBody}><Trash2 size={16} />清空</button>
                         </div>
-                        {articleEditorView === "visual" ? (
-                          <div
-                            aria-label="正文可视化编辑"
-                            className="article-visual-editor detail-body article-editor-rendered-body"
-                            contentEditable
-                            id="article-body-editor"
-                            ref={visualEditorRef}
-                            role="textbox"
-                            suppressContentEditableWarning
-                            onDoubleClick={handleVisualEditorDoubleClick}
-                            onInput={syncVisualEditorBody}
-                          />
-                        ) : (
-                          <label>Markdown / HTML 代码
-                            <textarea
-                              id="article-body-editor"
-                              className="wp-body code-mode"
-                              rows={28}
-                              value={activeArticleBody}
-                              onChange={(event) => updateArticleBody(event.target.value)}
-                            />
-                          </label>
-                        )}
+                        <AdminMarkdownEditor
+                          editorId={`article-${activeArticle.id ?? activeArticle.slug}-${locale}`}
+                          onChange={updateArticleBody}
+                          onImageUpload={(file) => uploadMarkdownEditorImage("article", file)}
+                          placeholder="在这里填写文章正文。"
+                          ref={articleMarkdownEditorRef}
+                          value={activeArticleBody}
+                        />
                       </div>
                     </article>
 
@@ -6236,7 +6167,7 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
                         <h2>媒体库</h2>
                         {state.uploadedFiles.length > 0 ? (
                           <>
-                            <button className="article-media-open-button" type="button" onClick={() => setArticleMediaPickerOpen(true)}>
+                            <button className="article-media-open-button" type="button" onClick={() => setMediaPickerTarget("article")}>
                               <Library size={16} />
                               打开媒体库
                             </button>
@@ -6303,55 +6234,6 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
                 ) : (
                   <div className="wp-editor empty">还没有文章，点击“写文章”开始。</div>
                 )
-              ) : null}
-
-              {articleMediaPickerOpen ? (
-                <div className="media-picker-overlay" role="presentation" onMouseDown={(event) => {
-                  if (event.target === event.currentTarget) setArticleMediaPickerOpen(false);
-                }}>
-                  <section className="media-picker-modal" role="dialog" aria-modal="true" aria-label="选择媒体文件">
-                    <div className="media-picker-head">
-                      <div>
-                        <h2>选择媒体文件</h2>
-                        <span>从媒体库选择文件插入当前文章正文。</span>
-                      </div>
-                      <button type="button" aria-label="关闭媒体库" onClick={() => setArticleMediaPickerOpen(false)}>
-                        <X size={18} />
-                      </button>
-                    </div>
-                    <div className="media-picker-toolbar">
-                      <select value={mediaTypeFilter} onChange={(event) => setMediaTypeFilter(event.target.value as MediaTypeFilter)}>
-                        {mediaTypeOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
-                      </select>
-                      <select value={mediaTimeFilter} onChange={(event) => setMediaTimeFilter(event.target.value as MediaTimeFilter)}>
-                        {mediaTimeOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
-                      </select>
-                      <input placeholder="搜索文件名或类型" value={mediaQuery} onChange={(event) => setMediaQuery(event.target.value)} />
-                      <span>{filteredMediaFiles.length} / {state.uploadedFiles.length}</span>
-                    </div>
-                    <div className="media-picker-grid">
-                      {filteredMediaFiles.map((file) => {
-                        const isImage = getMediaType(file) === "image";
-
-                        return (
-                          <button type="button" className="media-picker-item" key={file.id} onClick={() => insertExistingFileIntoArticle(file)}>
-                            <span className="media-picker-thumb">
-                              {isImage ? (
-                                // eslint-disable-next-line @next/next/no-img-element
-                                <img src={file.url} alt={file.name} />
-                              ) : (
-                                <Paperclip size={24} />
-                              )}
-                            </span>
-                            <strong>{file.name}</strong>
-                            <small>{getMediaTypeLabel(file)} · {formatFileSize(file.size)}</small>
-                          </button>
-                        );
-                      })}
-                      {filteredMediaFiles.length === 0 ? <div className="media-picker-empty">没有找到匹配的媒体文件。</div> : null}
-                    </div>
-                  </section>
-                </div>
               ) : null}
 
               {videoDialogTarget === "article" ? (
@@ -6860,206 +6742,16 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
           {tab === "templates" ? (
             <>
               {!canManageFrontendSettings ? <p className="settings-lock-note">当前账号没有前台模板权限。请在用户组权限中开放对应权限后修改模板。</p> : null}
-
-              <section className="settings-panel template-builder-panel">
-                <div className="settings-panel-head with-action">
-                  <div>
-                    <h2>前台模板</h2>
-                    <span>控制当前模板的首屏文案、轮播图片、模块显示、排序和首页内容数量。</span>
-                  </div>
-                  <div className="settings-actions template-mode-actions">
-                    <div className="template-mode-toggle" aria-label="模板编辑模式">
-                      <button
-                        className={templateEditorMode === "form" ? "template-mode-button active" : "template-mode-button"}
-                        type="button"
-	                        onClick={openTemplateFormEditor}
-                      >
-                        <LayoutPanelTop size={15} />表单编辑
-                      </button>
-                      <button
-                        className={templateEditorMode === "visual" ? "template-mode-button active" : "template-mode-button"}
-                        type="button"
-	                        onClick={openTemplateVisualEditor}
-                      >
-                        <Sparkles size={15} />高级编辑
-                      </button>
-                    </div>
-                    <button className="template-save-button" type="button" disabled={!canManageFrontendSettings || !frontendSettingsDirty} onClick={() => {
-                      if (guardFrontendSettingsAccess()) void save();
-                    }}>
-                      <Save size={15} />{frontendSettingsDirty ? "保存模板" : "已保存"}
-                    </button>
-                  </div>
-                </div>
-              </section>
-
-              {templateEditorMode === "visual" ? templateVisualEditorPanel : (
-                <>
-              <section className="settings-panel template-builder-panel hero-carousel-admin-panel">
-                <div className="settings-panel-head">
-                  <div>
-                    <h2>首页轮播图片</h2>
-                    <span>控制首屏背景海报、是否自动轮播、切换速度、图片排序和替换。</span>
-                  </div>
-                </div>
-                <div className="hero-carousel-controls">
-                  <label className="checkline"><input disabled={!canManageFrontendSettings} type="checkbox" checked={templateSettings.heroCarouselEnabled} onChange={(event) => updateTemplateSettings({ heroCarouselEnabled: event.target.checked })} />启用首屏轮播背景</label>
-                  <label className="checkline"><input disabled={!canManageFrontendSettings || !templateSettings.heroCarouselEnabled} type="checkbox" checked={templateSettings.heroCarouselAutoplay} onChange={(event) => updateTemplateSettings({ heroCarouselAutoplay: event.target.checked })} />自动播放</label>
-                  <label>切换间隔（秒）
-                    <input disabled={!canManageFrontendSettings || !templateSettings.heroCarouselEnabled} min={3} max={15} type="number" value={templateSettings.heroCarouselIntervalSeconds} onChange={(event) => updateTemplateSettings({ heroCarouselIntervalSeconds: Number(event.target.value) || 7 })} />
-                  </label>
-                </div>
-                <div className="hero-slide-add-row">
-                  <label>添加图片 URL
-                    <input disabled={!canManageFrontendSettings} placeholder="/assets/current-template/hero-new.jpg 或 https://..." value={newHeroSlideUrl} onChange={(event) => setNewHeroSlideUrl(event.target.value)} />
-                  </label>
-                  <button disabled={!canManageFrontendSettings} type="button" onClick={addHeroSlideFromUrl}>添加 URL</button>
-                  <label>从媒体库选择
-                    <select disabled={!canManageFrontendSettings || heroImageFiles.length === 0} value="" onChange={(event) => {
-                      const selectedFile = heroImageFiles.find((file) => file.id === event.target.value);
-                      if (selectedFile) addHeroSlideFromMedia(selectedFile);
-                    }}>
-                      <option value="">{heroImageFiles.length > 0 ? "选择图片" : "媒体库暂无图片"}</option>
-                      {heroImageFiles.map((file) => <option key={file.id} value={file.id}>{file.name}</option>)}
-                    </select>
-                  </label>
-                  <label className={canManageFrontendSettings ? "hero-slide-upload" : "hero-slide-upload disabled"}>
-                    上传图片
-                    <input
-                      accept="image/*"
-                      disabled={!canManageFrontendSettings}
-                      type="file"
-                      onChange={(event) => {
-                        uploadHeroSlideImage(event.currentTarget.files?.[0] ?? null);
-                        event.currentTarget.value = "";
-                      }}
-                    />
-                  </label>
-                </div>
-                <div className="hero-slide-list">
-                  {orderedHeroSlides.map((slide) => (
-                    <article className="hero-slide-card" key={slide.id}>
-                      <div className="hero-slide-thumb">
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img src={slide.imageUrl} alt={slide.alt.zh ?? slide.alt.en} />
-                      </div>
-                      <div className="hero-slide-fields">
-                        <label>中文描述
-                          <input disabled={!canManageFrontendSettings} value={slide.alt.zh ?? slide.alt.en} onChange={(event) => updateHeroSlide(slide.id, { alt: { ...slide.alt, zh: event.target.value } })} />
-                        </label>
-                        <label>英文描述
-                          <input disabled={!canManageFrontendSettings} value={slide.alt.en} onChange={(event) => updateHeroSlide(slide.id, { alt: { ...slide.alt, en: event.target.value } })} />
-                        </label>
-                        <label className="wide">图片 URL
-                          <input disabled={!canManageFrontendSettings} value={slide.imageUrl} onChange={(event) => updateHeroSlide(slide.id, { imageUrl: event.target.value })} />
-                        </label>
-                      </div>
-                      <div className="hero-slide-actions">
-                        <label className="checkline"><input disabled={!canManageFrontendSettings} type="checkbox" checked={slide.enabled} onChange={(event) => updateHeroSlide(slide.id, { enabled: event.target.checked })} />启用</label>
-                        <label>排序
-                          <input disabled={!canManageFrontendSettings} type="number" value={slide.order} onChange={(event) => updateHeroSlide(slide.id, { order: Number(event.target.value) || 0 })} />
-                        </label>
-                        <button className="contact-delete-button" disabled={!canManageFrontendSettings || orderedHeroSlides.length <= 1} type="button" onClick={() => removeHeroSlide(slide.id)}>删除</button>
-                      </div>
-                    </article>
-                  ))}
-                </div>
-              </section>
-
-              <section className="settings-panel template-builder-panel">
-                <div className="template-builder-grid">
-                  <div className="template-copy-form">
-                    <div className="settings-panel-head">
-                      <div>
-                        <h2>首屏内容</h2>
-                        <span>这些文案会直接替换前台首页首屏。</span>
-                      </div>
-                    </div>
-                    <label>眉标（中文）
-                      <input disabled={!canManageFrontendSettings} value={templateSettings.heroKicker.zh ?? templateSettings.heroKicker.en} onChange={(event) => updateTemplateText("heroKicker", "zh", event.target.value)} />
-                    </label>
-                    <label>眉标（英文）
-                      <input disabled={!canManageFrontendSettings} value={templateSettings.heroKicker.en} onChange={(event) => updateTemplateText("heroKicker", "en", event.target.value)} />
-                    </label>
-                    <label className="wide">主标题（中文）
-                      <textarea disabled={!canManageFrontendSettings} value={templateSettings.heroTitle.zh ?? templateSettings.heroTitle.en} onChange={(event) => updateTemplateText("heroTitle", "zh", event.target.value)} />
-                    </label>
-                    <label className="wide">主标题（英文）
-                      <textarea disabled={!canManageFrontendSettings} value={templateSettings.heroTitle.en} onChange={(event) => updateTemplateText("heroTitle", "en", event.target.value)} />
-                    </label>
-                    <label className="wide">说明文案（中文）
-                      <textarea disabled={!canManageFrontendSettings} value={templateSettings.heroBody.zh ?? templateSettings.heroBody.en} onChange={(event) => updateTemplateText("heroBody", "zh", event.target.value)} />
-                    </label>
-                    <label className="wide">说明文案（英文）
-                      <textarea disabled={!canManageFrontendSettings} value={templateSettings.heroBody.en} onChange={(event) => updateTemplateText("heroBody", "en", event.target.value)} />
-                    </label>
-                    <label>主按钮（中文）
-                      <input disabled={!canManageFrontendSettings} value={templateSettings.primaryCtaLabel.zh ?? templateSettings.primaryCtaLabel.en} onChange={(event) => updateTemplateText("primaryCtaLabel", "zh", event.target.value)} />
-                    </label>
-                    <label>主按钮（英文）
-                      <input disabled={!canManageFrontendSettings} value={templateSettings.primaryCtaLabel.en} onChange={(event) => updateTemplateText("primaryCtaLabel", "en", event.target.value)} />
-                    </label>
-                    <label>次按钮（中文）
-                      <input disabled={!canManageFrontendSettings} value={templateSettings.secondaryCtaLabel.zh ?? templateSettings.secondaryCtaLabel.en} onChange={(event) => updateTemplateText("secondaryCtaLabel", "zh", event.target.value)} />
-                    </label>
-                    <label>次按钮（英文）
-                      <input disabled={!canManageFrontendSettings} value={templateSettings.secondaryCtaLabel.en} onChange={(event) => updateTemplateText("secondaryCtaLabel", "en", event.target.value)} />
-                    </label>
-                    <label className="checkline"><input disabled={!canManageFrontendSettings} type="checkbox" checked={templateSettings.showHeroVisual} onChange={(event) => updateTemplateSettings({ showHeroVisual: event.target.checked })} />显示右侧工业视觉</label>
-                    <label className="checkline"><input disabled={!canManageFrontendSettings} type="checkbox" checked={templateSettings.showHeroMetrics} onChange={(event) => updateTemplateSettings({ showHeroMetrics: event.target.checked })} />显示首屏指标</label>
-                    <label>首页产品数量
-                      <input disabled={!canManageFrontendSettings} min={1} max={12} type="number" value={templateSettings.homeProductCount} onChange={(event) => updateTemplateSettings({ homeProductCount: Number(event.target.value) || 1 })} />
-                    </label>
-                    <label>首页文章数量
-                      <input disabled={!canManageFrontendSettings} min={0} max={12} type="number" value={templateSettings.homeArticleCount} onChange={(event) => updateTemplateSettings({ homeArticleCount: Number(event.target.value) || 0 })} />
-                    </label>
-                  </div>
-
-                  <aside className={`template-preview-panel ${templateSettings.homeTemplate}`}>
-                    <span className="eyebrow">{templateSettings.heroKicker.zh ?? templateSettings.heroKicker.en}</span>
-                    <h3>{templateSettings.heroTitle.zh ?? templateSettings.heroTitle.en}</h3>
-                    <p>{templateSettings.heroBody.zh ?? templateSettings.heroBody.en}</p>
-                    <div className="template-preview-actions">
-                      <span>{templateSettings.primaryCtaLabel.zh ?? templateSettings.primaryCtaLabel.en}</span>
-                      <span>{templateSettings.secondaryCtaLabel.zh ?? templateSettings.secondaryCtaLabel.en}</span>
-                    </div>
-                    <div className="template-preview-grid">
-                      {orderedTemplateSections.map((section) => (
-                        <span className={templateSettings.visibleSections[section.key] ? "enabled" : ""} key={section.key}>
-                          {section.label}
-                        </span>
-                      ))}
-                    </div>
-                  </aside>
-                </div>
-              </section>
-
-              <section className="settings-panel template-builder-panel">
-                <div className="settings-panel-head">
-                  <div>
-                    <h2>首页模块</h2>
-                    <span>模块排序数字越小越靠前；关闭后前台不渲染该模块。</span>
-                  </div>
-                </div>
-                <div className="template-section-list">
-                  {orderedTemplateSections.map((section) => (
-                    <article className="template-section-row" key={section.key}>
-                      <label className="checkline">
-                        <input disabled={!canManageFrontendSettings} type="checkbox" checked={templateSettings.visibleSections[section.key]} onChange={(event) => updateTemplateSectionVisibility(section.key, event.target.checked)} />
-                        <span>
-                          <strong>{section.label}</strong>
-                          <small>{section.description}</small>
-                        </span>
-                      </label>
-                      <label>排序
-                        <input disabled={!canManageFrontendSettings} type="number" value={templateSettings.sectionOrder[section.key]} onChange={(event) => updateTemplateSectionOrder(section.key, Number(event.target.value))} />
-                      </label>
-                    </article>
-                  ))}
-                </div>
-              </section>
-                </>
-              )}
+              <PuckTemplateEditor
+                canManage={canManageFrontendSettings}
+                locale={locale}
+                onStateChange={(nextState) => {
+                  setState(nextState);
+                  setFrontendSettingsDirty(false);
+                }}
+                onStatus={setStatus}
+                state={state}
+              />
             </>
           ) : null}
 
@@ -8112,6 +7804,7 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
               </div>
             </>
           ) : null}
+          {mediaPickerDialog}
         </section>
       </div>
     </main>

@@ -1,3 +1,4 @@
+import { PuckPageRenderer } from "@/components/PuckPageRenderer";
 import { readAdminState } from "@/lib/server/admin-store";
 import { buildBreadcrumbJsonLd, buildPageMetadata, jsonLd, localePath } from "@/lib/seo";
 import type { LocaleCode } from "@/types/site";
@@ -36,18 +37,20 @@ export default async function FilesPage({ params }: { params: Promise<{ locale: 
   const { locale } = await params;
   const state = await readAdminState();
   const files = state.uploadedFiles.filter((file) => file.enabled !== false);
-
-  return (
+  const structuredData = (
+    <script
+      type="application/ld+json"
+      dangerouslySetInnerHTML={{
+        __html: jsonLd(buildBreadcrumbJsonLd(state, [
+          { name: state.siteSettings.title, path: localePath(locale) },
+          { name: "Downloads", path: localePath(locale, "/files") }
+        ]))
+      }}
+    />
+  );
+  const fallback = (
     <main className="subpage">
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{
-          __html: jsonLd(buildBreadcrumbJsonLd(state, [
-            { name: state.siteSettings.title, path: localePath(locale) },
-            { name: "Downloads", path: localePath(locale, "/files") }
-          ]))
-        }}
-      />
+      {structuredData}
       <section className="section">
         <div className="section-head">
           <span className="eyebrow">Downloads</span>
@@ -68,5 +71,15 @@ export default async function FilesPage({ params }: { params: Promise<{ locale: 
         </div>
       </section>
     </main>
+  );
+
+  return (
+    <PuckPageRenderer
+      fallback={fallback}
+      layoutKey="files-index"
+      locale={locale}
+      prefix={structuredData}
+      state={state}
+    />
   );
 }

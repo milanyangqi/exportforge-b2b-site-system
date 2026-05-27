@@ -18,6 +18,8 @@
     "template:apply": "node scripts/apply-template.mjs"
   },
   "dependencies": {
+    "@mdxeditor/editor": "^4.0.1",
+    "@puckeditor/core": "^0.21.2",
     "@types/node": "^20.12.12",
     "@types/react": "^19.2.15",
     "@types/react-dom": "^19.2.3",

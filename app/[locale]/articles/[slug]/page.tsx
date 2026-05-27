@@ -1,6 +1,7 @@
 /* eslint-disable @next/next/no-img-element */
 import { notFound } from "next/navigation";
 import { ArticleContent } from "@/components/ArticleContent";
+import { PuckPageRenderer } from "@/components/PuckPageRenderer";
 import { RfqForm } from "@/components/RfqForm";
 import { t } from "@/lib/i18n";
 import { readAdminState } from "@/lib/server/admin-store";
@@ -51,9 +52,8 @@ export default async function ArticleDetailPage({
   if (!article) {
     notFound();
   }
-
-  return (
-    <main className="subpage">
+  const structuredData = (
+    <>
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: jsonLd(buildArticleJsonLd(state, article, locale, localePath(locale, `/articles/${article.slug}`))) }}
@@ -68,6 +68,11 @@ export default async function ArticleDetailPage({
           ]))
         }}
       />
+    </>
+  );
+  const fallback = (
+    <main className="subpage">
+      {structuredData}
       <article className="content-detail">
         <span className="eyebrow">{article.category}</span>
         <h1>{t(article.title, locale)}</h1>
@@ -88,5 +93,16 @@ export default async function ArticleDetailPage({
         <RfqForm locale={locale} />
       </section>
     </main>
+  );
+
+  return (
+    <PuckPageRenderer
+      currentArticle={article}
+      fallback={fallback}
+      layoutKey="article-detail"
+      locale={locale}
+      prefix={structuredData}
+      state={state}
+    />
   );
 }

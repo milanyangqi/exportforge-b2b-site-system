@@ -1,5 +1,6 @@
 import { articles, contactChannels, defaultEnabledLocales, defaultNavigation, productCategories, siteSettings, uploadedFiles } from "@/data/site";
 import { isLocale } from "@/config/locales";
+import { normalizePageLayouts } from "@/lib/puck-layouts";
 import type { AdminRolePermissions, AdminState, HomeSectionKey, HomeTemplateKey, LocaleCode, RoleKey, SiteHeroSlide, SiteNavigationItem, SiteSettings, SiteTemplateCustomBlock, SiteTemplateImageItem, SiteTemplateSettings, Translation } from "@/types/site";
 
 type KvNamespace = {
@@ -231,7 +232,8 @@ export function buildStoredFileUrl(id: string) {
 }
 
 export function createDefaultAdminState(): AdminState {
-  return {
+  const now = new Date().toISOString();
+  const state: AdminState = {
     products: productCategories,
     pages: [],
     articles,
@@ -243,6 +245,7 @@ export function createDefaultAdminState(): AdminState {
     navigation: defaultNavigation,
     siteSettings: defaultSiteSettings,
     templateSettings: defaultTemplateSettings,
+    pageLayouts: [],
     users: [
       {
         id: "u-super-admin",
@@ -292,7 +295,12 @@ export function createDefaultAdminState(): AdminState {
       pointPriceCny: 0.01
     },
     aiUsageRecords: [],
-    updatedAt: new Date().toISOString()
+    updatedAt: now
+  };
+
+  return {
+    ...state,
+    pageLayouts: normalizePageLayouts([], state)
   };
 }
 
@@ -406,6 +414,32 @@ function normalizeTemplateTextBlocks(settings?: Partial<Record<string, Partial<T
   }, {});
 }
 
+function normalizeHomeSectionOrder(settings?: Partial<SiteTemplateSettings>["sectionOrder"]) {
+  const remainingSections = homeSectionKeys
+    .filter((key) => key !== "navigation" && key !== "hero")
+    .map((key) => ({
+      key,
+      order: Number.isFinite(settings?.[key]) ? Math.trunc(settings?.[key] as number) : defaultTemplateSettings.sectionOrder[key]
+    }))
+    .sort((a, b) => a.order - b.order || homeSectionKeys.indexOf(a.key) - homeSectionKeys.indexOf(b.key));
+
+  const sectionOrder: Record<HomeSectionKey, number> = {
+    navigation: 10,
+    hero: 20,
+    products: 30,
+    factory: 40,
+    markets: 50,
+    articles: 60,
+    rfq: 70
+  };
+
+  remainingSections.forEach((section, index) => {
+    sectionOrder[section.key] = (index + 3) * 10;
+  });
+
+  return sectionOrder;
+}
+
 function normalizeCustomBlockImageItems(block: Partial<SiteTemplateCustomBlock>, index: number): SiteTemplateImageItem[] {
   const rawItems = Array.isArray(block.imageItems) ? block.imageItems : [];
   const normalizedItems = rawItems
@@ -445,11 +479,7 @@ function normalizeTemplateSettings(settings?: Partial<SiteTemplateSettings>): Si
     sections[key] = settings?.visibleSections?.[key] ?? defaultTemplateSettings.visibleSections[key];
     return sections;
   }, {} as Record<HomeSectionKey, boolean>);
-  const sectionOrder = homeSectionKeys.reduce<Record<HomeSectionKey, number>>((sections, key) => {
-    const rawOrder = settings?.sectionOrder?.[key];
-    sections[key] = Number.isFinite(rawOrder) ? Math.trunc(rawOrder as number) : defaultTemplateSettings.sectionOrder[key];
-    return sections;
-  }, {} as Record<HomeSectionKey, number>);
+  const sectionOrder = normalizeHomeSectionOrder(settings?.sectionOrder);
   const productCount = settings?.homeProductCount;
   const articleCount = settings?.homeArticleCount;
   const intervalSeconds = settings?.heroCarouselIntervalSeconds;
@@ -716,7 +746,7 @@ function normalizeAdminState(parsed: AdminState): AdminState {
       }
     : parsed.siteSettings;
 
-  return {
+  const normalizedState: AdminState = {
     ...parsed,
     products: productsSource.map((product, index) => ({
       ...product,
@@ -746,10 +776,16 @@ function normalizeAdminState(parsed: AdminState): AdminState {
     navigation: normalizeNavigation(navigationSource),
     siteSettings: normalizeSiteSettings(siteSettingsSource),
     templateSettings: normalizeTemplateSettings(parsed.templateSettings),
+    pageLayouts: [],
     aiSettings: normalizeAiSettings(parsed.aiSettings),
     aiCreditSettings: normalizeAiCreditSettings(parsed.aiCreditSettings),
     aiUsageRecords: Array.isArray(parsed.aiUsageRecords) ? parsed.aiUsageRecords.slice(0, 500) : [],
     updatedAt: parsed.updatedAt ?? new Date().toISOString()
+  };
+
+  return {
+    ...normalizedState,
+    pageLayouts: normalizePageLayouts(parsed.pageLayouts, normalizedState)
   };
 }
 

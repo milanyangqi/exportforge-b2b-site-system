@@ -44,7 +44,8 @@ export async function PUT(request: Request) {
     JSON.stringify(state.navigation ?? []) !== JSON.stringify(existingState.navigation ?? [])
     || JSON.stringify(state.enabledLocales ?? []) !== JSON.stringify(existingState.enabledLocales ?? [])
     || JSON.stringify(state.siteSettings ?? {}) !== JSON.stringify(existingState.siteSettings ?? {})
-    || JSON.stringify(state.templateSettings ?? {}) !== JSON.stringify(existingState.templateSettings ?? {});
+    || JSON.stringify(state.templateSettings ?? {}) !== JSON.stringify(existingState.templateSettings ?? {})
+    || JSON.stringify(state.pageLayouts ?? []) !== JSON.stringify(existingState.pageLayouts ?? []);
 
   if (frontendSettingsChanged && !canSaveFrontendSettings(existingState, currentUser?.role)) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });

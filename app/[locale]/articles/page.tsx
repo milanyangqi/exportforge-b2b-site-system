@@ -1,4 +1,5 @@
 /* eslint-disable @next/next/no-img-element */
+import { PuckPageRenderer } from "@/components/PuckPageRenderer";
 import { t } from "@/lib/i18n";
 import { readAdminState } from "@/lib/server/admin-store";
 import { articleContentComplete, buildBreadcrumbJsonLd, buildPageMetadata, jsonLd, localePath } from "@/lib/seo";
@@ -36,18 +37,20 @@ export default async function ArticlesPage({ params }: { params: Promise<{ local
   const { locale } = await params;
   const state = await readAdminState();
   const publishedArticles = state.articles.filter((article) => article.status === "published");
-
-  return (
+  const structuredData = (
+    <script
+      type="application/ld+json"
+      dangerouslySetInnerHTML={{
+        __html: jsonLd(buildBreadcrumbJsonLd(state, [
+          { name: state.siteSettings.title, path: localePath(locale) },
+          { name: "Articles", path: localePath(locale, "/articles") }
+        ]))
+      }}
+    />
+  );
+  const fallback = (
     <main className="subpage articles-subpage">
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{
-          __html: jsonLd(buildBreadcrumbJsonLd(state, [
-            { name: state.siteSettings.title, path: localePath(locale) },
-            { name: "Articles", path: localePath(locale, "/articles") }
-          ]))
-        }}
-      />
+      {structuredData}
       <section className="section">
         <div className="section-head subpage-head">
           <span className="eyebrow">Technical library</span>
@@ -70,5 +73,16 @@ export default async function ArticlesPage({ params }: { params: Promise<{ local
         </div>
       </section>
     </main>
+  );
+
+  return (
+    <PuckPageRenderer
+      className="subpage articles-subpage puck-public-page"
+      fallback={fallback}
+      layoutKey="articles-index"
+      locale={locale}
+      prefix={structuredData}
+      state={state}
+    />
   );
 }

@@ -1,9 +1,8 @@
 import { Fragment, type CSSProperties } from "react";
-import { ShieldCheck } from "lucide-react";
 import { IndustrialVisual } from "@/components/IndustrialVisual";
 import { HeroPosterCarousel } from "@/components/HeroPosterCarousel";
-import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { ProductGrid } from "@/components/ProductGrid";
+import { HomeNavigationShell } from "@/components/PublicSiteShell";
 import { RfqForm } from "@/components/RfqForm";
 import { locales } from "@/config/locales";
 import { themes } from "@/config/themes";
@@ -32,9 +31,6 @@ export function ActiveTemplate({ locale, state }: { locale: LocaleCode; state: A
   const additionalHomeProducts = state.products.filter((product) => !preferredHomeProductSlugs.has(product.slug));
   const homeProducts = [...preferredHomeProducts, ...additionalHomeProducts].slice(0, templateSettings.homeProductCount);
   const visibleLocales = locales.filter((item) => state.enabledLocales.includes(item.code));
-  const homeNavigation = [...state.navigation]
-    .filter((item) => item.enabled && !item.parentId)
-    .sort((a, b) => a.order - b.order);
   const templateText = (key: string, fallback: string) => {
     const value = templateSettings.textBlocks[key];
     return value ? t(value, locale) : fallback;
@@ -98,25 +94,13 @@ export function ActiveTemplate({ locale, state }: { locale: LocaleCode; state: A
       key: "navigation" as HomeSectionKey,
       order: templateSettings.sectionOrder.navigation,
       node: (
-        <section className="template-home-navigation" aria-label="Home navigation">
-          <div className="template-home-nav-inner">
-            <a className="template-home-brand" href={`/${locale}`}>
-              <span className="template-home-brand-mark" aria-hidden="true"><ShieldCheck size={22} /></span>
-              <span>{state.siteSettings.title || "KeyproTools"}</span>
-            </a>
-            <nav className="template-home-nav-links" aria-label="Primary navigation">
-              {homeNavigation.map((item) => (
-                <a href={item.href} target={item.openInNewTab ? "_blank" : undefined} rel={item.openInNewTab ? "noopener noreferrer" : undefined} key={item.id}>
-                  {t(item.label, locale)}
-                </a>
-              ))}
-            </nav>
-            <div className="template-home-header-actions">
-              <LanguageSwitcher locale={locale} enabledLocales={state.enabledLocales} />
-              <a className="template-home-nav-cta" href="#rfq">{t(templateSettings.primaryCtaLabel, locale) || t(ui.quote, locale)}</a>
-            </div>
-          </div>
-        </section>
+        <HomeNavigationShell
+          brandName={state.siteSettings.title || "KeyproTools"}
+          ctaLabel={t(templateSettings.primaryCtaLabel, locale) || t(ui.quote, locale)}
+          enabledLocales={state.enabledLocales}
+          locale={locale}
+          navigation={state.navigation}
+        />
       )
     },
     {
