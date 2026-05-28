@@ -1,8 +1,10 @@
 .next
+.next.backup-codex-*
 .open-next
 .wrangler
 node_modules
 dist
+output/
 coverage
 .env
 .env.local

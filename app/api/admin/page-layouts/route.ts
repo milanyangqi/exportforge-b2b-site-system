@@ -1,12 +1,13 @@
 import { NextResponse } from "next/server";
 import { getAdminSessionEmail } from "@/lib/server/auth";
 import { readAdminState, sanitizeAdminState, writeAdminState } from "@/lib/server/admin-store";
-import type { AdminState, PageLayoutKey, RoleKey, VisualPageLayoutData } from "@/types/site";
+import type { AdminState, PageLayoutKey, RoleKey, SiteTemplateSettings, Translation, VisualPageLayoutData } from "@/types/site";
 
 type PageLayoutRequest = {
   key?: PageLayoutKey;
   label?: string;
   data?: VisualPageLayoutData;
+  templateSettings?: Partial<Pick<SiteTemplateSettings, "footerCopyright" | "footerCredit" | "footerTagline">>;
 };
 
 const frontendManagerRoles = new Set<RoleKey>(["super-admin", "admin"]);
@@ -33,6 +34,19 @@ function isPuckData(value: unknown): value is VisualPageLayoutData {
   if (!value || typeof value !== "object") return false;
   const data = value as VisualPageLayoutData;
   return Array.isArray(data.content);
+}
+
+function normalizeFooterTranslation(value: unknown, fallback: Translation): Translation {
+  if (!value || typeof value !== "object") return fallback;
+  const record = value as Partial<Translation>;
+  const en = typeof record.en === "string" && record.en.trim() ? record.en.trim() : fallback.en;
+  const zh = typeof record.zh === "string" && record.zh.trim() ? record.zh.trim() : fallback.zh;
+
+  return {
+    ...fallback,
+    en,
+    zh
+  };
 }
 
 export async function POST(request: Request) {
@@ -69,8 +83,19 @@ export async function POST(request: Request) {
     }
   ].sort((a, b) => a.label.localeCompare(b.label, "zh-Hans-CN"));
 
+  const footerSettings = body.templateSettings;
+  const templateSettings = footerSettings
+    ? {
+      ...state.templateSettings,
+      footerTagline: normalizeFooterTranslation(footerSettings.footerTagline, state.templateSettings.footerTagline),
+      footerCopyright: normalizeFooterTranslation(footerSettings.footerCopyright, state.templateSettings.footerCopyright),
+      footerCredit: normalizeFooterTranslation(footerSettings.footerCredit, state.templateSettings.footerCredit)
+    }
+    : state.templateSettings;
+
   const savedState = await writeAdminState({
     ...state,
+    templateSettings,
     pageLayouts
   });
 

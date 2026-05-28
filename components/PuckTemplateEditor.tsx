@@ -197,6 +197,32 @@ const imagePlacementChoices = [
   { label: "右侧", value: "right" }
 ];
 
+const imageDisplayModeChoices = [
+  { label: "单图", value: "single" },
+  { label: "淡入轮播", value: "carousel" }
+];
+
+const imageTransitionEffectChoices = [
+  { label: "淡入", value: "fade" },
+  { label: "缩放淡入", value: "zoom" }
+];
+
+const imageOverlayChoices = [
+  { label: "无", value: "none" },
+  { label: "渐变遮罩", value: "gradient" },
+  { label: "深色遮罩", value: "dark" }
+];
+
+const imageHoverEffectChoices = [
+  { label: "无", value: "none" },
+  { label: "悬停放大", value: "zoom" }
+];
+
+const imageCaptionPlacementChoices = [
+  { label: "图片下方", value: "below" },
+  { label: "图片内底部", value: "inside" }
+];
+
 const buttonStyleChoices = [
   { label: "主按钮", value: "primary" },
   { label: "次按钮", value: "secondary" },
@@ -383,10 +409,10 @@ function createContainerSlotItem(index: number, elementType: ContainerElementTyp
   };
 
   if (elementType === "image") {
-    return { type: "ContainerImageElement", props: { ...visualProps, id, imageUrl: commonProps.source || commonProps.imageUrl, alt: commonProps.title, caption: commonProps.body, href: commonProps.href, openInNewTab: commonProps.openInNewTab, imageRatio: "wide", imageFit: "cover" } };
+    return { type: "ContainerImageElement", props: { ...visualProps, id, imageUrl: commonProps.source || commonProps.imageUrl, alt: commonProps.title, caption: commonProps.body, href: commonProps.href, openInNewTab: commonProps.openInNewTab, displayMode: "single", imageItems: [], transitionEffect: "fade", intervalSeconds: 5, overlay: "none", hoverEffect: "none", captionPlacement: "below", imageRatio: "wide", imageFit: "cover" } };
   }
   if (elementType === "imageText") {
-    return { type: "ContainerImageTextElement", props: { ...commonProps, imageUrl: commonProps.source || commonProps.imageUrl, title: commonProps.title || `内容 ${index + 1}`, imageRatio: "wide", imageFit: "cover", imagePlacement: "top", buttonStyle: "text" } };
+    return { type: "ContainerImageTextElement", props: { ...commonProps, imageUrl: commonProps.source || commonProps.imageUrl, title: commonProps.title || `内容 ${index + 1}`, displayMode: "single", imageItems: [], transitionEffect: "fade", intervalSeconds: 5, overlay: "none", hoverEffect: "none", captionPlacement: "below", imageRatio: "wide", imageFit: "cover", imagePlacement: "top", buttonStyle: "text" } };
   }
   if (elementType === "video") {
     return { type: "ContainerVideoElement", props: { ...commonProps, videoUrl: commonProps.videoSource || commonProps.videoUrl, title: commonProps.title || `视频 ${index + 1}`, videoRatio: "wide", autoplay: false, muted: true, loop: false } };
@@ -959,8 +985,15 @@ function containerTextFields() {
 
 function containerImageFields(imageItems: MediaPickerItem[]) {
   return {
+    displayMode: radioField("显示方式", imageDisplayModeChoices),
     imageUrl: mediaPickerField("图片：从媒体库选择", imageItems, "image"),
     externalImageUrl: field("text", "外部图片 URL"),
+    imageItems: imageListField("轮播图片", imageItems),
+    transitionEffect: radioField("轮播效果", imageTransitionEffectChoices),
+    intervalSeconds: field("number", "轮播间隔秒数", { min: 3, max: 12 }),
+    overlay: radioField("图片遮罩", imageOverlayChoices),
+    hoverEffect: radioField("悬停效果", imageHoverEffectChoices),
+    captionPlacement: radioField("说明位置", imageCaptionPlacementChoices),
     alt: editableTextField("text", "替代文字 Alt"),
     caption: editableTextField("text", "图片说明"),
     href: field("text", "图片链接"),
@@ -973,8 +1006,15 @@ function containerImageFields(imageItems: MediaPickerItem[]) {
 
 function containerImageTextFields(imageItems: MediaPickerItem[]) {
   return {
+    displayMode: radioField("显示方式", imageDisplayModeChoices),
     imageUrl: mediaPickerField("图片：从媒体库选择", imageItems, "image"),
     externalImageUrl: field("text", "外部图片 URL"),
+    imageItems: imageListField("轮播图片", imageItems),
+    transitionEffect: radioField("轮播效果", imageTransitionEffectChoices),
+    intervalSeconds: field("number", "轮播间隔秒数", { min: 3, max: 12 }),
+    overlay: radioField("图片遮罩", imageOverlayChoices),
+    hoverEffect: radioField("悬停效果", imageHoverEffectChoices),
+    captionPlacement: radioField("文字位置", imageCaptionPlacementChoices),
     imagePlacement: radioField("图片位置", imagePlacementChoices),
     imageRatio: radioField("图片比例", mediaAspectChoices),
     imageFit: radioField("图片显示", mediaFitChoices),
@@ -2231,13 +2271,13 @@ function createConfig(state: AdminState, locale: LocaleCode, layoutKey: PageLayo
       ContainerImageElement: {
         label: "容器图片",
         fields: containerImageFields(imageMediaItems),
-        defaultProps: { imageUrl: "/assets/current-template/hero-tooling-range.jpg", externalImageUrl: "", alt: "Container image", caption: "", href: "", openInNewTab: false, imageRatio: "wide", imageFit: "cover", align: "left", verticalAlign: "start", padding: "normal", minHeight: "auto", background: "transparent", customBackground: "", textColor: "", accentColor: "", borderStyle: "line", radius: "medium", shadow: "none", isHidden: false, adminLabel: "" },
+        defaultProps: { imageUrl: "/assets/current-template/hero-tooling-range.jpg", externalImageUrl: "", imageItems: [], displayMode: "single", transitionEffect: "fade", intervalSeconds: 5, overlay: "none", hoverEffect: "none", captionPlacement: "below", alt: "Container image", caption: "", href: "", openInNewTab: false, imageRatio: "wide", imageFit: "cover", align: "left", verticalAlign: "start", padding: "normal", minHeight: "auto", background: "transparent", customBackground: "", textColor: "", accentColor: "", borderStyle: "line", radius: "medium", shadow: "none", isHidden: false, adminLabel: "" },
         render: render("ContainerImageElement")
       },
       ContainerImageTextElement: {
         label: "容器图文",
         fields: containerImageTextFields(imageMediaItems),
-        defaultProps: { imageUrl: "/assets/current-template/hero-tooling-range.jpg", externalImageUrl: "", imagePlacement: "top", imageRatio: "wide", imageFit: "cover", eyebrow: "", title: "图文内容", body: "选择这个元素后，可在右侧修改图片、标题、正文和链接。", textSize: "normal", href: "", openInNewTab: false, buttonLabel: "", buttonStyle: "text", align: "left", verticalAlign: "start", padding: "normal", minHeight: "auto", background: "transparent", customBackground: "", textColor: "", accentColor: "", borderStyle: "line", radius: "medium", shadow: "none", isHidden: false, adminLabel: "" },
+        defaultProps: { imageUrl: "/assets/current-template/hero-tooling-range.jpg", externalImageUrl: "", imageItems: [], displayMode: "single", transitionEffect: "fade", intervalSeconds: 5, overlay: "none", hoverEffect: "none", captionPlacement: "below", imagePlacement: "top", imageRatio: "wide", imageFit: "cover", eyebrow: "", title: "图文内容", body: "选择这个元素后，可在右侧修改图片、标题、正文和链接。", textSize: "normal", href: "", openInNewTab: false, buttonLabel: "", buttonStyle: "text", align: "left", verticalAlign: "start", padding: "normal", minHeight: "auto", background: "transparent", customBackground: "", textColor: "", accentColor: "", borderStyle: "line", radius: "medium", shadow: "none", isHidden: false, adminLabel: "" },
         render: render("ContainerImageTextElement")
       },
       ContainerVideoElement: {

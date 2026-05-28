@@ -550,6 +550,100 @@ function containerLinkProps(href: string, locale: LocaleCode, openInNewTab: bool
   };
 }
 
+function containerImageItems(props: Record<string, unknown>, primaryUrl: string) {
+  return collectImages(props, primaryUrl ? [primaryUrl] : []);
+}
+
+function renderContainerImageCaption({
+  body,
+  buttonLabel,
+  buttonStyle,
+  eyebrow,
+  title,
+  variant
+}: {
+  body?: ReactNode;
+  buttonLabel?: ReactNode;
+  buttonStyle?: string;
+  eyebrow?: ReactNode;
+  title?: ReactNode;
+  variant: "simple" | "rich";
+}) {
+  if (!eyebrow && !title && !body && !buttonLabel) return null;
+
+  if (variant === "simple") {
+    return body ? <figcaption>{body}</figcaption> : null;
+  }
+
+  return (
+    <div className="container-card-copy">
+      {eyebrow ? <span>{eyebrow}</span> : null}
+      {title ? <h3>{title}</h3> : null}
+      {body ? <p>{body}</p> : null}
+      {buttonLabel ? <strong className={`container-card-link is-${buttonStyle || "text"}`}>{buttonLabel}</strong> : null}
+    </div>
+  );
+}
+
+function renderContainerImageStage({
+  altFallback,
+  body,
+  buttonLabel,
+  eyebrow,
+  images,
+  props,
+  title,
+  variant
+}: {
+  altFallback: string;
+  body?: ReactNode;
+  buttonLabel?: ReactNode;
+  eyebrow?: ReactNode;
+  images: VisualImageItem[];
+  props: Record<string, unknown>;
+  title?: ReactNode;
+  variant: "simple" | "rich";
+}) {
+  if (images.length === 0) return <em>选择图片</em>;
+
+  const displayMode = propString(props, "displayMode", "single");
+  const isCarousel = displayMode === "carousel" && images.length > 1;
+  const safeInterval = Math.max(3, Math.min(12, propNumber(props, "intervalSeconds", 5)));
+  const captionPlacement = propString(props, "captionPlacement", "below");
+  const showInsideCaption = captionPlacement === "inside";
+  const sharedCaption = renderContainerImageCaption({ body, buttonLabel, buttonStyle: propString(props, "buttonStyle", "text"), eyebrow, title, variant });
+  const stageClass = [
+    "container-image-stage",
+    isCarousel ? "mode-carousel" : "mode-single",
+    `effect-${propString(props, "transitionEffect", "fade")}`,
+    `overlay-${propString(props, "overlay", "none")}`,
+    `hover-${propString(props, "hoverEffect", "none")}`,
+    `caption-${captionPlacement}`,
+    `aspect-${propString(props, "imageRatio", "wide")}`,
+    `fit-${propString(props, "imageFit", "cover")}`
+  ].join(" ");
+
+  return (
+    <div
+      className={stageClass}
+      style={{
+        "--container-carousel-duration": `${images.length * safeInterval}s`
+      } as CSSProperties}
+    >
+      {images.map((image, index) => (
+        <figure
+          className="container-image-slide"
+          key={`${image.url}-${index}`}
+          style={{ "--container-slide-delay": `${index * safeInterval}s` } as CSSProperties}
+        >
+          <img className="container-media" src={image.url} alt={image.alt || altFallback} loading={index === 0 ? "eager" : "lazy"} />
+          {showInsideCaption ? sharedCaption || (image.caption ? <figcaption>{image.caption}</figcaption> : null) : null}
+        </figure>
+      ))}
+    </div>
+  );
+}
+
 function buttonStyleClass(props: Record<string, unknown>) {
   const style = propString(props, "buttonStyle", "primary");
   const size = propString(props, "buttonSize", "normal");
@@ -579,12 +673,15 @@ function ContainerImageElement({ editable = false, props, locale }: { editable?:
   const alt = nodeToString(propNode(props, "alt"), "Container image");
   const caption = propNode(props, "caption");
   const href = propString(props, "href");
-  const imageClass = `container-media aspect-${propString(props, "imageRatio", "wide")} fit-${propString(props, "imageFit", "cover")}`;
+  const images = containerImageItems(props, imageUrl);
+  const captionBelow = propString(props, "captionPlacement", "below") !== "inside"
+    ? renderContainerImageCaption({ body: caption, variant: "simple" })
+    : null;
   const content = (
-    <figure className={containerElementClass(editable, props, "puck-container-slot-element type-image")} style={containerElementStyle(props)} title={editable ? "点击选择图片元素" : undefined}>
-      {imageUrl ? <img className={imageClass} src={imageUrl} alt={alt} loading="lazy" /> : <em>选择图片</em>}
-      {caption ? <figcaption>{caption}</figcaption> : null}
-    </figure>
+    <article className={containerElementClass(editable, props, "puck-container-slot-element type-image")} style={containerElementStyle(props)} title={editable ? "点击选择图片元素" : undefined}>
+      {renderContainerImageStage({ altFallback: alt, body: caption, images, props, variant: "simple" })}
+      {captionBelow}
+    </article>
   );
 
   return href ? <a {...containerLinkProps(href, locale, propBoolean(props, "openInNewTab"))}>{content}</a> : content;
@@ -598,17 +695,29 @@ function ContainerImageTextElement({ editable = false, props, locale }: { editab
   const body = propNode(props, "body");
   const buttonLabel = propNode(props, "buttonLabel");
   const href = propString(props, "href");
-  const imageClass = `container-media aspect-${propString(props, "imageRatio", "wide")} fit-${propString(props, "imageFit", "cover")}`;
-  const imageNode = imageUrl ? <img className={imageClass} src={imageUrl} alt={nodeToString(title, "Container image")} loading="lazy" /> : null;
+  const images = containerImageItems(props, imageUrl);
+  const textNode = renderContainerImageCaption({
+    body,
+    buttonLabel,
+    buttonStyle: propString(props, "buttonStyle", "text"),
+    eyebrow,
+    title,
+    variant: "rich"
+  });
+  const imageNode = renderContainerImageStage({
+    altFallback: nodeToString(title, "Container image"),
+    body,
+    buttonLabel,
+    eyebrow,
+    images,
+    props,
+    title,
+    variant: "rich"
+  });
   const content = (
     <article className={containerElementClass(editable, props, `puck-container-slot-element type-image-text image-${propString(props, "imagePlacement", "top")}`)} style={containerElementStyle(props)} title={editable ? "点击选择，双击文字可直接编辑" : undefined}>
       {imageNode}
-      <div className="container-card-copy">
-        {eyebrow ? <span>{eyebrow}</span> : null}
-        {title ? <h3>{title}</h3> : null}
-        {body ? <p>{body}</p> : null}
-        {buttonLabel ? <strong className={`container-card-link is-${propString(props, "buttonStyle", "text")}`}>{buttonLabel}</strong> : null}
-      </div>
+      {propString(props, "captionPlacement", "below") === "inside" ? null : textNode}
     </article>
   );
 

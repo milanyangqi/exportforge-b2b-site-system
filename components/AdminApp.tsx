@@ -61,7 +61,7 @@ import {
 import { locales } from "@/config/locales";
 import { themes } from "@/config/themes";
 import { AdminMarkdownEditor, type AdminMarkdownEditorHandle } from "@/components/AdminMarkdownEditor";
-import type { AdminRolePermissions, AdminState, AdminUser, Article, ContactChannel, ContactChannelType, HomeSectionKey, LeadStatus, LocaleCode, ProductCategory, RoleKey, SiteHeroSlide, SiteNavigationItem, SitePage, SiteTemplateCustomBlock, SiteTemplateCustomBlockType, SiteTemplateImageItem, SiteTemplateImageLayout, SiteTemplateSettings, ThemeKey, Translation, UploadedFile } from "@/types/site";
+import type { AdminRolePermissions, AdminState, AdminUser, Article, ContactChannel, ContactChannelType, HomeSectionKey, LeadStatus, LocaleCode, ProductCategory, RoleKey, SiteHeroSlide, SiteNavigationItem, SitePage, SiteTemplateCustomBlock, SiteTemplateCustomBlockType, SiteTemplateImageItem, SiteTemplateImageLayout, SiteTemplateSettings, ThemeKey, Translation, UploadedFile, WorldClockCity } from "@/types/site";
 
 type Tab = "overview" | "products" | "pages" | "articles" | "files" | "leads" | "mail" | "contacts" | "navigation" | "users" | "collect" | "templates" | "settings" | "languages" | "themes" | "account" | "ai";
 type ArticleEditorView = "visual" | "code";
@@ -78,9 +78,21 @@ type AiWizardStep = 1 | 2 | 3 | 4 | 5;
 type TranslationScope = "all" | "article" | "page" | "products" | "templates" | "navigation";
 type TranslationSourceChoice = "auto" | LocaleCode;
 type TranslationTargetChoice = "all" | LocaleCode;
+type ProductInlineEditField = "name" | "summary" | "slug" | "parentId";
+type ProductInlineEditState = {
+  field: ProductInlineEditField;
+  productId: string;
+  value: string;
+};
 type BackupSectionKey = keyof Pick<AdminState, "products" | "pages" | "articles" | "leads" | "contactChannels" | "uploadedFiles" | "users" | "rolePermissions" | "navigation" | "siteSettings" | "templateSettings" | "pageLayouts" | "aiSettings" | "aiCreditSettings" | "aiUsageRecords" | "activeTheme" | "enabledLocales">;
 type TemplateEditorMode = "form" | "visual";
 type VideoDialogTarget = "article" | "page";
+type MailActionResponse = {
+  ok?: boolean;
+  message?: string;
+  error?: string;
+  state?: AdminState;
+};
 type VisualBuilderDevice = "desktop" | "tablet" | "mobile";
 type VisualBuilderSidebarTab = "components" | "properties";
 type VisualBuilderModuleKind = "section" | "custom";
@@ -224,66 +236,253 @@ const defaultAllowedTabsByRole: Record<RoleKey, Tab[]> = {
 };
 
 const worldClockCities = [
-  { city: "北京", country: "中国", zone: "Asia/Shanghai" },
-  { city: "东京", country: "日本", zone: "Asia/Tokyo" },
-  { city: "首尔", country: "韩国", zone: "Asia/Seoul" },
-  { city: "新加坡", country: "新加坡", zone: "Asia/Singapore" },
-  { city: "马尼拉", country: "菲律宾", zone: "Asia/Manila" },
-  { city: "吉隆坡", country: "马来西亚", zone: "Asia/Kuala_Lumpur" },
-  { city: "雅加达", country: "印度尼西亚", zone: "Asia/Jakarta" },
-  { city: "曼谷", country: "泰国", zone: "Asia/Bangkok" },
-  { city: "胡志明市", country: "越南", zone: "Asia/Ho_Chi_Minh" },
-  { city: "河内", country: "越南", zone: "Asia/Ho_Chi_Minh" },
-  { city: "金边", country: "柬埔寨", zone: "Asia/Phnom_Penh" },
-  { city: "万象", country: "老挝", zone: "Asia/Vientiane" },
-  { city: "仰光", country: "缅甸", zone: "Asia/Yangon" },
-  { city: "孟买", country: "印度", zone: "Asia/Kolkata" },
-  { city: "新德里", country: "印度", zone: "Asia/Kolkata" },
-  { city: "达卡", country: "孟加拉国", zone: "Asia/Dhaka" },
-  { city: "卡拉奇", country: "巴基斯坦", zone: "Asia/Karachi" },
-  { city: "科伦坡", country: "斯里兰卡", zone: "Asia/Colombo" },
-  { city: "迪拜", country: "阿联酋", zone: "Asia/Dubai" },
-  { city: "阿布扎比", country: "阿联酋", zone: "Asia/Dubai" },
-  { city: "利雅得", country: "沙特阿拉伯", zone: "Asia/Riyadh" },
-  { city: "吉达", country: "沙特阿拉伯", zone: "Asia/Riyadh" },
-  { city: "多哈", country: "卡塔尔", zone: "Asia/Qatar" },
-  { city: "科威特城", country: "科威特", zone: "Asia/Kuwait" },
-  { city: "马斯喀特", country: "阿曼", zone: "Asia/Muscat" },
-  { city: "开罗", country: "埃及", zone: "Africa/Cairo" },
-  { city: "约翰内斯堡", country: "南非", zone: "Africa/Johannesburg" },
-  { city: "开普敦", country: "南非", zone: "Africa/Johannesburg" },
-  { city: "拉各斯", country: "尼日利亚", zone: "Africa/Lagos" },
-  { city: "内罗毕", country: "肯尼亚", zone: "Africa/Nairobi" },
-  { city: "卡萨布兰卡", country: "摩洛哥", zone: "Africa/Casablanca" },
-  { city: "伊斯坦布尔", country: "土耳其", zone: "Europe/Istanbul" },
-  { city: "伦敦", country: "英国", zone: "Europe/London" },
-  { city: "巴黎", country: "法国", zone: "Europe/Paris" },
-  { city: "鹿特丹", country: "荷兰", zone: "Europe/Amsterdam" },
-  { city: "汉堡", country: "德国", zone: "Europe/Berlin" },
-  { city: "法兰克福", country: "德国", zone: "Europe/Berlin" },
-  { city: "米兰", country: "意大利", zone: "Europe/Rome" },
-  { city: "马德里", country: "西班牙", zone: "Europe/Madrid" },
-  { city: "华沙", country: "波兰", zone: "Europe/Warsaw" },
-  { city: "莫斯科", country: "俄罗斯", zone: "Europe/Moscow" },
-  { city: "纽约", country: "美国", zone: "America/New_York" },
-  { city: "多伦多", country: "加拿大", zone: "America/Toronto" },
-  { city: "芝加哥", country: "美国", zone: "America/Chicago" },
-  { city: "休斯敦", country: "美国", zone: "America/Chicago" },
-  { city: "洛杉矶", country: "美国", zone: "America/Los_Angeles" },
-  { city: "温哥华", country: "加拿大", zone: "America/Vancouver" },
-  { city: "迈阿密", country: "美国", zone: "America/New_York" },
-  { city: "墨西哥城", country: "墨西哥", zone: "America/Mexico_City" },
-  { city: "波哥大", country: "哥伦比亚", zone: "America/Bogota" },
-  { city: "利马", country: "秘鲁", zone: "America/Lima" },
-  { city: "圣地亚哥", country: "智利", zone: "America/Santiago" },
-  { city: "布宜诺斯艾利斯", country: "阿根廷", zone: "America/Argentina/Buenos_Aires" },
-  { city: "圣保罗", country: "巴西", zone: "America/Sao_Paulo" },
-  { city: "里约热内卢", country: "巴西", zone: "America/Sao_Paulo" },
-  { city: "悉尼", country: "澳大利亚", zone: "Australia/Sydney" },
-  { city: "墨尔本", country: "澳大利亚", zone: "Australia/Melbourne" },
-  { city: "珀斯", country: "澳大利亚", zone: "Australia/Perth" },
-  { city: "奥克兰", country: "新西兰", zone: "Pacific/Auckland" }
-];
+  { id: "asia-shanghai", city: "北京", country: "中国", zone: "Asia/Shanghai" },
+  { id: "asia-tokyo", city: "东京", country: "日本", zone: "Asia/Tokyo" },
+  { id: "asia-seoul", city: "首尔", country: "韩国", zone: "Asia/Seoul" },
+  { id: "asia-singapore", city: "新加坡", country: "新加坡", zone: "Asia/Singapore" },
+  { id: "asia-manila", city: "马尼拉", country: "菲律宾", zone: "Asia/Manila" },
+  { id: "asia-kuala-lumpur", city: "吉隆坡", country: "马来西亚", zone: "Asia/Kuala_Lumpur" },
+  { id: "asia-jakarta", city: "雅加达", country: "印度尼西亚", zone: "Asia/Jakarta" },
+  { id: "asia-bangkok", city: "曼谷", country: "泰国", zone: "Asia/Bangkok" },
+  { id: "asia-ho-chi-minh", city: "胡志明市", country: "越南", zone: "Asia/Ho_Chi_Minh" },
+  { id: "asia-hanoi", city: "河内", country: "越南", zone: "Asia/Ho_Chi_Minh" },
+  { id: "asia-phnom-penh", city: "金边", country: "柬埔寨", zone: "Asia/Phnom_Penh" },
+  { id: "asia-vientiane", city: "万象", country: "老挝", zone: "Asia/Vientiane" },
+  { id: "asia-yangon", city: "仰光", country: "缅甸", zone: "Asia/Yangon" },
+  { id: "asia-mumbai", city: "孟买", country: "印度", zone: "Asia/Kolkata" },
+  { id: "asia-new-delhi", city: "新德里", country: "印度", zone: "Asia/Kolkata" },
+  { id: "asia-dhaka", city: "达卡", country: "孟加拉国", zone: "Asia/Dhaka" },
+  { id: "asia-karachi", city: "卡拉奇", country: "巴基斯坦", zone: "Asia/Karachi" },
+  { id: "asia-colombo", city: "科伦坡", country: "斯里兰卡", zone: "Asia/Colombo" },
+  { id: "asia-dubai", city: "迪拜", country: "阿联酋", zone: "Asia/Dubai" },
+  { id: "asia-abu-dhabi", city: "阿布扎比", country: "阿联酋", zone: "Asia/Dubai" },
+  { id: "asia-riyadh", city: "利雅得", country: "沙特阿拉伯", zone: "Asia/Riyadh" },
+  { id: "asia-jeddah", city: "吉达", country: "沙特阿拉伯", zone: "Asia/Riyadh" },
+  { id: "asia-doha", city: "多哈", country: "卡塔尔", zone: "Asia/Qatar" },
+  { id: "asia-kuwait", city: "科威特城", country: "科威特", zone: "Asia/Kuwait" },
+  { id: "asia-muscat", city: "马斯喀特", country: "阿曼", zone: "Asia/Muscat" },
+  { id: "africa-cairo", city: "开罗", country: "埃及", zone: "Africa/Cairo" },
+  { id: "africa-johannesburg", city: "约翰内斯堡", country: "南非", zone: "Africa/Johannesburg" },
+  { id: "africa-cape-town", city: "开普敦", country: "南非", zone: "Africa/Johannesburg" },
+  { id: "africa-lagos", city: "拉各斯", country: "尼日利亚", zone: "Africa/Lagos" },
+  { id: "africa-nairobi", city: "内罗毕", country: "肯尼亚", zone: "Africa/Nairobi" },
+  { id: "africa-casablanca", city: "卡萨布兰卡", country: "摩洛哥", zone: "Africa/Casablanca" },
+  { id: "europe-istanbul", city: "伊斯坦布尔", country: "土耳其", zone: "Europe/Istanbul" },
+  { id: "europe-london", city: "伦敦", country: "英国", zone: "Europe/London" },
+  { id: "europe-paris", city: "巴黎", country: "法国", zone: "Europe/Paris" },
+  { id: "europe-rotterdam", city: "鹿特丹", country: "荷兰", zone: "Europe/Amsterdam" },
+  { id: "europe-hamburg", city: "汉堡", country: "德国", zone: "Europe/Berlin" },
+  { id: "europe-frankfurt", city: "法兰克福", country: "德国", zone: "Europe/Berlin" },
+  { id: "europe-milan", city: "米兰", country: "意大利", zone: "Europe/Rome" },
+  { id: "europe-madrid", city: "马德里", country: "西班牙", zone: "Europe/Madrid" },
+  { id: "europe-warsaw", city: "华沙", country: "波兰", zone: "Europe/Warsaw" },
+  { id: "europe-moscow", city: "莫斯科", country: "俄罗斯", zone: "Europe/Moscow" },
+  { id: "america-new-york", city: "纽约", country: "美国", zone: "America/New_York" },
+  { id: "america-toronto", city: "多伦多", country: "加拿大", zone: "America/Toronto" },
+  { id: "america-chicago", city: "芝加哥", country: "美国", zone: "America/Chicago" },
+  { id: "america-houston", city: "休斯敦", country: "美国", zone: "America/Chicago" },
+  { id: "america-los-angeles", city: "洛杉矶", country: "美国", zone: "America/Los_Angeles" },
+  { id: "america-vancouver", city: "温哥华", country: "加拿大", zone: "America/Vancouver" },
+  { id: "america-miami", city: "迈阿密", country: "美国", zone: "America/New_York" },
+  { id: "america-mexico-city", city: "墨西哥城", country: "墨西哥", zone: "America/Mexico_City" },
+  { id: "america-bogota", city: "波哥大", country: "哥伦比亚", zone: "America/Bogota" },
+  { id: "america-lima", city: "利马", country: "秘鲁", zone: "America/Lima" },
+  { id: "america-santiago", city: "圣地亚哥", country: "智利", zone: "America/Santiago" },
+  { id: "america-buenos-aires", city: "布宜诺斯艾利斯", country: "阿根廷", zone: "America/Argentina/Buenos_Aires" },
+  { id: "america-sao-paulo", city: "圣保罗", country: "巴西", zone: "America/Sao_Paulo" },
+  { id: "america-rio", city: "里约热内卢", country: "巴西", zone: "America/Sao_Paulo" },
+  { id: "australia-sydney", city: "悉尼", country: "澳大利亚", zone: "Australia/Sydney" },
+  { id: "australia-melbourne", city: "墨尔本", country: "澳大利亚", zone: "Australia/Melbourne" },
+  { id: "australia-perth", city: "珀斯", country: "澳大利亚", zone: "Australia/Perth" },
+  { id: "pacific-auckland", city: "奥克兰", country: "新西兰", zone: "Pacific/Auckland" },
+  { id: "australia-brisbane", city: "布里斯班", country: "澳大利亚", zone: "Australia/Brisbane" },
+  { id: "pacific-wellington", city: "惠灵顿", country: "新西兰", zone: "Pacific/Auckland" },
+  { id: "pacific-honolulu", city: "檀香山", country: "美国", zone: "Pacific/Honolulu" },
+  { id: "america-anchorage", city: "安克雷奇", country: "美国", zone: "America/Anchorage" }
+] satisfies WorldClockCity[];
+
+const worldClockCityCatalog = [
+  ...worldClockCities,
+  { id: "asia-shenzhen", city: "深圳", country: "中国", zone: "Asia/Shanghai" },
+  { id: "asia-shanghai-city", city: "上海", country: "中国", zone: "Asia/Shanghai" },
+  { id: "asia-guangzhou", city: "广州", country: "中国", zone: "Asia/Shanghai" },
+  { id: "asia-hangzhou", city: "杭州", country: "中国", zone: "Asia/Shanghai" },
+  { id: "asia-ningbo", city: "宁波", country: "中国", zone: "Asia/Shanghai" },
+  { id: "asia-yiwu", city: "义乌", country: "中国", zone: "Asia/Shanghai" },
+  { id: "asia-qingdao", city: "青岛", country: "中国", zone: "Asia/Shanghai" },
+  { id: "asia-xiamen", city: "厦门", country: "中国", zone: "Asia/Shanghai" },
+  { id: "asia-suzhou", city: "苏州", country: "中国", zone: "Asia/Shanghai" },
+  { id: "asia-tianjin", city: "天津", country: "中国", zone: "Asia/Shanghai" },
+  { id: "asia-chengdu", city: "成都", country: "中国", zone: "Asia/Shanghai" },
+  { id: "asia-chongqing", city: "重庆", country: "中国", zone: "Asia/Shanghai" },
+  { id: "asia-wuhan", city: "武汉", country: "中国", zone: "Asia/Shanghai" },
+  { id: "asia-nanjing", city: "南京", country: "中国", zone: "Asia/Shanghai" },
+  { id: "asia-zhengzhou", city: "郑州", country: "中国", zone: "Asia/Shanghai" },
+  { id: "asia-xian", city: "西安", country: "中国", zone: "Asia/Shanghai" },
+  { id: "asia-foshan", city: "佛山", country: "中国", zone: "Asia/Shanghai" },
+  { id: "asia-dongguan", city: "东莞", country: "中国", zone: "Asia/Shanghai" },
+  { id: "asia-taipei", city: "台北", country: "中国台湾", zone: "Asia/Taipei" },
+  { id: "asia-kaohsiung", city: "高雄", country: "中国台湾", zone: "Asia/Taipei" },
+  { id: "asia-hong-kong", city: "香港", country: "中国香港", zone: "Asia/Hong_Kong" },
+  { id: "asia-macau", city: "澳门", country: "中国澳门", zone: "Asia/Macau" },
+  { id: "asia-osaka", city: "大阪", country: "日本", zone: "Asia/Tokyo" },
+  { id: "asia-nagoya", city: "名古屋", country: "日本", zone: "Asia/Tokyo" },
+  { id: "asia-busan", city: "釜山", country: "韩国", zone: "Asia/Seoul" },
+  { id: "asia-incheon", city: "仁川", country: "韩国", zone: "Asia/Seoul" },
+  { id: "asia-taichung", city: "台中", country: "中国台湾", zone: "Asia/Taipei" },
+  { id: "asia-bengaluru", city: "班加罗尔", country: "印度", zone: "Asia/Kolkata" },
+  { id: "asia-chennai", city: "金奈", country: "印度", zone: "Asia/Kolkata" },
+  { id: "asia-hyderabad", city: "海得拉巴", country: "印度", zone: "Asia/Kolkata" },
+  { id: "asia-ahmedabad", city: "艾哈迈达巴德", country: "印度", zone: "Asia/Kolkata" },
+  { id: "asia-pune", city: "浦那", country: "印度", zone: "Asia/Kolkata" },
+  { id: "asia-lahore", city: "拉合尔", country: "巴基斯坦", zone: "Asia/Karachi" },
+  { id: "asia-islamabad", city: "伊斯兰堡", country: "巴基斯坦", zone: "Asia/Karachi" },
+  { id: "asia-chittagong", city: "吉大港", country: "孟加拉国", zone: "Asia/Dhaka" },
+  { id: "asia-kathmandu", city: "加德满都", country: "尼泊尔", zone: "Asia/Kathmandu" },
+  { id: "asia-ulaanbaatar", city: "乌兰巴托", country: "蒙古", zone: "Asia/Ulaanbaatar" },
+  { id: "asia-tashkent", city: "塔什干", country: "乌兹别克斯坦", zone: "Asia/Tashkent" },
+  { id: "asia-almaty", city: "阿拉木图", country: "哈萨克斯坦", zone: "Asia/Almaty" },
+  { id: "asia-astana", city: "阿斯塔纳", country: "哈萨克斯坦", zone: "Asia/Almaty" },
+  { id: "asia-bishkek", city: "比什凯克", country: "吉尔吉斯斯坦", zone: "Asia/Bishkek" },
+  { id: "asia-dushanbe", city: "杜尚别", country: "塔吉克斯坦", zone: "Asia/Dushanbe" },
+  { id: "asia-ashgabat", city: "阿什哈巴德", country: "土库曼斯坦", zone: "Asia/Ashgabat" },
+  { id: "asia-hong-kong-export", city: "九龙", country: "中国香港", zone: "Asia/Hong_Kong" },
+  { id: "asia-surabaya", city: "泗水", country: "印度尼西亚", zone: "Asia/Jakarta" },
+  { id: "asia-bandung", city: "万隆", country: "印度尼西亚", zone: "Asia/Jakarta" },
+  { id: "asia-medan", city: "棉兰", country: "印度尼西亚", zone: "Asia/Jakarta" },
+  { id: "asia-bali", city: "登巴萨", country: "印度尼西亚", zone: "Asia/Makassar" },
+  { id: "asia-cebu", city: "宿务", country: "菲律宾", zone: "Asia/Manila" },
+  { id: "asia-davao", city: "达沃", country: "菲律宾", zone: "Asia/Manila" },
+  { id: "asia-chiang-mai", city: "清迈", country: "泰国", zone: "Asia/Bangkok" },
+  { id: "asia-da-nang", city: "岘港", country: "越南", zone: "Asia/Ho_Chi_Minh" },
+  { id: "asia-hai-phong", city: "海防", country: "越南", zone: "Asia/Ho_Chi_Minh" },
+  { id: "asia-penang", city: "槟城", country: "马来西亚", zone: "Asia/Kuala_Lumpur" },
+  { id: "asia-johor-bahru", city: "新山", country: "马来西亚", zone: "Asia/Kuala_Lumpur" },
+  { id: "asia-kuantan", city: "关丹", country: "马来西亚", zone: "Asia/Kuala_Lumpur" },
+  { id: "asia-brunei", city: "斯里巴加湾", country: "文莱", zone: "Asia/Brunei" },
+  { id: "asia-dili", city: "帝力", country: "东帝汶", zone: "Asia/Dili" },
+  { id: "asia-tehran", city: "德黑兰", country: "伊朗", zone: "Asia/Tehran" },
+  { id: "asia-baghdad", city: "巴格达", country: "伊拉克", zone: "Asia/Baghdad" },
+  { id: "asia-amman", city: "安曼", country: "约旦", zone: "Asia/Amman" },
+  { id: "asia-beirut", city: "贝鲁特", country: "黎巴嫩", zone: "Asia/Beirut" },
+  { id: "asia-jerusalem", city: "特拉维夫", country: "以色列", zone: "Asia/Jerusalem" },
+  { id: "asia-manama", city: "麦纳麦", country: "巴林", zone: "Asia/Bahrain" },
+  { id: "asia-dammam", city: "达曼", country: "沙特阿拉伯", zone: "Asia/Riyadh" },
+  { id: "asia-medina", city: "麦地那", country: "沙特阿拉伯", zone: "Asia/Riyadh" },
+  { id: "asia-sharjah", city: "沙迦", country: "阿联酋", zone: "Asia/Dubai" },
+  { id: "asia-tbilisi", city: "第比利斯", country: "格鲁吉亚", zone: "Asia/Tbilisi" },
+  { id: "asia-baku", city: "巴库", country: "阿塞拜疆", zone: "Asia/Baku" },
+  { id: "asia-yerevan", city: "埃里温", country: "亚美尼亚", zone: "Asia/Yerevan" },
+  { id: "europe-berlin", city: "柏林", country: "德国", zone: "Europe/Berlin" },
+  { id: "europe-munich", city: "慕尼黑", country: "德国", zone: "Europe/Berlin" },
+  { id: "europe-stuttgart", city: "斯图加特", country: "德国", zone: "Europe/Berlin" },
+  { id: "europe-lyon", city: "里昂", country: "法国", zone: "Europe/Paris" },
+  { id: "europe-marseille", city: "马赛", country: "法国", zone: "Europe/Paris" },
+  { id: "europe-manchester", city: "曼彻斯特", country: "英国", zone: "Europe/London" },
+  { id: "europe-birmingham", city: "伯明翰", country: "英国", zone: "Europe/London" },
+  { id: "europe-glasgow", city: "格拉斯哥", country: "英国", zone: "Europe/London" },
+  { id: "europe-rome", city: "罗马", country: "意大利", zone: "Europe/Rome" },
+  { id: "europe-turin", city: "都灵", country: "意大利", zone: "Europe/Rome" },
+  { id: "europe-bologna", city: "博洛尼亚", country: "意大利", zone: "Europe/Rome" },
+  { id: "europe-barcelona", city: "巴塞罗那", country: "西班牙", zone: "Europe/Madrid" },
+  { id: "europe-valencia", city: "瓦伦西亚", country: "西班牙", zone: "Europe/Madrid" },
+  { id: "europe-zaragoza", city: "萨拉戈萨", country: "西班牙", zone: "Europe/Madrid" },
+  { id: "europe-lisbon", city: "里斯本", country: "葡萄牙", zone: "Europe/Lisbon" },
+  { id: "europe-porto", city: "波尔图", country: "葡萄牙", zone: "Europe/Lisbon" },
+  { id: "europe-brussels", city: "布鲁塞尔", country: "比利时", zone: "Europe/Brussels" },
+  { id: "europe-antwerp", city: "安特卫普", country: "比利时", zone: "Europe/Brussels" },
+  { id: "europe-amsterdam", city: "阿姆斯特丹", country: "荷兰", zone: "Europe/Amsterdam" },
+  { id: "europe-eindhoven", city: "埃因霍温", country: "荷兰", zone: "Europe/Amsterdam" },
+  { id: "europe-zurich", city: "苏黎世", country: "瑞士", zone: "Europe/Zurich" },
+  { id: "europe-geneva", city: "日内瓦", country: "瑞士", zone: "Europe/Zurich" },
+  { id: "europe-vienna", city: "维也纳", country: "奥地利", zone: "Europe/Vienna" },
+  { id: "europe-prague", city: "布拉格", country: "捷克", zone: "Europe/Prague" },
+  { id: "europe-budapest", city: "布达佩斯", country: "匈牙利", zone: "Europe/Budapest" },
+  { id: "europe-bucharest", city: "布加勒斯特", country: "罗马尼亚", zone: "Europe/Bucharest" },
+  { id: "europe-sofia", city: "索非亚", country: "保加利亚", zone: "Europe/Sofia" },
+  { id: "europe-athens", city: "雅典", country: "希腊", zone: "Europe/Athens" },
+  { id: "europe-stockholm", city: "斯德哥尔摩", country: "瑞典", zone: "Europe/Stockholm" },
+  { id: "europe-gothenburg", city: "哥德堡", country: "瑞典", zone: "Europe/Stockholm" },
+  { id: "europe-oslo", city: "奥斯陆", country: "挪威", zone: "Europe/Oslo" },
+  { id: "europe-copenhagen", city: "哥本哈根", country: "丹麦", zone: "Europe/Copenhagen" },
+  { id: "europe-helsinki", city: "赫尔辛基", country: "芬兰", zone: "Europe/Helsinki" },
+  { id: "europe-dublin", city: "都柏林", country: "爱尔兰", zone: "Europe/Dublin" },
+  { id: "europe-kyiv", city: "基辅", country: "乌克兰", zone: "Europe/Kyiv" },
+  { id: "europe-minsk", city: "明斯克", country: "白俄罗斯", zone: "Europe/Minsk" },
+  { id: "europe-belgrade", city: "贝尔格莱德", country: "塞尔维亚", zone: "Europe/Belgrade" },
+  { id: "europe-zagreb", city: "萨格勒布", country: "克罗地亚", zone: "Europe/Zagreb" },
+  { id: "europe-ljubljana", city: "卢布尔雅那", country: "斯洛文尼亚", zone: "Europe/Ljubljana" },
+  { id: "europe-bratislava", city: "布拉迪斯拉发", country: "斯洛伐克", zone: "Europe/Bratislava" },
+  { id: "europe-vilnius", city: "维尔纽斯", country: "立陶宛", zone: "Europe/Vilnius" },
+  { id: "europe-riga", city: "里加", country: "拉脱维亚", zone: "Europe/Riga" },
+  { id: "europe-tallinn", city: "塔林", country: "爱沙尼亚", zone: "Europe/Tallinn" },
+  { id: "europe-st-petersburg", city: "圣彼得堡", country: "俄罗斯", zone: "Europe/Moscow" },
+  { id: "europe-yekaterinburg", city: "叶卡捷琳堡", country: "俄罗斯", zone: "Asia/Yekaterinburg" },
+  { id: "asia-novosibirsk", city: "新西伯利亚", country: "俄罗斯", zone: "Asia/Novosibirsk" },
+  { id: "america-washington", city: "华盛顿", country: "美国", zone: "America/New_York" },
+  { id: "america-boston", city: "波士顿", country: "美国", zone: "America/New_York" },
+  { id: "america-atlanta", city: "亚特兰大", country: "美国", zone: "America/New_York" },
+  { id: "america-detroit", city: "底特律", country: "美国", zone: "America/Detroit" },
+  { id: "america-dallas", city: "达拉斯", country: "美国", zone: "America/Chicago" },
+  { id: "america-denver", city: "丹佛", country: "美国", zone: "America/Denver" },
+  { id: "america-phoenix", city: "凤凰城", country: "美国", zone: "America/Phoenix" },
+  { id: "america-seattle", city: "西雅图", country: "美国", zone: "America/Los_Angeles" },
+  { id: "america-san-francisco", city: "旧金山", country: "美国", zone: "America/Los_Angeles" },
+  { id: "america-san-jose", city: "圣何塞", country: "美国", zone: "America/Los_Angeles" },
+  { id: "america-montreal", city: "蒙特利尔", country: "加拿大", zone: "America/Toronto" },
+  { id: "america-ottawa", city: "渥太华", country: "加拿大", zone: "America/Toronto" },
+  { id: "america-calgary", city: "卡尔加里", country: "加拿大", zone: "America/Edmonton" },
+  { id: "america-edmonton", city: "埃德蒙顿", country: "加拿大", zone: "America/Edmonton" },
+  { id: "america-winnipeg", city: "温尼伯", country: "加拿大", zone: "America/Winnipeg" },
+  { id: "america-guadalajara", city: "瓜达拉哈拉", country: "墨西哥", zone: "America/Mexico_City" },
+  { id: "america-monterrey", city: "蒙特雷", country: "墨西哥", zone: "America/Monterrey" },
+  { id: "america-tijuana", city: "蒂华纳", country: "墨西哥", zone: "America/Tijuana" },
+  { id: "america-panama", city: "巴拿马城", country: "巴拿马", zone: "America/Panama" },
+  { id: "america-san-jose-cr", city: "圣何塞", country: "哥斯达黎加", zone: "America/Costa_Rica" },
+  { id: "america-guatemala", city: "危地马拉城", country: "危地马拉", zone: "America/Guatemala" },
+  { id: "america-santo-domingo", city: "圣多明各", country: "多米尼加", zone: "America/Santo_Domingo" },
+  { id: "america-havana", city: "哈瓦那", country: "古巴", zone: "America/Havana" },
+  { id: "america-kingston", city: "金斯敦", country: "牙买加", zone: "America/Jamaica" },
+  { id: "america-medellin", city: "麦德林", country: "哥伦比亚", zone: "America/Bogota" },
+  { id: "america-cali", city: "卡利", country: "哥伦比亚", zone: "America/Bogota" },
+  { id: "america-quito", city: "基多", country: "厄瓜多尔", zone: "America/Guayaquil" },
+  { id: "america-guayaquil", city: "瓜亚基尔", country: "厄瓜多尔", zone: "America/Guayaquil" },
+  { id: "america-la-paz", city: "拉巴斯", country: "玻利维亚", zone: "America/La_Paz" },
+  { id: "america-montevideo", city: "蒙得维的亚", country: "乌拉圭", zone: "America/Montevideo" },
+  { id: "america-asuncion", city: "亚松森", country: "巴拉圭", zone: "America/Asuncion" },
+  { id: "america-caracas", city: "加拉加斯", country: "委内瑞拉", zone: "America/Caracas" },
+  { id: "america-cordoba", city: "科尔多瓦", country: "阿根廷", zone: "America/Argentina/Cordoba" },
+  { id: "america-rosario", city: "罗萨里奥", country: "阿根廷", zone: "America/Argentina/Buenos_Aires" },
+  { id: "america-brasilia", city: "巴西利亚", country: "巴西", zone: "America/Sao_Paulo" },
+  { id: "america-curitiba", city: "库里蒂巴", country: "巴西", zone: "America/Sao_Paulo" },
+  { id: "america-porto-alegre", city: "阿雷格里港", country: "巴西", zone: "America/Sao_Paulo" },
+  { id: "america-recife", city: "累西腓", country: "巴西", zone: "America/Recife" },
+  { id: "america-manaus", city: "马瑙斯", country: "巴西", zone: "America/Manaus" },
+  { id: "america-valparaiso", city: "瓦尔帕莱索", country: "智利", zone: "America/Santiago" },
+  { id: "america-arequipa", city: "阿雷基帕", country: "秘鲁", zone: "America/Lima" },
+  { id: "africa-alexandria", city: "亚历山大", country: "埃及", zone: "Africa/Cairo" },
+  { id: "africa-giza", city: "吉萨", country: "埃及", zone: "Africa/Cairo" },
+  { id: "africa-durban", city: "德班", country: "南非", zone: "Africa/Johannesburg" },
+  { id: "africa-pretoria", city: "比勒陀利亚", country: "南非", zone: "Africa/Johannesburg" },
+  { id: "africa-accra", city: "阿克拉", country: "加纳", zone: "Africa/Accra" },
+  { id: "africa-abidjan", city: "阿比让", country: "科特迪瓦", zone: "Africa/Abidjan" },
+  { id: "africa-dakar", city: "达喀尔", country: "塞内加尔", zone: "Africa/Dakar" },
+  { id: "africa-addis-ababa", city: "亚的斯亚贝巴", country: "埃塞俄比亚", zone: "Africa/Addis_Ababa" },
+  { id: "africa-kampala", city: "坎帕拉", country: "乌干达", zone: "Africa/Kampala" },
+  { id: "africa-dar-es-salaam", city: "达累斯萨拉姆", country: "坦桑尼亚", zone: "Africa/Dar_es_Salaam" },
+  { id: "africa-luanda", city: "罗安达", country: "安哥拉", zone: "Africa/Luanda" },
+  { id: "africa-maputo", city: "马普托", country: "莫桑比克", zone: "Africa/Maputo" },
+  { id: "africa-tunis", city: "突尼斯", country: "突尼斯", zone: "Africa/Tunis" },
+  { id: "africa-algiers", city: "阿尔及尔", country: "阿尔及利亚", zone: "Africa/Algiers" },
+  { id: "africa-rabat", city: "拉巴特", country: "摩洛哥", zone: "Africa/Casablanca" },
+  { id: "africa-marrakesh", city: "马拉喀什", country: "摩洛哥", zone: "Africa/Casablanca" },
+  { id: "australia-adelaide", city: "阿德莱德", country: "澳大利亚", zone: "Australia/Adelaide" },
+  { id: "australia-canberra", city: "堪培拉", country: "澳大利亚", zone: "Australia/Sydney" },
+  { id: "australia-gold-coast", city: "黄金海岸", country: "澳大利亚", zone: "Australia/Brisbane" },
+  { id: "australia-darwin", city: "达尔文", country: "澳大利亚", zone: "Australia/Darwin" },
+  { id: "pacific-christchurch", city: "基督城", country: "新西兰", zone: "Pacific/Auckland" },
+  { id: "pacific-suva", city: "苏瓦", country: "斐济", zone: "Pacific/Fiji" }
+] satisfies WorldClockCity[];
 
 function getTimeZoneOffsetMinutes(date: Date, timeZone: string) {
   const parts = new Intl.DateTimeFormat("en-US", {
@@ -324,6 +523,15 @@ function formatBeijingDifference(offsetMinutes: number, beijingOffsetMinutes: nu
   const minuteText = minutes > 0 ? `${minutes}分钟` : "";
 
   return `比北京${direction}${hourText}${minuteText}`;
+}
+
+function isValidTimeZone(zone: string) {
+  try {
+    new Intl.DateTimeFormat("en-US", { timeZone: zone }).format(new Date());
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 const themeOptions: ThemeKey[] = ["industrial", "clean-export", "premium-brand", "equipment", "consumer-goods"];
@@ -1122,6 +1330,23 @@ function buildProductTableRows(products: ProductCategory[], rawQuery: string): P
   return [...rows, ...orphanRows];
 }
 
+function productParentWouldCreateCycle(products: ProductCategory[], productId: string, nextParentId?: string) {
+  if (!nextParentId) return false;
+  if (nextParentId === productId) return true;
+
+  const parentById = new Map<string, string | undefined>(products.map((product) => [getProductId(product), product.parentId]));
+  const visited = new Set([productId]);
+  let currentParentId: string | undefined = nextParentId;
+
+  while (currentParentId) {
+    if (visited.has(currentParentId)) return true;
+    visited.add(currentParentId);
+    currentParentId = parentById.get(currentParentId);
+  }
+
+  return false;
+}
+
 function navigationWouldCreateCycle(items: SiteNavigationItem[], itemId: string, nextParentId?: string) {
   const parentById = new Map(items.map((item) => [item.id, item.parentId]));
   const visited = new Set([itemId]);
@@ -1227,6 +1452,7 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
   const [expandedProductDescriptionIds, setExpandedProductDescriptionIds] = useState<string[]>([]);
   const [quickEditingProductId, setQuickEditingProductId] = useState<string | null>(null);
   const [quickEditingProductName, setQuickEditingProductName] = useState("");
+  const [inlineEditingProduct, setInlineEditingProduct] = useState<ProductInlineEditState | null>(null);
   const [productBulkAction, setProductBulkAction] = useState("");
   const [mediaTypeFilter, setMediaTypeFilter] = useState<MediaTypeFilter>("all");
   const [mediaTimeFilter, setMediaTimeFilter] = useState<MediaTimeFilter>("all");
@@ -1236,6 +1462,9 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
   const [videoDialogUrl, setVideoDialogUrl] = useState("");
   const [replacingArticleVideoUrl, setReplacingArticleVideoUrl] = useState<string | null>(null);
   const [mailDraftLeadId, setMailDraftLeadId] = useState<string | null>(null);
+  const [mailTestTo, setMailTestTo] = useState("");
+  const [mailActionStatus, setMailActionStatus] = useState("");
+  const [mailActionRunning, setMailActionRunning] = useState(false);
   const [contactForm, setContactForm] = useState<ContactFormState>(() => createContactForm());
   const [newUserForm, setNewUserForm] = useState<NewUserFormState>(emptyNewUserForm);
   const [expandedRolePermissionId, setExpandedRolePermissionId] = useState<RoleKey | null>("admin");
@@ -1279,6 +1508,7 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
   const [backupImportFiles, setBackupImportFiles] = useState(false);
   const [backupStatus, setBackupStatus] = useState("选择要导出的数据模块，生成 JSON 后可用于恢复。");
   const [clockNow, setClockNow] = useState<Date | null>(null);
+  const [worldClockForm, setWorldClockForm] = useState({ city: "", country: "", zone: "" });
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const articleMarkdownEditorRef = useRef<AdminMarkdownEditorHandle | null>(null);
   const pageMarkdownEditorRef = useRef<AdminMarkdownEditorHandle | null>(null);
@@ -1378,12 +1608,18 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
     ];
   }, [state]);
 
+  const activeWorldClockCities = useMemo(() => {
+    const configuredCities = state?.siteSettings.worldClockCities;
+    const sourceCities = configuredCities && configuredCities.length > 0 ? configuredCities : worldClockCities;
+    return sourceCities.filter((city) => city.city.trim() && city.country.trim() && isValidTimeZone(city.zone));
+  }, [state?.siteSettings.worldClockCities]);
+
   const worldClocks = useMemo(() => {
-    if (!clockNow) return worldClockCities.map((item) => ({ ...item, time: "--:--", date: "--", offset: "--", beijingDiff: "--" }));
+    if (!clockNow) return activeWorldClockCities.map((item) => ({ ...item, time: "--:--", date: "--", offset: "--", beijingDiff: "--" }));
 
     const beijingOffset = getTimeZoneOffsetMinutes(clockNow, "Asia/Shanghai");
 
-    return worldClockCities.map((item) => {
+    return activeWorldClockCities.map((item) => {
       const offsetMinutes = getTimeZoneOffsetMinutes(clockNow, item.zone);
 
       return {
@@ -1404,7 +1640,7 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
         beijingDiff: formatBeijingDifference(offsetMinutes, beijingOffset)
       };
     });
-  }, [clockNow]);
+  }, [activeWorldClockCities, clockNow]);
 
   async function save(nextState = state) {
     if (!nextState) return;
@@ -1592,6 +1828,33 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
     setFrontendSettingsDirty(true);
   }
 
+  function addWorldClockCity() {
+    const selectedCity = worldClockCityCatalog.find((city) => city.id === worldClockForm.city);
+
+    if (!worldClockForm.country || !selectedCity) {
+      setStatus("请先选择国家/地区和城市");
+      return;
+    }
+    if (activeWorldClockCities.some((city) => city.id === selectedCity.id || (city.country === selectedCity.country && city.city === selectedCity.city && city.zone === selectedCity.zone))) {
+      setStatus(`${selectedCity.country} ${selectedCity.city} 已经在世界时钟中`);
+      return;
+    }
+
+    const nextCity: WorldClockCity = {
+      ...selectedCity,
+      custom: true
+    };
+    updateSiteSettings({ worldClockCities: [...activeWorldClockCities, nextCity] });
+    setWorldClockForm({ city: "", country: "", zone: "" });
+    setStatus("城市已添加，点击保存发布后生效");
+  }
+
+  function removeWorldClockCity(cityId: string) {
+    const nextCities = activeWorldClockCities.filter((city) => city.id !== cityId);
+    updateSiteSettings({ worldClockCities: nextCities.length > 0 ? nextCities : worldClockCities });
+    setStatus("城市已删除，点击保存发布后生效");
+  }
+
   async function copyTextToClipboard(value: string, successMessage: string) {
     const text = value.trim();
     if (!text) {
@@ -1689,6 +1952,52 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
     setMailDraftLeadId(lead.id);
     switchAdminTab("mail");
     setStatus("已将询盘信息带入邮件草稿");
+  }
+
+  async function sendMailRequest(path: "/api/admin/mail/test" | "/api/admin/mail/send", body: Record<string, unknown>) {
+    if (!state) return;
+    setMailActionRunning(true);
+    setMailActionStatus("正在保存邮件设置...");
+    await save();
+    setMailActionStatus("正在发送邮件...");
+
+    try {
+      const response = await fetch(path, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body)
+      });
+      const payload = await response.json().catch(() => ({ message: "邮件请求失败" })) as MailActionResponse;
+      const message = payload.message || payload.error || "邮件请求完成";
+
+      if (payload.state) setState(payload.state);
+      setMailActionStatus(message);
+      setStatus(message);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "邮件请求失败";
+      setMailActionStatus(message);
+      setStatus(message);
+    } finally {
+      setMailActionRunning(false);
+    }
+  }
+
+  function sendTestMail() {
+    void sendMailRequest("/api/admin/mail/test", { to: mailTestTo.trim() });
+  }
+
+  function sendSelectedLeadMail() {
+    if (!selectedMailLead || !selectedMailDraft) {
+      setMailActionStatus("请先从询盘列表选择一条可回复的询盘。");
+      return;
+    }
+
+    void sendMailRequest("/api/admin/mail/send", {
+      leadId: selectedMailLead.id,
+      to: selectedMailLead.email,
+      subject: selectedMailDraft.subject,
+      body: selectedMailDraft.body
+    });
   }
 
   function updateAiSettings(patch: Partial<AdminState["aiSettings"]>) {
@@ -2475,6 +2784,7 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
   function startProductQuickEdit(product: ProductCategory) {
     setQuickEditingProductId(product.id ?? product.slug);
     setQuickEditingProductName(product.name.zh || product.name.en || "");
+    setInlineEditingProduct(null);
   }
 
   function cancelProductQuickEdit() {
@@ -2509,6 +2819,100 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
     cancelProductQuickEdit();
     setStatus("分类名称已更新");
     void save(nextState);
+  }
+
+  function getProductInlineEditValue(product: ProductCategory, field: ProductInlineEditField) {
+    if (field === "name") return product.name.zh || product.name.en || "";
+    if (field === "summary") return product.summary.zh || product.summary.en || "";
+    if (field === "parentId") return product.parentId ?? "";
+    return product.slug;
+  }
+
+  function startProductInlineEdit(product: ProductCategory, field: ProductInlineEditField) {
+    const productId = product.id ?? product.slug;
+    setQuickEditingProductId(null);
+    setQuickEditingProductName("");
+    setInlineEditingProduct({
+      field,
+      productId,
+      value: getProductInlineEditValue(product, field)
+    });
+  }
+
+  function cancelProductInlineEdit() {
+    setInlineEditingProduct(null);
+  }
+
+  function saveProductInlineEdit() {
+    if (!state || !inlineEditingProduct) return;
+    const { field, productId } = inlineEditingProduct;
+    const rawValue = inlineEditingProduct.value.trim();
+
+    if ((field === "name" || field === "slug") && !rawValue) {
+      setStatus(field === "name" ? "分类名称不能为空" : "分类别名不能为空");
+      return;
+    }
+
+    const nextParentId = field === "parentId" ? rawValue || undefined : undefined;
+    if (field === "parentId" && productParentWouldCreateCycle(state.products, productId, nextParentId)) {
+      setStatus("父级分类不能指向自身或子分类");
+      return;
+    }
+
+    const nextState = {
+      ...state,
+      products: state.products.map((product) => {
+        if ((product.id ?? product.slug) !== productId) return product;
+        if (field === "name") {
+          return {
+            ...product,
+            name: {
+              ...product.name,
+              zh: rawValue,
+              en: product.name.en || rawValue
+            }
+          };
+        }
+        if (field === "summary") {
+          return {
+            ...product,
+            summary: {
+              ...product.summary,
+              zh: rawValue,
+              en: product.summary.en || rawValue
+            }
+          };
+        }
+        if (field === "slug") {
+          return {
+            ...product,
+            slug: slugify(rawValue) || product.slug
+          };
+        }
+        return {
+          ...product,
+          parentId: nextParentId
+        };
+      })
+    };
+
+    setState(nextState);
+    setInlineEditingProduct(null);
+    setStatus("分类内容已更新");
+    void save(nextState);
+  }
+
+  function handleProductInlineEditKeyDown(event: KeyboardEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) {
+    if (event.key === "Escape") {
+      event.preventDefault();
+      cancelProductInlineEdit();
+      return;
+    }
+
+    if (event.key !== "Enter") return;
+    if (event.currentTarget.tagName === "TEXTAREA" && !event.metaKey && !event.ctrlKey) return;
+    event.preventDefault();
+    saveProductInlineEdit();
   }
 
   function switchTheme(theme: ThemeKey) {
@@ -3690,6 +4094,16 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
   }
 
   const productRows = buildProductTableRows(state.products, productQuery);
+  const worldClockCountryOptions = Array.from(new Set(worldClockCityCatalog.map((city) => city.country)))
+    .sort((left, right) => left.localeCompare(right, "zh-Hans-CN"));
+  const worldClockCityOptions = worldClockCityCatalog
+    .filter((city) => city.country === worldClockForm.country && isValidTimeZone(city.zone))
+    .sort((left, right) => left.city.localeCompare(right.city, "zh-Hans-CN"));
+  const selectedWorldClockCity = worldClockCityOptions.find((city) => city.id === worldClockForm.city);
+  const selectedWorldClockCityExists = Boolean(selectedWorldClockCity && activeWorldClockCities.some((city) => (
+    city.id === selectedWorldClockCity.id
+      || (city.country === selectedWorldClockCity.country && city.city === selectedWorldClockCity.city && city.zone === selectedWorldClockCity.zone)
+  )));
   const expandedProductSet = new Set(expandedProductIds);
   const productSearchActive = productQuery.trim().length > 0;
   const productIds = new Set(state.products.map((product) => product.id ?? product.slug));
@@ -3962,7 +4376,7 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
     return (
       <div className="admin-editor-quickbar" aria-label={isPage ? "页面编辑器快捷工具" : "文章编辑器快捷工具"}>
         <button title="插入视频链接" aria-label="插入视频链接" type="button" onClick={() => openVideoDialog(target)}><Video size={16} />视频</button>
-        <label className="article-image-inline-upload" title="上传并插入媒体">
+        <label aria-label="上传并插入媒体" className="article-image-inline-upload" title="上传并插入媒体">
           <Paperclip size={16} />
           媒体
           <input
@@ -4271,6 +4685,9 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
   const canImportArticles = getRolePermissions(currentUser?.role ?? "viewer", state.rolePermissions).articleImportEnabled;
   const selectedMailLead = state.leads.find((lead) => lead.id === mailDraftLeadId) ?? null;
   const selectedMailDraft = selectedMailLead ? buildLeadReplyDraft(selectedMailLead) : null;
+  const mailProvider = state.siteSettings.mailProvider || "mailto";
+  const smtpPasswordConfigured = Boolean(state.siteSettings.mailSmtpPasswordConfigured);
+  const mailApiKeyConfigured = Boolean(state.siteSettings.mailApiKeyConfigured);
   const canRunAutoTranslation = Boolean(currentUser && (
     frontendManagerRoles.has(currentUser.role)
     || allowedTabsForCurrentUser.has("ai")
@@ -5581,11 +5998,70 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
               </div>
               <section className="world-clock-panel" aria-label="世界主要城市时间">
                 <div className="admin-section-title">
-                  <h2>世界主要城市时间</h2>
+                  <div>
+                    <h2>世界主要城市时间</h2>
+                    <span>先选择国家/地区，再选择城市；系统会自动带出对应 IANA 时区。</span>
+                  </div>
+                </div>
+                <div className="world-clock-manager">
+                  <label>
+                    国家/地区
+                    <select
+                      disabled={!canManageFrontendSettings}
+                      value={worldClockForm.country}
+                      onChange={(event) => setWorldClockForm({ country: event.target.value, city: "", zone: "" })}
+                    >
+                      <option value="">选择国家/地区</option>
+                      {worldClockCountryOptions.map((country) => <option key={country} value={country}>{country}</option>)}
+                    </select>
+                  </label>
+                  <label>
+                    城市
+                    <select
+                      disabled={!canManageFrontendSettings || !worldClockForm.country}
+                      value={worldClockForm.city}
+                      onChange={(event) => {
+                        const nextCity = worldClockCityCatalog.find((city) => city.id === event.target.value);
+                        setWorldClockForm({
+                          country: nextCity?.country ?? worldClockForm.country,
+                          city: nextCity?.id ?? "",
+                          zone: nextCity?.zone ?? ""
+                        });
+                      }}
+                    >
+                      <option value="">{worldClockForm.country ? "选择城市" : "请先选择国家/地区"}</option>
+                      {worldClockCityOptions.map((city) => <option key={city.id} value={city.id}>{city.city}</option>)}
+                    </select>
+                  </label>
+                  <label>
+                    时区
+                    <input
+                      readOnly
+                      disabled={!canManageFrontendSettings || !selectedWorldClockCity}
+                      value={selectedWorldClockCity?.zone ?? ""}
+                      placeholder="选择城市后自动显示"
+                    />
+                  </label>
+                  <button disabled={!canManageFrontendSettings || !selectedWorldClockCity} type="button" onClick={addWorldClockCity}>
+                    <PlusCircle size={15} />添加城市
+                  </button>
+                  {selectedWorldClockCityExists ? (
+                    <span className="world-clock-form-note">{selectedWorldClockCity?.country} {selectedWorldClockCity?.city} 已经在下方世界时钟中。</span>
+                  ) : null}
                 </div>
                 <div className="world-clock-grid">
                   {worldClocks.map((clock) => (
-                    <article className="world-clock-card" key={`${clock.city}-${clock.zone}`}>
+                    <article className="world-clock-card" key={clock.id}>
+                      <button
+                        aria-label={`删除${clock.city}`}
+                        className="world-clock-delete"
+                        disabled={!canManageFrontendSettings}
+                        title={`删除${clock.city}`}
+                        type="button"
+                        onClick={() => removeWorldClockCity(clock.id)}
+                      >
+                        <X size={12} />
+                      </button>
                       <span>{clock.city}</span>
                       <small>{clock.country} · {clock.offset}</small>
                       <strong>{clock.time}</strong>
@@ -5689,6 +6165,10 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
                       const hasLongSummary = productSummary.length > PRODUCT_SUMMARY_PREVIEW_LIMIT;
                       const summaryExpanded = expandedProductDescriptionIds.includes(productId);
                       const quickEditing = quickEditingProductId === productId;
+                      const inlineNameEditing = inlineEditingProduct?.productId === productId && inlineEditingProduct.field === "name";
+                      const inlineSummaryEditing = inlineEditingProduct?.productId === productId && inlineEditingProduct.field === "summary";
+                      const inlineSlugEditing = inlineEditingProduct?.productId === productId && inlineEditingProduct.field === "slug";
+                      const inlineParentEditing = inlineEditingProduct?.productId === productId && inlineEditingProduct.field === "parentId";
 
                       return (
                         <div className={childCount > 0 ? "wp-taxonomy-row has-children" : "wp-taxonomy-row"} role="row" key={productId} style={{ "--category-depth": depth } as CSSProperties}>
@@ -5702,26 +6182,32 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
                           </span>
                           <div className="taxonomy-name-cell">
                             <div className="taxonomy-title-stack">
-                              {quickEditing ? (
+                              {quickEditing || inlineNameEditing ? (
                                 <div className="taxonomy-quick-edit">
                                   <input
-                                    aria-label={`${product.name.zh || product.name.en} 快速编辑名称`}
+                                    aria-label={`${product.name.zh || product.name.en} 编辑名称`}
                                     autoFocus
-                                    value={quickEditingProductName}
-                                    onChange={(event) => setQuickEditingProductName(event.target.value)}
+                                    value={inlineNameEditing ? inlineEditingProduct.value : quickEditingProductName}
+                                    onChange={(event) => inlineNameEditing
+                                      ? setInlineEditingProduct({ field: "name", productId, value: event.target.value })
+                                      : setQuickEditingProductName(event.target.value)}
                                     onKeyDown={(event) => {
+                                      if (inlineNameEditing) {
+                                        handleProductInlineEditKeyDown(event);
+                                        return;
+                                      }
                                       if (event.key === "Enter") saveProductQuickEdit(productId);
                                       if (event.key === "Escape") cancelProductQuickEdit();
                                     }}
                                   />
                                   <div className="taxonomy-quick-edit-actions">
-                                    <button type="button" onClick={() => saveProductQuickEdit(productId)}>保存</button>
-                                    <button type="button" onClick={cancelProductQuickEdit}>取消</button>
+                                    <button type="button" onClick={() => inlineNameEditing ? saveProductInlineEdit() : saveProductQuickEdit(productId)}>保存</button>
+                                    <button type="button" onClick={inlineNameEditing ? cancelProductInlineEdit : cancelProductQuickEdit}>取消</button>
                                   </div>
                                 </div>
                               ) : (
                                 <>
-                                  <button className="taxonomy-edit-trigger" type="button" onClick={() => editProduct(product)}>
+                                  <button className="taxonomy-edit-trigger" type="button" onClick={() => editProduct(product)} onDoubleClick={() => startProductInlineEdit(product, "name")}>
                                     <span className="taxonomy-name">{product.name.zh || product.name.en}</span>
                                   </button>
                                   <div className="taxonomy-row-actions" aria-label={`${product.name.zh || product.name.en} 分类操作`}>
@@ -5738,7 +6224,7 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
                                       </button>
                                     ) : null}
                                     <button type="button" onClick={() => editProduct(product)}>编辑</button>
-                                    <button type="button" onClick={() => startProductQuickEdit(product)}>快速编辑</button>
+                                    <button type="button" onClick={() => startProductInlineEdit(product, "name")}>快速编辑</button>
                                     <Link href={`/${locale}/products/${product.slug}`} target="_blank" rel="noreferrer">查看</Link>
                                   </div>
                                 </>
@@ -5747,22 +6233,85 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
                             {childCount > 0 ? <span className="taxonomy-child-count">子目录 {childCount}</span> : null}
                           </div>
                           <div className="taxonomy-description-cell">
-                            <span className={hasLongSummary ? "taxonomy-description-preview is-clamped" : "taxonomy-description-preview"}>{productSummary || "-"}</span>
-                            {hasLongSummary ? (
-                              <button
-                                aria-expanded={summaryExpanded}
-                                className="taxonomy-description-toggle"
-                                type="button"
-                                onClick={() => setExpandedProductDescriptionIds((current) => current.includes(productId)
-                                  ? current.filter((item) => item !== productId)
-                                  : [...current, productId])}
-                              >
-                                {summaryExpanded ? "收起完整描述" : "展开完整描述"}
-                              </button>
-                            ) : null}
+                            {inlineSummaryEditing ? (
+                              <div className="taxonomy-quick-edit taxonomy-quick-edit-wide">
+                                <textarea
+                                  aria-label={`${product.name.zh || product.name.en} 编辑描述`}
+                                  autoFocus
+                                  value={inlineEditingProduct.value}
+                                  onChange={(event) => setInlineEditingProduct({ field: "summary", productId, value: event.target.value })}
+                                  onKeyDown={handleProductInlineEditKeyDown}
+                                />
+                                <div className="taxonomy-quick-edit-actions">
+                                  <button type="button" onClick={saveProductInlineEdit}>保存</button>
+                                  <button type="button" onClick={cancelProductInlineEdit}>取消</button>
+                                </div>
+                              </div>
+                            ) : (
+                              <>
+                                <span
+                                  className={hasLongSummary ? "taxonomy-description-preview is-clamped is-editable" : "taxonomy-description-preview is-editable"}
+                                  onDoubleClick={() => startProductInlineEdit(product, "summary")}
+                                  title="双击编辑描述"
+                                >
+                                  {productSummary || "-"}
+                                </span>
+                                {hasLongSummary ? (
+                                  <button
+                                    aria-expanded={summaryExpanded}
+                                    className="taxonomy-description-toggle"
+                                    type="button"
+                                    onClick={() => setExpandedProductDescriptionIds((current) => current.includes(productId)
+                                      ? current.filter((item) => item !== productId)
+                                      : [...current, productId])}
+                                  >
+                                    {summaryExpanded ? "收起完整描述" : "展开完整描述"}
+                                  </button>
+                                ) : null}
+                              </>
+                            )}
                           </div>
-                          <span>{product.slug}</span>
-                          <span>{parent ? parent.name.zh || parent.name.en : "-"}</span>
+                          <span className="taxonomy-inline-cell" onDoubleClick={() => startProductInlineEdit(product, "slug")} title="双击编辑别名">
+                            {inlineSlugEditing ? (
+                              <span className="taxonomy-quick-edit">
+                                <input
+                                  aria-label={`${product.name.zh || product.name.en} 编辑别名`}
+                                  autoFocus
+                                  value={inlineEditingProduct.value}
+                                  onChange={(event) => setInlineEditingProduct({ field: "slug", productId, value: event.target.value })}
+                                  onKeyDown={handleProductInlineEditKeyDown}
+                                />
+                                <span className="taxonomy-quick-edit-actions">
+                                  <button type="button" onClick={saveProductInlineEdit}>保存</button>
+                                  <button type="button" onClick={cancelProductInlineEdit}>取消</button>
+                                </span>
+                              </span>
+                            ) : product.slug}
+                          </span>
+                          <span className="taxonomy-inline-cell" onDoubleClick={() => startProductInlineEdit(product, "parentId")} title="双击编辑父级">
+                            {inlineParentEditing ? (
+                              <span className="taxonomy-quick-edit">
+                                <select
+                                  aria-label={`${product.name.zh || product.name.en} 编辑父级`}
+                                  autoFocus
+                                  value={inlineEditingProduct.value}
+                                  onChange={(event) => setInlineEditingProduct({ field: "parentId", productId, value: event.target.value })}
+                                  onKeyDown={handleProductInlineEditKeyDown}
+                                >
+                                  <option value="">无</option>
+                                  {state.products
+                                    .filter((item) => (item.id ?? item.slug) !== productId)
+                                    .map((item) => (
+                                      <option key={item.id ?? item.slug} value={item.id ?? item.slug}>{item.name.zh || item.name.en}</option>
+                                    ))}
+                                </select>
+                                <span className="taxonomy-quick-edit-actions">
+                                  <button type="button" onClick={saveProductInlineEdit}>保存</button>
+                                  <button type="button" onClick={cancelProductInlineEdit}>取消</button>
+                                </span>
+                              </span>
+                            ) : parent ? parent.name.zh || parent.name.en : "-"}
+                          </span>
                           <span>0</span>
                           {hasLongSummary && summaryExpanded ? (
                             <div className="taxonomy-description-expanded">
@@ -6547,9 +7096,12 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
                   <div className="settings-panel-head with-action">
                     <div>
                       <h2>询盘邮件草稿</h2>
-                      <span>已从询盘带入收件人、主题和正文，可继续复制或用本机邮件客户端打开。</span>
+                      <span>已从询盘带入收件人、主题和正文，可真实发送或用本机邮件客户端兜底打开。</span>
                     </div>
-                    <a className="mail-draft-send" href={buildLeadReplyMailto(selectedMailLead)}><Mail size={15} />打开邮件</a>
+                    <div className="mail-action-group">
+                      <button className="mail-draft-send" disabled={mailActionRunning} type="button" onClick={sendSelectedLeadMail}><Mail size={15} />发送邮件</button>
+                      <a className="mail-draft-send secondary" href={buildLeadReplyMailto(selectedMailLead)}><Mail size={15} />打开邮件客户端</a>
+                    </div>
                   </div>
                   <div className="mail-draft-grid">
                     <label>收件人<input readOnly value={selectedMailLead.email} /></label>
@@ -6560,10 +7112,11 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
               ) : null}
               <section className="settings-panel mail-settings-panel">
                 <div className="settings-panel-head with-action">
-                  <div><h2>绑定邮箱</h2><span>用于询盘列表里的“发邮件”入口；当前通过本机默认邮件客户端打开草稿。</span></div>
+                  <div><h2>绑定邮箱</h2><span>用于询盘列表里的“发邮件”入口；支持本机邮件客户端、SMTP 授权码和第三方邮件 API。</span></div>
                   {settingsSaveAction}
                 </div>
-                <div className="wp-settings-form">
+                {mailActionStatus ? <div className="mail-status-note">{mailActionStatus}</div> : null}
+                <div className="wp-settings-form mail-settings-form">
                   <label>发件人邮箱
                     <input
                       disabled={!canManageFrontendSettings}
@@ -6579,15 +7132,93 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
                       onChange={(event) => updateSiteSettings({ mailFromName: event.target.value })}
                     />
                   </label>
+                  <label>回复邮箱
+                    <input
+                      disabled={!canManageFrontendSettings}
+                      type="email"
+                      value={state.siteSettings.mailReplyToEmail || state.siteSettings.mailFromEmail || state.siteSettings.adminEmail}
+                      onChange={(event) => updateSiteSettings({ mailReplyToEmail: event.target.value })}
+                    />
+                  </label>
                   <label>发送方式
                     <select
                       disabled={!canManageFrontendSettings}
-                      value={state.siteSettings.mailProvider || "mailto"}
-                      onChange={(event) => updateSiteSettings({ mailProvider: event.target.value })}
+                      value={mailProvider}
+                      onChange={(event) => updateSiteSettings({ mailProvider: event.target.value as AdminState["siteSettings"]["mailProvider"] })}
                     >
                       <option value="mailto">本机邮件客户端</option>
+                      <option value="smtp">SMTP 邮箱授权码</option>
+                      <option value="http">第三方邮件 API / Cloudflare 兼容</option>
                     </select>
                   </label>
+                  {mailProvider === "smtp" ? (
+                    <div className="mail-provider-card wide">
+                      <div className="mail-provider-card-head">
+                        <strong>SMTP 邮箱授权码</strong>
+                        <span>适合 QQ、163、Gmail、Outlook 和企业邮箱；保存后可立即发送测试邮件。</span>
+                      </div>
+                      <label>SMTP 服务器
+                        <input disabled={!canManageFrontendSettings} placeholder="smtp.qq.com / smtp.gmail.com" value={state.siteSettings.mailSmtpHost || ""} onChange={(event) => updateSiteSettings({ mailSmtpHost: event.target.value })} />
+                      </label>
+                      <label>SMTP 端口
+                        <input disabled={!canManageFrontendSettings} min={1} type="number" value={state.siteSettings.mailSmtpPort || 465} onChange={(event) => updateSiteSettings({ mailSmtpPort: Number(event.target.value) || 465 })} />
+                      </label>
+                      <label>SMTP 账号
+                        <input disabled={!canManageFrontendSettings} value={state.siteSettings.mailSmtpUser || ""} onChange={(event) => updateSiteSettings({ mailSmtpUser: event.target.value })} />
+                      </label>
+                      <label>授权码 / 密码
+                        <input
+                          disabled={!canManageFrontendSettings}
+                          placeholder={smtpPasswordConfigured ? "已配置，留空则不修改" : "请输入邮箱授权码或 SMTP 密码"}
+                          type="password"
+                          value={state.siteSettings.mailSmtpPassword || ""}
+                          onChange={(event) => updateSiteSettings({ mailSmtpPassword: event.target.value })}
+                        />
+                      </label>
+                      <label className="checkline"><input disabled={!canManageFrontendSettings} type="checkbox" checked={state.siteSettings.mailSmtpSecure !== false} onChange={(event) => updateSiteSettings({ mailSmtpSecure: event.target.checked })} />使用 SSL/TLS 安全连接</label>
+                      <div className="mail-provider-help">QQ/163/企业邮箱通常填写授权码；Gmail/Outlook 建议使用应用专用密码。Cloudflare 线上不建议走 SMTP，请使用第三方邮件 API。</div>
+                    </div>
+                  ) : null}
+                  {mailProvider === "http" ? (
+                    <div className="mail-provider-card wide">
+                      <div className="mail-provider-card-head">
+                        <strong>第三方邮件 API</strong>
+                        <span>适合 Cloudflare Worker 线上发信；保存后可立即发送测试邮件。</span>
+                      </div>
+                      <label>API 服务
+                        <select disabled={!canManageFrontendSettings} value={state.siteSettings.mailApiProvider || "resend"} onChange={(event) => updateSiteSettings({ mailApiProvider: event.target.value })}>
+                          <option value="resend">Resend</option>
+                          <option value="generic">通用 Bearer API</option>
+                        </select>
+                      </label>
+                      <label>API 地址
+                        <input disabled={!canManageFrontendSettings} placeholder="https://api.resend.com/emails" value={state.siteSettings.mailApiBaseUrl || ""} onChange={(event) => updateSiteSettings({ mailApiBaseUrl: event.target.value })} />
+                      </label>
+                      <label>API Key
+                        <input
+                          disabled={!canManageFrontendSettings}
+                          placeholder={mailApiKeyConfigured ? "已配置，留空则不修改" : "请输入第三方邮件 API Key"}
+                          type="password"
+                          value={state.siteSettings.mailApiKey || ""}
+                          onChange={(event) => updateSiteSettings({ mailApiKey: event.target.value })}
+                        />
+                      </label>
+                      <div className="mail-provider-help">第三方 API 使用 HTTPS 请求发信，适合 Cloudflare Worker 线上环境；Resend 会按官方 JSON 格式发送。</div>
+                    </div>
+                  ) : null}
+                  {mailProvider === "mailto" ? <div className="mail-provider-help">本机邮件客户端不会由网站后端发送邮件，只会打开系统默认邮箱草稿；这是最安全的兜底方式。</div> : null}
+                  <div className="mail-test-card wide">
+                    <div>
+                      <strong>测试发送</strong>
+                      <span>{mailProvider === "mailto" ? "本机邮件客户端不会真实发信；SMTP 或第三方 API 可用这里测试。" : "会先保存当前邮件设置，再发送一封测试邮件。"}</span>
+                    </div>
+                    <label>测试收件人
+                      <input disabled={!canManageFrontendSettings || mailProvider === "mailto"} placeholder={state.siteSettings.adminEmail} type="email" value={mailTestTo} onChange={(event) => setMailTestTo(event.target.value)} />
+                    </label>
+                    <div className="mail-test-actions">
+                      <button disabled={!canManageFrontendSettings || mailActionRunning || mailProvider === "mailto"} type="button" onClick={sendTestMail}><Mail size={15} />保存并发送测试邮件</button>
+                    </div>
+                  </div>
                   <label className="wide">询盘回复模板
                     <textarea
                       disabled={!canManageFrontendSettings}

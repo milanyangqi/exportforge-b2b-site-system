@@ -42,7 +42,7 @@ export default async function LocaleLayout({
       <body>
         <Header brandName={state.siteSettings.title} locale={locale} navigation={state.navigation} enabledLocales={state.enabledLocales} />
         {children}
-        <Footer brandName={state.siteSettings.title} locale={locale} navigation={state.navigation} channels={state.contactChannels} />
+        <Footer brandName={state.siteSettings.title} locale={locale} navigation={state.navigation} channels={state.contactChannels} templateSettings={state.templateSettings} />
         <ContactDock locale={locale} channels={state.contactChannels} />
       </body>
     </html>

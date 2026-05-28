@@ -1,5 +1,6 @@
 import { articles, contactChannels, defaultEnabledLocales, defaultNavigation, productCategories, siteSettings, uploadedFiles } from "@/data/site";
 import { isLocale } from "@/config/locales";
+import { encryptMailSecret } from "@/lib/server/mail-secrets";
 import { normalizePageLayouts } from "@/lib/puck-layouts";
 import type { AdminRolePermissions, AdminState, HomeSectionKey, HomeTemplateKey, LocaleCode, RoleKey, SiteHeroSlide, SiteNavigationItem, SiteSettings, SiteTemplateCustomBlock, SiteTemplateImageItem, SiteTemplateSettings, Translation } from "@/types/site";
 
@@ -94,7 +95,18 @@ const defaultSiteSettings: SiteSettings = {
   adminEmail: process.env.INITIAL_ADMIN_EMAIL ?? "admin@example.com",
   mailFromEmail: process.env.INITIAL_ADMIN_EMAIL ?? "admin@example.com",
   mailFromName: siteSettings.brand,
+  mailReplyToEmail: process.env.INITIAL_ADMIN_EMAIL ?? "admin@example.com",
   mailProvider: "mailto",
+  mailSmtpHost: "",
+  mailSmtpPort: 465,
+  mailSmtpSecure: true,
+  mailSmtpUser: "",
+  mailSmtpPassword: "",
+  mailSmtpPasswordConfigured: false,
+  mailApiProvider: "resend",
+  mailApiBaseUrl: "https://api.resend.com/emails",
+  mailApiKey: "",
+  mailApiKeyConfigured: false,
   mailReplyTemplate: "Hello {name},\n\nThank you for your RFQ about {productType}. We have received your inquiry and will follow up with tooling details, quotation, and lead time soon.\n\nBest regards,\n{siteTitle}",
   allowRegistration: false,
   defaultUserRole: "viewer",
@@ -199,6 +211,18 @@ const defaultTemplateSettings: SiteTemplateSettings = {
   heroSlides: defaultHeroSlides,
   showHeroVisual: true,
   showHeroMetrics: true,
+  footerTagline: {
+    en: "Carbide end mills, drill bits, OEM tooling, and export-ready packing for global buyers.",
+    zh: "硬质合金铣刀、钻头、OEM 刀具和面向全球买家的出口包装。"
+  },
+  footerCopyright: {
+    en: "Copyright © {year} {brand}. All rights reserved.",
+    zh: "Copyright © {year} {brand}. All rights reserved."
+  },
+  footerCredit: {
+    en: "Built for precision tooling and B2B export orders.",
+    zh: "为精密刀具和 B2B 出口订单打造。"
+  },
   homeProductCount: 6,
   homeArticleCount: 6,
   visibleSections: {
@@ -307,10 +331,18 @@ export function createDefaultAdminState(): AdminState {
 function normalizeSiteSettings(settings?: Partial<SiteSettings>): SiteSettings {
   const next = { ...defaultSiteSettings, ...(settings ?? {}) };
   const validLocale = isLocale(next.siteLanguage) ? next.siteLanguage : defaultSiteSettings.siteLanguage;
+  const validMailProvider = next.mailProvider === "smtp" || next.mailProvider === "http" ? next.mailProvider : "mailto";
+  const smtpPort = Number(next.mailSmtpPort ?? defaultSiteSettings.mailSmtpPort);
 
   return {
     ...next,
     siteLanguage: validLocale,
+    mailProvider: validMailProvider,
+    mailReplyToEmail: next.mailReplyToEmail || next.mailFromEmail || next.adminEmail,
+    mailSmtpPort: Number.isFinite(smtpPort) && smtpPort > 0 ? Math.trunc(smtpPort) : defaultSiteSettings.mailSmtpPort,
+    mailSmtpSecure: typeof next.mailSmtpSecure === "boolean" ? next.mailSmtpSecure : defaultSiteSettings.mailSmtpSecure,
+    mailSmtpPasswordConfigured: Boolean(next.mailSmtpPassword),
+    mailApiKeyConfigured: Boolean(next.mailApiKey),
     postsPerPage: Number.isFinite(next.postsPerPage) && next.postsPerPage > 0 ? Math.trunc(next.postsPerPage) : defaultSiteSettings.postsPerPage,
     thumbnailWidth: Number.isFinite(next.thumbnailWidth) ? Math.max(0, Math.trunc(next.thumbnailWidth)) : defaultSiteSettings.thumbnailWidth,
     thumbnailHeight: Number.isFinite(next.thumbnailHeight) ? Math.max(0, Math.trunc(next.thumbnailHeight)) : defaultSiteSettings.thumbnailHeight,
@@ -318,6 +350,27 @@ function normalizeSiteSettings(settings?: Partial<SiteSettings>): SiteSettings {
     mediumHeight: Number.isFinite(next.mediumHeight) ? Math.max(0, Math.trunc(next.mediumHeight)) : defaultSiteSettings.mediumHeight,
     largeWidth: Number.isFinite(next.largeWidth) ? Math.max(0, Math.trunc(next.largeWidth)) : defaultSiteSettings.largeWidth,
     largeHeight: Number.isFinite(next.largeHeight) ? Math.max(0, Math.trunc(next.largeHeight)) : defaultSiteSettings.largeHeight
+  };
+}
+
+export function sanitizeSiteSettingsSecrets(settings: SiteSettings): SiteSettings {
+  return {
+    ...settings,
+    mailSmtpPassword: "",
+    mailSmtpPasswordConfigured: Boolean(settings.mailSmtpPassword),
+    mailApiKey: "",
+    mailApiKeyConfigured: Boolean(settings.mailApiKey)
+  };
+}
+
+function preserveMailSecrets(nextSettings: SiteSettings, existingSettings: SiteSettings): SiteSettings {
+  const smtpPassword = nextSettings.mailSmtpPassword?.trim();
+  const apiKey = nextSettings.mailApiKey?.trim();
+
+  return {
+    ...nextSettings,
+    mailSmtpPassword: smtpPassword ? encryptMailSecret(smtpPassword) : existingSettings.mailSmtpPassword || "",
+    mailApiKey: apiKey ? encryptMailSecret(apiKey) : existingSettings.mailApiKey || ""
   };
 }
 
@@ -549,6 +602,9 @@ function normalizeTemplateSettings(settings?: Partial<SiteTemplateSettings>): Si
     heroSlides: normalizedSlides.length > 0 ? normalizedSlides : defaultHeroSlides,
     showHeroVisual: settings?.showHeroVisual ?? defaultTemplateSettings.showHeroVisual,
     showHeroMetrics: settings?.showHeroMetrics ?? defaultTemplateSettings.showHeroMetrics,
+    footerTagline: normalizeTranslation(settings?.footerTagline, defaultTemplateSettings.footerTagline),
+    footerCopyright: normalizeTranslation(settings?.footerCopyright, defaultTemplateSettings.footerCopyright),
+    footerCredit: normalizeTranslation(settings?.footerCredit, defaultTemplateSettings.footerCredit),
     homeProductCount: Number.isFinite(productCount) ? Math.max(1, Math.min(12, Math.trunc(productCount as number))) : defaultTemplateSettings.homeProductCount,
     homeArticleCount: Number.isFinite(articleCount) ? Math.max(0, Math.min(12, Math.trunc(articleCount as number))) : defaultTemplateSettings.homeArticleCount,
     visibleSections,
@@ -806,6 +862,7 @@ export async function readAdminState(): Promise<AdminState> {
 export function sanitizeAdminState(state: AdminState): AdminState {
   return {
     ...state,
+    siteSettings: sanitizeSiteSettingsSecrets(state.siteSettings),
     users: state.users.map(({ passwordHash: _passwordHash, ...user }) => user),
     aiSettings: {
       ...state.aiSettings,
@@ -822,6 +879,7 @@ export function sanitizeAdminState(state: AdminState): AdminState {
 export function preserveUserPasswordHashes(nextState: AdminState, existingState: AdminState): AdminState {
   return {
     ...nextState,
+    siteSettings: preserveMailSecrets(nextState.siteSettings, existingState.siteSettings),
     aiSettings: {
       ...nextState.aiSettings,
       apiKey: nextState.aiSettings.apiKey?.trim() || existingState.aiSettings.apiKey || "",

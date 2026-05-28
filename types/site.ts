@@ -211,6 +211,14 @@ export type AiCreditSettings = {
   pointPriceCny: number;
 };
 
+export type WorldClockCity = {
+  id: string;
+  city: string;
+  country: string;
+  zone: string;
+  custom?: boolean;
+};
+
 export type AiUsageRecord = {
   id: string;
   userId: string;
@@ -260,12 +268,24 @@ export type SiteSettings = {
   adminEmail: string;
   mailFromEmail?: string;
   mailFromName?: string;
-  mailProvider?: string;
+  mailReplyToEmail?: string;
+  mailProvider?: "mailto" | "smtp" | "http";
+  mailSmtpHost?: string;
+  mailSmtpPort?: number;
+  mailSmtpSecure?: boolean;
+  mailSmtpUser?: string;
+  mailSmtpPassword?: string;
+  mailSmtpPasswordConfigured?: boolean;
+  mailApiProvider?: string;
+  mailApiBaseUrl?: string;
+  mailApiKey?: string;
+  mailApiKeyConfigured?: boolean;
   mailReplyTemplate?: string;
   allowRegistration: boolean;
   defaultUserRole: RoleKey;
   siteLanguage: LocaleCode;
   timezone: string;
+  worldClockCities?: WorldClockCity[];
   dateFormat: string;
   timeFormat: string;
   defaultArticleCategory: string;
@@ -347,6 +367,9 @@ export type SiteTemplateSettings = {
   heroSlides: SiteHeroSlide[];
   showHeroVisual: boolean;
   showHeroMetrics: boolean;
+  footerTagline: Translation;
+  footerCopyright: Translation;
+  footerCredit: Translation;
   homeProductCount: number;
   homeArticleCount: number;
   visibleSections: Record<HomeSectionKey, boolean>;

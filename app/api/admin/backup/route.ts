@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { getAdminSessionEmail } from "@/lib/server/auth";
-import { preserveUserPasswordHashes, readAdminState, readStoredFile, sanitizeAdminState, writeAdminState, writeStoredFile } from "@/lib/server/admin-store";
+import { preserveUserPasswordHashes, readAdminState, readStoredFile, sanitizeAdminState, sanitizeSiteSettingsSecrets, writeAdminState, writeStoredFile } from "@/lib/server/admin-store";
 import type { AdminState, RoleKey } from "@/types/site";
 import type { StoredUploadFile } from "@/lib/server/admin-store";
 
@@ -74,7 +74,7 @@ async function exportBackup(sections: BackupSectionKey[], includeFiles: boolean)
   const partialState: Partial<AdminState> = {};
 
   for (const section of sections) {
-    partialState[section] = state[section] as never;
+    partialState[section] = (section === "siteSettings" ? sanitizeSiteSettingsSecrets(state.siteSettings) : state[section]) as never;
   }
 
   const files: StoredUploadFile[] = [];

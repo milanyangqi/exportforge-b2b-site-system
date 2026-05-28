@@ -6,7 +6,7 @@ import { ShieldCheck } from "lucide-react";
 import { ContactChannelIcon } from "@/components/ContactChannelIcon";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { t, ui } from "@/lib/i18n";
-import type { ContactChannel, ContactChannelType, LocaleCode, SiteNavigationItem } from "@/types/site";
+import type { ContactChannel, ContactChannelType, LocaleCode, SiteNavigationItem, Translation } from "@/types/site";
 
 type NavigationNode = SiteNavigationItem & {
   children: NavigationNode[];
@@ -212,12 +212,18 @@ export function HomeNavigationShell({
 export function PublicFooterShell({
   brandName,
   channels,
+  copyright,
+  credit,
+  tagline,
   locale,
   navigation,
   preventNavigation = false
 }: {
   brandName: string;
   channels: ContactChannel[];
+  copyright?: Translation;
+  credit?: Translation;
+  tagline?: Translation;
   locale: LocaleCode;
   navigation: SiteNavigationItem[];
   preventNavigation?: boolean;
@@ -227,13 +233,18 @@ export function PublicFooterShell({
   const handleLinkClick: LinkClickHandler | undefined = preventNavigation
     ? (event) => event.preventDefault()
     : undefined;
+  const footerTagline = tagline ? t(tagline, locale) : "Carbide end mills, drill bits, OEM tooling, and export-ready packing for global buyers.";
+  const footerCopyright = (copyright ? t(copyright, locale) : "Copyright © {year} {brand}. All rights reserved.")
+    .replaceAll("{year}", String(new Date().getFullYear()))
+    .replaceAll("{brand}", brandName);
+  const footerCredit = credit ? t(credit, locale) : "Built for precision tooling and B2B export orders.";
 
   return (
     <footer className="site-footer">
       <div className="site-footer-inner">
         <div className="footer-brand-block">
           <strong>{brandName}</strong>
-          <span>Carbide end mills, drill bits, OEM tooling, and export-ready packing for global buyers.</span>
+          <span>{footerTagline}</span>
         </div>
         <nav className="footer-links" aria-label="Footer navigation">
           {footerNavigation.map((item) => {
@@ -274,8 +285,8 @@ export function PublicFooterShell({
           </div>
         ) : null}
         <div className="footer-bottom">
-          <span>Copyright © {new Date().getFullYear()} {brandName}. All rights reserved.</span>
-          <span>Built for precision tooling and B2B export orders.</span>
+          <span>{footerCopyright}</span>
+          <span>{footerCredit}</span>
         </div>
       </div>
     </footer>

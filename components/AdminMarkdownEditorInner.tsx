@@ -120,12 +120,6 @@ export default function AdminMarkdownEditorInner({
               {
                 fallback: () => (
                   <>
-                    {toolbarActions ? (
-                      <>
-                        <div className="admin-markdown-toolbar-actions">{toolbarActions}</div>
-                        <Separator />
-                      </>
-                    ) : null}
                     <UndoRedo />
                     <Separator />
                     <BlockTypeSelect />
@@ -138,6 +132,9 @@ export default function AdminMarkdownEditorInner({
                     <Separator />
                     <CreateLink />
                     <InsertImage />
+                    {toolbarActions ? (
+                      <div className="admin-markdown-toolbar-actions">{toolbarActions}</div>
+                    ) : null}
                     <Separator />
                     <InsertTable />
                     <InsertThematicBreak />

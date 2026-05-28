@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
-import "@mdxeditor/editor/style.css";
-import "@puckeditor/core/puck.css";
 import "@/styles/globals.css";
+import "@/styles/puck-public.css";
+import "@/styles/public-site.css";
 import "@/styles/active-template.css";
 
 export const metadata: Metadata = {
