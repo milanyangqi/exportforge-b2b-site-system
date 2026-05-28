@@ -474,10 +474,11 @@
 }
 
 .admin-editor-quickbar {
-  display: inline-flex;
-  flex-wrap: wrap;
-  gap: 2px;
+  display: grid;
+  grid-template-columns: repeat(8, 28px);
+  gap: 4px;
   align-items: center;
+  width: min(100%, 252px);
   min-height: 28px;
   padding: 0;
 }
@@ -559,11 +560,19 @@
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 4px;
+  gap: 4px 6px;
   border-bottom: 1px solid var(--line);
   border-radius: 0;
   padding: 8px 10px;
   background: #f8fbfc;
+}
+
+.admin-markdown-editor-toolbar > div {
+  display: flex;
+  width: 100%;
+  flex-wrap: wrap !important;
+  align-items: center;
+  gap: 4px 6px;
 }
 
 .admin-markdown-editor-toolbar button,
@@ -593,10 +602,15 @@
 .admin-markdown-toolbar-actions {
   display: inline-flex;
   flex-wrap: wrap;
+  order: 10;
+  flex: 0 0 100%;
   align-items: center;
-  gap: 2px;
+  gap: 4px;
   min-height: 28px;
   max-width: 100%;
+  margin-top: 2px;
+  padding-top: 6px;
+  border-top: 1px solid color-mix(in srgb, var(--line), white 45%);
 }
 
 .admin-markdown-editor-content {
