@@ -1225,6 +1225,8 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
   const [selectedProductIds, setSelectedProductIds] = useState<string[]>([]);
   const [expandedProductIds, setExpandedProductIds] = useState<string[]>([]);
   const [expandedProductDescriptionIds, setExpandedProductDescriptionIds] = useState<string[]>([]);
+  const [quickEditingProductId, setQuickEditingProductId] = useState<string | null>(null);
+  const [quickEditingProductName, setQuickEditingProductName] = useState("");
   const [productBulkAction, setProductBulkAction] = useState("");
   const [mediaTypeFilter, setMediaTypeFilter] = useState<MediaTypeFilter>("all");
   const [mediaTimeFilter, setMediaTimeFilter] = useState<MediaTimeFilter>("all");
@@ -2468,6 +2470,45 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
   function editProduct(product: ProductCategory) {
     setEditingProductId(product.id ?? product.slug);
     setProductForm(productToForm(product));
+  }
+
+  function startProductQuickEdit(product: ProductCategory) {
+    setQuickEditingProductId(product.id ?? product.slug);
+    setQuickEditingProductName(product.name.zh || product.name.en || "");
+  }
+
+  function cancelProductQuickEdit() {
+    setQuickEditingProductId(null);
+    setQuickEditingProductName("");
+  }
+
+  function saveProductQuickEdit(productId: string) {
+    if (!state) return;
+    const nextName = quickEditingProductName.trim();
+    if (!nextName) {
+      setStatus("分类名称不能为空");
+      return;
+    }
+
+    const nextState = {
+      ...state,
+      products: state.products.map((product) => {
+        if ((product.id ?? product.slug) !== productId) return product;
+        return {
+          ...product,
+          name: {
+            ...product.name,
+            zh: nextName,
+            en: product.name.en || nextName
+          }
+        };
+      })
+    };
+
+    setState(nextState);
+    cancelProductQuickEdit();
+    setStatus("分类名称已更新");
+    void save(nextState);
   }
 
   function switchTheme(theme: ThemeKey) {
@@ -5614,6 +5655,7 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
                       const productSummary = product.summary.zh || product.summary.en || "";
                       const hasLongSummary = productSummary.length > PRODUCT_SUMMARY_PREVIEW_LIMIT;
                       const summaryExpanded = expandedProductDescriptionIds.includes(productId);
+                      const quickEditing = quickEditingProductId === productId;
 
                       return (
                         <div className={childCount > 0 ? "wp-taxonomy-row has-children" : "wp-taxonomy-row"} role="row" key={productId} style={{ "--category-depth": depth } as CSSProperties}>
@@ -5626,22 +5668,49 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
                             />
                           </span>
                           <div className="taxonomy-name-cell">
-                            {childCount > 0 ? (
-                              <button
-                                aria-expanded={treeExpanded}
-                                className="taxonomy-tree-toggle"
-                                disabled={productSearchActive}
-                                type="button"
-                                onClick={() => toggleProductExpanded(productId)}
-                                aria-label={`${treeExpanded ? "收起" : "展开"} ${product.name.zh || product.name.en} 的子分类`}
-                              >
-                                {treeExpanded ? "收起" : "展开"}
-                              </button>
-                            ) : null}
-                            <button className="taxonomy-edit-trigger" type="button" onClick={() => editProduct(product)}>
-                              <span className="taxonomy-name">{product.name.zh || product.name.en}</span>
-                              <small>编辑</small>
-                            </button>
+                            <div className="taxonomy-title-stack">
+                              {quickEditing ? (
+                                <div className="taxonomy-quick-edit">
+                                  <input
+                                    aria-label={`${product.name.zh || product.name.en} 快速编辑名称`}
+                                    autoFocus
+                                    value={quickEditingProductName}
+                                    onChange={(event) => setQuickEditingProductName(event.target.value)}
+                                    onKeyDown={(event) => {
+                                      if (event.key === "Enter") saveProductQuickEdit(productId);
+                                      if (event.key === "Escape") cancelProductQuickEdit();
+                                    }}
+                                  />
+                                  <div className="taxonomy-quick-edit-actions">
+                                    <button type="button" onClick={() => saveProductQuickEdit(productId)}>保存</button>
+                                    <button type="button" onClick={cancelProductQuickEdit}>取消</button>
+                                  </div>
+                                </div>
+                              ) : (
+                                <>
+                                  <button className="taxonomy-edit-trigger" type="button" onClick={() => editProduct(product)}>
+                                    <span className="taxonomy-name">{product.name.zh || product.name.en}</span>
+                                  </button>
+                                  <div className="taxonomy-row-actions" aria-label={`${product.name.zh || product.name.en} 分类操作`}>
+                                    {childCount > 0 ? (
+                                      <button
+                                        aria-expanded={treeExpanded}
+                                        className="taxonomy-tree-toggle"
+                                        disabled={productSearchActive}
+                                        type="button"
+                                        onClick={() => toggleProductExpanded(productId)}
+                                        aria-label={`${treeExpanded ? "收起" : "展开"} ${product.name.zh || product.name.en} 的子分类`}
+                                      >
+                                        {treeExpanded ? "收起" : "展开"}
+                                      </button>
+                                    ) : null}
+                                    <button type="button" onClick={() => editProduct(product)}>编辑</button>
+                                    <button type="button" onClick={() => startProductQuickEdit(product)}>快速编辑</button>
+                                    <Link href={`/${locale}/products/${product.slug}`} target="_blank" rel="noreferrer">查看</Link>
+                                  </div>
+                                </>
+                              )}
+                            </div>
                             {childCount > 0 ? <span className="taxonomy-child-count">子目录 {childCount}</span> : null}
                           </div>
                           <div className="taxonomy-description-cell">
@@ -5667,19 +5736,6 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
                               {productSummary}
                             </div>
                           ) : null}
-                          <div className="wp-row-actions">
-                            <button type="button" onClick={() => editProduct(product)}>编辑</button>
-                            <button
-                              type="button"
-                              onClick={() => {
-                                const nextState = { ...state, products: state.products.filter((item) => (item.id ?? item.slug) !== productId) };
-                                setState(nextState);
-                                void save(nextState);
-                              }}
-                            >
-                              删除
-                            </button>
-                          </div>
                         </div>
                       );
                     })}
