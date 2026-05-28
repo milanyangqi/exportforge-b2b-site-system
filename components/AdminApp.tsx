@@ -1069,6 +1069,8 @@ function compactOptionLabel(value: string, fallback: string) {
   return label.length > 24 ? `${label.slice(0, 24)}...` : label;
 }
 
+const PRODUCT_SUMMARY_PREVIEW_LIMIT = 120;
+
 function getProductId(product: ProductCategory) {
   return product.id ?? product.slug;
 }
@@ -1222,6 +1224,7 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
   const [productForm, setProductForm] = useState<ProductFormState>(emptyProductForm);
   const [selectedProductIds, setSelectedProductIds] = useState<string[]>([]);
   const [expandedProductIds, setExpandedProductIds] = useState<string[]>([]);
+  const [expandedProductDescriptionIds, setExpandedProductDescriptionIds] = useState<string[]>([]);
   const [productBulkAction, setProductBulkAction] = useState("");
   const [mediaTypeFilter, setMediaTypeFilter] = useState<MediaTypeFilter>("all");
   const [mediaTimeFilter, setMediaTimeFilter] = useState<MediaTimeFilter>("all");
@@ -4221,6 +4224,10 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
 
     return statusMatches && queryMatches;
   });
+  const leadStatusCounts = leadStatuses.reduce((counts, statusOption) => ({
+    ...counts,
+    [statusOption]: state.leads.filter((lead) => lead.status === statusOption).length
+  }), {} as Record<LeadStatus, number>);
   const visibleAiUsageRecords = canResetUserPasswords
     ? state.aiUsageRecords
     : state.aiUsageRecords.filter((record) => record.userEmail.toLowerCase() === currentEmail.toLowerCase());
@@ -5603,7 +5610,10 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
                       const productId = product.id ?? product.slug;
                       const parent = state.products.find((item) => (item.id ?? item.slug) === product.parentId);
                       const childCount = productChildCounts.get(productId) ?? 0;
-                      const expanded = productSearchActive || expandedProductSet.has(productId);
+                      const treeExpanded = productSearchActive || expandedProductSet.has(productId);
+                      const productSummary = product.summary.zh || product.summary.en || "";
+                      const hasLongSummary = productSummary.length > PRODUCT_SUMMARY_PREVIEW_LIMIT;
+                      const summaryExpanded = expandedProductDescriptionIds.includes(productId);
 
                       return (
                         <div className={childCount > 0 ? "wp-taxonomy-row has-children" : "wp-taxonomy-row"} role="row" key={productId} style={{ "--category-depth": depth } as CSSProperties}>
@@ -5618,13 +5628,14 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
                           <div className="taxonomy-name-cell">
                             {childCount > 0 ? (
                               <button
-                                aria-expanded={expanded}
+                                aria-expanded={treeExpanded}
                                 className="taxonomy-tree-toggle"
                                 disabled={productSearchActive}
                                 type="button"
                                 onClick={() => toggleProductExpanded(productId)}
+                                aria-label={`${treeExpanded ? "收起" : "展开"} ${product.name.zh || product.name.en} 的子分类`}
                               >
-                                {expanded ? "收起" : "展开"}
+                                {treeExpanded ? "收起" : "展开"}
                               </button>
                             ) : null}
                             <button className="taxonomy-edit-trigger" type="button" onClick={() => editProduct(product)}>
@@ -5633,10 +5644,29 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
                             </button>
                             {childCount > 0 ? <span className="taxonomy-child-count">子目录 {childCount}</span> : null}
                           </div>
-                          <span>{product.summary.zh || product.summary.en || "-"}</span>
+                          <div className="taxonomy-description-cell">
+                            <span className={hasLongSummary ? "taxonomy-description-preview is-clamped" : "taxonomy-description-preview"}>{productSummary || "-"}</span>
+                            {hasLongSummary ? (
+                              <button
+                                aria-expanded={summaryExpanded}
+                                className="taxonomy-description-toggle"
+                                type="button"
+                                onClick={() => setExpandedProductDescriptionIds((current) => current.includes(productId)
+                                  ? current.filter((item) => item !== productId)
+                                  : [...current, productId])}
+                              >
+                                {summaryExpanded ? "收起完整描述" : "展开完整描述"}
+                              </button>
+                            ) : null}
+                          </div>
                           <span>{product.slug}</span>
                           <span>{parent ? parent.name.zh || parent.name.en : "-"}</span>
                           <span>0</span>
+                          {hasLongSummary && summaryExpanded ? (
+                            <div className="taxonomy-description-expanded">
+                              {productSummary}
+                            </div>
+                          ) : null}
                           <div className="wp-row-actions">
                             <button type="button" onClick={() => editProduct(product)}>编辑</button>
                             <button
@@ -6332,37 +6362,78 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
 
           {tab === "leads" ? (
             <>
-              <div className="lead-filter-toolbar">
-                <select value={leadStatusFilter} onChange={(event) => setLeadStatusFilter(event.target.value as "all" | LeadStatus)}>
-                  <option value="all">全部状态</option>
-                  {leadStatuses.map((statusOption) => <option key={statusOption} value={statusOption}>{leadStatusLabels[statusOption]}</option>)}
-                </select>
-                <input placeholder="搜索姓名、邮箱、产品、地区" value={leadQuery} onChange={(event) => setLeadQuery(event.target.value)} />
-                <span>{filteredLeads.length} / {state.leads.length} 条询盘</span>
-              </div>
-              <div className="admin-table">
+              <section className="lead-workbench">
+                <div className="lead-command-bar">
+                  <div>
+                    <h1>询盘工作台</h1>
+                    <span>集中处理 RFQ、联系方式、目的地和跟进状态。</span>
+                  </div>
+                  <div className="lead-total-card">
+                    <small>当前视图</small>
+                    <strong>{filteredLeads.length}</strong>
+                    <span>总计 {state.leads.length} 条</span>
+                  </div>
+                </div>
+
+                <div className="lead-status-summary" aria-label="询盘状态概览">
+                  <button className={leadStatusFilter === "all" ? "lead-stat-card is-active" : "lead-stat-card"} type="button" onClick={() => setLeadStatusFilter("all")}>
+                    <small>全部</small>
+                    <strong>{state.leads.length}</strong>
+                    <span>All RFQs</span>
+                  </button>
+                  {leadStatuses.map((statusOption) => (
+                    <button
+                      className={leadStatusFilter === statusOption ? `lead-stat-card is-active lead-stat-${statusOption}` : `lead-stat-card lead-stat-${statusOption}`}
+                      key={statusOption}
+                      type="button"
+                      onClick={() => setLeadStatusFilter(statusOption)}
+                    >
+                      <small>{leadStatusLabels[statusOption]}</small>
+                      <strong>{leadStatusCounts[statusOption]}</strong>
+                      <span>{statusOption}</span>
+                    </button>
+                  ))}
+                </div>
+
+                <div className="lead-filter-toolbar">
+                  <label>
+                    <span>状态</span>
+                    <select value={leadStatusFilter} onChange={(event) => setLeadStatusFilter(event.target.value as "all" | LeadStatus)}>
+                      <option value="all">全部状态</option>
+                      {leadStatuses.map((statusOption) => <option key={statusOption} value={statusOption}>{leadStatusLabels[statusOption]}</option>)}
+                    </select>
+                  </label>
+                  <label className="lead-search-field">
+                    <span>搜索</span>
+                    <input placeholder="姓名、邮箱、产品、地区、材料" value={leadQuery} onChange={(event) => setLeadQuery(event.target.value)} />
+                  </label>
+                  <span className="lead-filter-count">{filteredLeads.length} / {state.leads.length} 条询盘</span>
+                </div>
+              </section>
+
+              <div className="admin-table lead-list">
                 {state.leads.length === 0 ? <p>暂无询盘。前台提交 RFQ 后会自动进入这里。</p> : null}
                 {filteredLeads.map((lead) => (
-                  <div className="admin-row lead-row" key={lead.id}>
-                    <div className="lead-cell" title="双击复制姓名" onDoubleClick={() => copyTextToClipboard(lead.fullName || "未填写姓名", "姓名已复制")}>
-                      <small>姓名</small>
-                      <strong>{lead.fullName || "未填写姓名"}</strong>
+                  <article className="admin-row lead-row" key={lead.id}>
+                    <div className="lead-card-head">
+                      <div>
+                        <small>客户</small>
+                        <strong>{lead.fullName || "未填写姓名"}</strong>
+                        <span>{lead.company || "No company"}</span>
+                      </div>
+                      <span className={`lead-status-pill lead-status-${lead.status}`}>{leadStatusLabels[lead.status]}</span>
                     </div>
-                    <div className="lead-cell" title="双击复制公司" onDoubleClick={() => copyTextToClipboard(lead.company || "No company", "公司已复制")}>
-                      <small>公司</small>
-                      <span>{lead.company || "No company"}</span>
-                    </div>
-                    <div className="lead-cell" title="双击复制产品" onDoubleClick={() => copyTextToClipboard(lead.productType || "", "产品已复制")}>
+                    <div className="lead-cell lead-cell-product" title="双击复制产品" onDoubleClick={() => copyTextToClipboard(lead.productType || "", "产品已复制")}>
                       <small>产品</small>
-                      <strong>{lead.productType}</strong>
+                      <strong>{lead.productType || "No product"}</strong>
                     </div>
                     <div className="lead-cell" title="双击复制数量" onDoubleClick={() => copyTextToClipboard(lead.quantity || "", "数量已复制")}>
                       <small>数量</small>
-                      <span>{lead.quantity}</span>
+                      <span>{lead.quantity || "No quantity"}</span>
                     </div>
                     <div className="lead-cell" title="双击复制邮箱" onDoubleClick={() => copyTextToClipboard(lead.email || "", "邮箱已复制")}>
                       <small>邮箱</small>
-                      <span>{lead.email}</span>
+                      <span>{lead.email || "No email"}</span>
                     </div>
                     <div className="lead-cell" title="双击复制联系方式" onDoubleClick={() => copyTextToClipboard(lead.whatsapp || "No WhatsApp / Phone", "联系方式已复制")}>
                       <small>联系方式</small>
@@ -6376,9 +6447,18 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
                       <small>材料</small>
                       <span>{lead.workpieceMaterial || "No material"}</span>
                     </div>
+                    <div className="lead-cell" title="双击复制姓名" onDoubleClick={() => copyTextToClipboard(lead.fullName || "未填写姓名", "姓名已复制")}>
+                      <small>姓名</small>
+                      <span>{lead.fullName || "未填写姓名"}</span>
+                    </div>
+                    <div className="lead-cell" title="双击复制公司" onDoubleClick={() => copyTextToClipboard(lead.company || "No company", "公司已复制")}>
+                      <small>公司</small>
+                      <span>{lead.company || "No company"}</span>
+                    </div>
                     <div className="lead-actions">
-                      <span className="lead-date">{new Date(lead.createdAt).toLocaleString()}</span>
+                      <span className="lead-date"><small>提交时间</small>{new Date(lead.createdAt).toLocaleString()}</span>
                       <select
+                        aria-label="更新询盘状态"
                         value={lead.status}
                         onChange={(event) =>
                           setState({
@@ -6392,8 +6472,8 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
                       <button type="button" onClick={() => copyTextToClipboard(formatLeadForCopy(lead), "整条询盘已复制")}><Copy size={14} />复制</button>
                       {lead.email ? <button type="button" onClick={() => openLeadMailDraft(lead)}><Mail size={14} />发邮件</button> : null}
                     </div>
-                    {lead.message ? <p>{lead.message}</p> : null}
-                  </div>
+                    {lead.message ? <p className="lead-message">{lead.message}</p> : null}
+                  </article>
                 ))}
                 {state.leads.length > 0 && filteredLeads.length === 0 ? <div className="wp-empty-row">没有匹配的询盘。</div> : null}
               </div>
