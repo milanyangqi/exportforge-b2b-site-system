@@ -25,6 +25,21 @@
 - 用户要求“本地复刻”时，先新建分支；不要默认 push GitHub 或部署 Cloudflare。
 - 用户明确要求 push 或部署时，才执行对应操作；Cloudflare 部署仍必须遵守下方发布流程。
 
+## CodeGraph 知识图谱约束
+
+本项目允许在仓库中保留 CodeGraph 生成的项目知识图谱：
+
+- 图谱固定放在项目根目录 `.codegraph/`，用于后续代码查找、影响分析和二次开发。
+- `.codegraph/` 可以提交到 git，但不要移动到 `public/`，也不要在业务代码、模板、样式或配置中 import、读取或引用它。
+- 本轮 CodeGraph 只做本地生成和本地提交；不要默认 push GitHub，不要默认部署 Cloudflare。
+- 后续每次 Cloudflare/OpenNext 发布前，除了常规构建检查，还必须确认构建产物不包含 `.codegraph/`：
+
+```bash
+find .open-next -path '*codegraph*' -o -name '.codegraph'
+```
+
+如果上面命令输出为空，才可继续发布；如果有输出，必须先移除构建产物中的 CodeGraph 文件并重新验证。
+
 ## Cloudflare 构建与部署流程
 
 推荐每次发布前按下面顺序执行：
