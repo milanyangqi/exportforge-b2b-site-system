@@ -2,14 +2,14 @@
 
 /* eslint-disable @next/next/no-img-element */
 
-import { type DragEvent, type MouseEvent, type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { ArrowDown, ArrowUp, ChevronDown, ChevronsLeft, ChevronsRight, Download, FileUp, GripVertical, ImageIcon, Layers, Maximize2, Minimize2, Save, Search, Video, X } from "lucide-react";
+import { type DragEvent, type MouseEvent, type ReactNode, type Ref, type SyntheticEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { ArrowDown, ArrowUp, ChevronDown, ChevronsLeft, ChevronsRight, Download, FileUp, GripVertical, ImageIcon, Layers, Maximize2, Minimize2, Plus, Save, Search, Video, X } from "lucide-react";
 import { Puck, createUsePuck } from "@puckeditor/core";
-import type { Config, Data, Permissions, Plugin, Viewports } from "@puckeditor/core";
+import type { Config, Data, Permissions, Plugin, PuckAction, Viewports } from "@puckeditor/core";
 import { PublicFooterShell, PublicHeaderShell } from "@/components/PublicSiteShell";
 import { PuckVisualBlock } from "@/components/PuckVisualBlocks";
 import { getBaseLayoutLabels } from "@/lib/puck-layouts";
-import type { AdminState, LocaleCode, PageLayoutKey, SitePageLayout, TemplatePackagePayload, VisualPageLayoutData } from "@/types/site";
+import type { AdminState, LocaleCode, PageLayoutKey, SitePageLayout, TemplatePackagePayload, Translation, VisualPageLayoutData } from "@/types/site";
 
 type PuckTemplateEditorProps = {
   state: AdminState;
@@ -42,7 +42,39 @@ type ImagePickerItem = {
   linkHref?: string;
 };
 
-type CustomSectionModuleType = "media" | "text" | "video" | "cta";
+type PuckTemplateAddRequest = {
+  label: string;
+  target?: {
+    id?: string;
+    index: number;
+    zone: string;
+  };
+  type: string;
+};
+
+type PuckTemplateEditKind = "text" | "image" | "video" | "button" | "html" | "layout";
+
+type PuckTemplateEditFieldRequest = {
+  componentId?: string;
+  field: string;
+  kind: PuckTemplateEditKind;
+  label: string;
+};
+
+type CustomSectionModuleType = "media" | "text" | "video" | "cta" | "container";
+
+type ContainerElementType = "" | "image" | "text" | "imageText" | "video" | "button" | "html" | "separator";
+
+type ContainerSlotContentItem = {
+  type: string;
+  props: Record<string, unknown>;
+};
+
+type FooterDraftProps = {
+  footerCopyright?: string;
+  footerCredit?: string;
+  footerTagline?: string;
+};
 
 const customSectionPresetLabels: Record<string, string> = {
   CustomMediaSection: "图文模块",
@@ -51,7 +83,400 @@ const customSectionPresetLabels: Record<string, string> = {
   CustomCtaSection: "行动按钮模块"
 };
 
+const customQuickAddModules = [
+  { type: "CustomMediaSection", label: "图文模块" },
+  { type: "CustomTextSection", label: "纯文字模块" },
+  { type: "CustomVideoSection", label: "视频模块" },
+  { type: "CustomCtaSection", label: "行动按钮模块" },
+  { type: "CustomSection", label: "自定义模块" }
+];
+
+const containerPatternChoices = [
+  { label: "1/1", value: "1/1" },
+  { label: "1/2 - 1/2", value: "1/2-1/2" },
+  { label: "1/3 - 1/3 - 1/3", value: "1/3-1/3-1/3" },
+  { label: "1/4 - 1/4 - 1/4 - 1/4", value: "1/4-1/4-1/4-1/4" },
+  { label: "2/3 - 1/3", value: "2/3-1/3" },
+  { label: "1/3 - 2/3", value: "1/3-2/3" },
+  { label: "1/4 - 3/4", value: "1/4-3/4" },
+  { label: "3/4 - 1/4", value: "3/4-1/4" },
+  { label: "1/4 - 1/2 - 1/4", value: "1/4-1/2-1/4" },
+  { label: "1/2 - 1/4 - 1/4", value: "1/2-1/4-1/4" },
+  { label: "1/4 - 1/4 - 1/2", value: "1/4-1/4-1/2" },
+  { label: "1/5 - 4/5", value: "1/5-4/5" },
+  { label: "4/5 - 1/5", value: "4/5-1/5" },
+  { label: "1/6 - 2/3 - 1/6", value: "1/6-2/3-1/6" }
+];
+
+const containerElementChoices: Array<{ label: string; value: ContainerElementType }> = [
+  { label: "空容器", value: "" },
+  { label: "图片", value: "image" },
+  { label: "文字", value: "text" },
+  { label: "图文", value: "imageText" },
+  { label: "视频", value: "video" },
+  { label: "按钮", value: "button" },
+  { label: "HTML / 代码", value: "html" },
+  { label: "分隔线", value: "separator" }
+];
+
+const containerAlignChoices = [
+  { label: "左对齐", value: "left" },
+  { label: "居中", value: "center" },
+  { label: "右对齐", value: "right" }
+];
+
+const containerVerticalAlignChoices = [
+  { label: "顶部", value: "start" },
+  { label: "居中", value: "center" },
+  { label: "底部", value: "end" }
+];
+
+const containerPaddingChoices = [
+  { label: "无", value: "none" },
+  { label: "紧凑", value: "compact" },
+  { label: "标准", value: "normal" },
+  { label: "宽松", value: "large" }
+];
+
+const containerMinHeightChoices = [
+  { label: "自动", value: "auto" },
+  { label: "矮", value: "short" },
+  { label: "中", value: "medium" },
+  { label: "高", value: "tall" }
+];
+
+const containerBackgroundChoices = [
+  { label: "透明", value: "transparent" },
+  { label: "白色", value: "white" },
+  { label: "浅色", value: "tint" },
+  { label: "深色", value: "dark" },
+  { label: "自定义", value: "custom" }
+];
+
+const containerBorderChoices = [
+  { label: "细边框", value: "line" },
+  { label: "无边框", value: "none" },
+  { label: "虚线", value: "dashed" },
+  { label: "强调", value: "accent" }
+];
+
+const containerRadiusChoices = [
+  { label: "无", value: "none" },
+  { label: "小", value: "small" },
+  { label: "中", value: "medium" },
+  { label: "大", value: "large" }
+];
+
+const containerShadowChoices = [
+  { label: "无", value: "none" },
+  { label: "轻微", value: "soft" },
+  { label: "明显", value: "strong" }
+];
+
+const containerTextSizeChoices = [
+  { label: "小", value: "small" },
+  { label: "标准", value: "normal" },
+  { label: "大", value: "large" }
+];
+
+const mediaAspectChoices = [
+  { label: "16:9", value: "wide" },
+  { label: "4:3", value: "standard" },
+  { label: "1:1", value: "square" },
+  { label: "3:4", value: "portrait" }
+];
+
+const mediaFitChoices = [
+  { label: "裁切填充", value: "cover" },
+  { label: "完整显示", value: "contain" }
+];
+
+const imagePlacementChoices = [
+  { label: "上方", value: "top" },
+  { label: "左侧", value: "left" },
+  { label: "右侧", value: "right" }
+];
+
+const buttonStyleChoices = [
+  { label: "主按钮", value: "primary" },
+  { label: "次按钮", value: "secondary" },
+  { label: "文字链接", value: "text" }
+];
+
+const buttonSizeChoices = [
+  { label: "小", value: "small" },
+  { label: "标准", value: "normal" },
+  { label: "大", value: "large" },
+  { label: "撑满", value: "full" }
+];
+
+const separatorStyleChoices = [
+  { label: "实线", value: "solid" },
+  { label: "虚线", value: "dashed" },
+  { label: "点线", value: "dotted" }
+];
+
+const separatorWidthChoices = [
+  { label: "短", value: "short" },
+  { label: "中", value: "medium" },
+  { label: "全宽", value: "full" }
+];
+
+const containerSlotComponentTypes = [
+  "ContainerTextElement",
+  "ContainerImageElement",
+  "ContainerImageTextElement",
+  "ContainerVideoElement",
+  "ContainerButtonElement",
+  "ContainerHtmlElement",
+  "ContainerSeparatorElement"
+];
+
+const ratioHandledInsertIds = new Set<string>();
+
 const useTypedPuck = createUsePuck<Config>();
+
+function requestPuckFieldEdit(detail: PuckTemplateEditFieldRequest, event?: MouseEvent<HTMLElement>) {
+  event?.preventDefault();
+  event?.stopPropagation();
+  const targetWindow = window.parent && window.parent !== window ? window.parent : window;
+  targetWindow.dispatchEvent(new CustomEvent<PuckTemplateEditFieldRequest>("puck-template-request-edit-field", { detail }));
+}
+
+function getCustomSectionPrimaryEditTarget(type: string, props: Record<string, unknown>): Omit<PuckTemplateEditFieldRequest, "componentId"> {
+  const moduleType = type === "CustomMediaSection"
+    ? "media"
+    : type === "CustomTextSection"
+      ? "text"
+      : type === "CustomVideoSection"
+        ? "video"
+        : type === "CustomCtaSection"
+          ? "cta"
+          : getCustomSectionModuleType(props.moduleType);
+
+  if (moduleType === "video") return { field: "videoLibraryUrl", kind: "video", label: "视频：从媒体库选择" };
+  if (moduleType === "cta") return { field: "buttonLabel", kind: "button", label: "按钮文字" };
+  if (moduleType === "container") return { field: "slotItems", kind: "layout", label: "容器内部元素" };
+  if (moduleType === "text") return { field: "body", kind: "text", label: "正文 Markdown" };
+  return { field: "mediaLibraryUrl", kind: "image", label: "图片：从媒体库选择" };
+}
+
+function getPrimaryEditTarget(type: string, props: Record<string, unknown>): Omit<PuckTemplateEditFieldRequest, "componentId"> {
+  if (type === "HeroSection") return { field: "mediaLibraryUrl", kind: "image", label: "从媒体库选择背景" };
+  if (type === "PageHero") return { field: "mediaLibraryUrl", kind: "image", label: "背景/配图" };
+  if (type === "TextSection") return { field: propStringFromRecord(props, "layout") === "text" ? "body" : "mediaLibraryUrl", kind: propStringFromRecord(props, "layout") === "text" ? "text" : "image", label: propStringFromRecord(props, "layout") === "text" ? "正文" : "配图" };
+  if (type === "RichTextBlock") return { field: "body", kind: "text", label: "正文 Markdown" };
+  if (type === "ImageGallery") return { field: "mediaLibraryUrl", kind: "image", label: "主图/首图" };
+  if (type === "VideoSection") return { field: "mediaLibraryUrl", kind: "video", label: "从媒体库选择视频" };
+  if (type === "CtaSection") return { field: "buttonLabel", kind: "button", label: "按钮文字" };
+  if (type === "ProductList" || type === "ArticleList" || type === "FeatureCards" || type === "MarketSection" || type === "RfqSection" || type === "ContactChannels") return { field: "title", kind: "text", label: "标题" };
+  if (type === "HomeNavigation") return { field: "ctaLabel", kind: "button", label: "按钮文字" };
+  if (type === "ContainerTextElement") return { field: "title", kind: "text", label: "标题" };
+  if (type === "ContainerImageElement") return { field: "imageUrl", kind: "image", label: "图片：从媒体库选择" };
+  if (type === "ContainerImageTextElement") return { field: "imageUrl", kind: "image", label: "图片：从媒体库选择" };
+  if (type === "ContainerVideoElement") return { field: "videoUrl", kind: "video", label: "视频：从媒体库选择" };
+  if (type === "ContainerButtonElement") return { field: "buttonLabel", kind: "button", label: "按钮文字" };
+  if (type === "ContainerHtmlElement") return { field: "body", kind: "html", label: "HTML / Markdown" };
+  if (type === "CustomMediaSection" || type === "CustomTextSection" || type === "CustomVideoSection" || type === "CustomCtaSection" || type === "CustomSection") return getCustomSectionPrimaryEditTarget(type, props);
+  return { field: "title", kind: "text", label: "标题" };
+}
+
+function propStringFromRecord(props: Record<string, unknown>, key: string, fallback = "") {
+  const value = props[key];
+  return typeof value === "string" ? value : fallback;
+}
+
+function findPuckItemSelectorById(content: VisualPageLayoutData["content"], componentId: string) {
+  for (let index = 0; index < content.length; index += 1) {
+    const item = content[index];
+    const props = getPuckItemProps(item);
+    const itemId = typeof props.id === "string" ? props.id : "";
+    if (itemId === componentId) return { index, zone: rootDropZone };
+
+    const slotItems = Array.isArray(props.slotItems) ? props.slotItems as VisualPageLayoutData["content"] : [];
+    const slotIndex = slotItems.findIndex((slotItem) => {
+      const slotProps = getPuckItemProps(slotItem);
+      return typeof slotProps.id === "string" && slotProps.id === componentId;
+    });
+    if (slotIndex >= 0 && itemId) return { index: slotIndex, zone: `${itemId}:slotItems` };
+  }
+
+  return null;
+}
+
+function normalizeFieldSearchText(value: string) {
+  return value.replace(/\s+/g, "").toLowerCase();
+}
+
+function focusPuckFieldControl(detail: PuckTemplateEditFieldRequest) {
+  const fieldCandidates = Array.from(document.querySelectorAll<HTMLElement>([
+    `[name="${detail.field}"]`,
+    `[id$="${detail.field}"]`,
+    `[data-field="${detail.field}"]`,
+    `[data-puck-field="${detail.field}"]`
+  ].join(",")));
+  const directControl = fieldCandidates.find((element) => element instanceof HTMLInputElement || element instanceof HTMLTextAreaElement || element instanceof HTMLSelectElement || element instanceof HTMLButtonElement);
+  if (directControl) {
+    directControl.focus();
+    if (detail.kind === "image" || detail.kind === "video") directControl.click();
+    return;
+  }
+
+  const normalizedLabel = normalizeFieldSearchText(detail.label);
+  const fieldGroups = Array.from(document.querySelectorAll<HTMLElement>(".puck-media-picker-field, label, [class*='FieldLabel'], [class*='AutoField']"));
+  const group = fieldGroups.find((element) => normalizeFieldSearchText(element.textContent || "").includes(normalizedLabel));
+  const control = group?.querySelector<HTMLElement>("button:not([disabled]), input:not([disabled]), textarea:not([disabled]), select:not([disabled])");
+  if (control) {
+    control.focus();
+    if (detail.kind === "image" || detail.kind === "video") control.click();
+  }
+}
+
+function containerPatternSlotCount(pattern: string) {
+  return Math.max(1, pattern.split("-").filter(Boolean).length);
+}
+
+function blankContainerItem() {
+  return {
+    elementType: "",
+    title: "",
+    body: "",
+    source: "",
+    imageUrl: "",
+    videoSource: "",
+    videoUrl: "",
+    href: "",
+    buttonLabel: ""
+  };
+}
+
+function createContainerSlotItem(index: number, elementType: ContainerElementType = "text", source: Record<string, unknown> = {}): ContainerSlotContentItem {
+  const id = `${elementType || "slot"}-${Date.now().toString(36)}-${index}-${Math.random().toString(36).slice(2, 7)}`;
+  const visualProps = {
+    adminLabel: typeof source.adminLabel === "string" ? source.adminLabel : "",
+    isHidden: typeof source.isHidden === "boolean" ? source.isHidden : false,
+    align: typeof source.align === "string" ? source.align : "left",
+    verticalAlign: typeof source.verticalAlign === "string" ? source.verticalAlign : "start",
+    padding: typeof source.padding === "string" ? source.padding : "normal",
+    minHeight: typeof source.minHeight === "string" ? source.minHeight : "auto",
+    background: typeof source.background === "string" ? source.background : "transparent",
+    customBackground: typeof source.customBackground === "string" ? source.customBackground : "",
+    textColor: typeof source.textColor === "string" ? source.textColor : "",
+    accentColor: typeof source.accentColor === "string" ? source.accentColor : "",
+    borderStyle: typeof source.borderStyle === "string" ? source.borderStyle : "line",
+    radius: typeof source.radius === "string" ? source.radius : "medium",
+    shadow: typeof source.shadow === "string" ? source.shadow : "none"
+  };
+  const commonProps = {
+    ...visualProps,
+    id,
+    title: typeof source.title === "string" ? source.title : "",
+    eyebrow: typeof source.eyebrow === "string" ? source.eyebrow : "",
+    body: typeof source.body === "string" ? source.body : "",
+    href: typeof source.href === "string" ? source.href : "",
+    buttonLabel: typeof source.buttonLabel === "string" ? source.buttonLabel : "",
+    openInNewTab: typeof source.openInNewTab === "boolean" ? source.openInNewTab : false,
+    imageUrl: typeof source.imageUrl === "string" ? source.imageUrl : "",
+    source: typeof source.source === "string" ? source.source : "",
+    videoUrl: typeof source.videoUrl === "string" ? source.videoUrl : "",
+    videoSource: typeof source.videoSource === "string" ? source.videoSource : ""
+  };
+
+  if (elementType === "image") {
+    return { type: "ContainerImageElement", props: { ...visualProps, id, imageUrl: commonProps.source || commonProps.imageUrl, alt: commonProps.title, caption: commonProps.body, href: commonProps.href, openInNewTab: commonProps.openInNewTab, imageRatio: "wide", imageFit: "cover" } };
+  }
+  if (elementType === "imageText") {
+    return { type: "ContainerImageTextElement", props: { ...commonProps, imageUrl: commonProps.source || commonProps.imageUrl, title: commonProps.title || `内容 ${index + 1}`, imageRatio: "wide", imageFit: "cover", imagePlacement: "top", buttonStyle: "text" } };
+  }
+  if (elementType === "video") {
+    return { type: "ContainerVideoElement", props: { ...commonProps, videoUrl: commonProps.videoSource || commonProps.videoUrl, title: commonProps.title || `视频 ${index + 1}`, videoRatio: "wide", autoplay: false, muted: true, loop: false } };
+  }
+  if (elementType === "button") {
+    return { type: "ContainerButtonElement", props: { ...commonProps, buttonLabel: commonProps.buttonLabel || commonProps.title || "了解更多", href: commonProps.href || "#rfq", buttonStyle: "primary", buttonSize: "normal" } };
+  }
+  if (elementType === "html") {
+    return { type: "ContainerHtmlElement", props: { ...visualProps, id, body: commonProps.body || "<p>HTML / Markdown content</p>", renderMode: "markdown" } };
+  }
+  if (elementType === "separator") {
+    return { type: "ContainerSeparatorElement", props: { ...visualProps, id, separatorStyle: "solid", separatorWidth: "full", thickness: 1 } };
+  }
+
+  return {
+    type: "ContainerTextElement",
+    props: {
+      id,
+      title: commonProps.title || `内容 ${index + 1}`,
+      body: commonProps.body || "双击文字可直接编辑，也可以在右侧属性面板修改。",
+      href: commonProps.href
+    }
+  };
+}
+
+function defaultContainerElementTypeForModule(componentType: string, moduleType?: CustomSectionModuleType): ContainerElementType {
+  const resolvedModuleType = componentType === "CustomMediaSection"
+    ? "media"
+    : componentType === "CustomTextSection"
+      ? "text"
+      : componentType === "CustomVideoSection"
+        ? "video"
+        : componentType === "CustomCtaSection"
+          ? "cta"
+          : moduleType ?? "container";
+
+  if (resolvedModuleType === "media") return "imageText";
+  if (resolvedModuleType === "video") return "video";
+  if (resolvedModuleType === "cta") return "button";
+  return "text";
+}
+
+function createContainerSlotContent(pattern: string, items: Record<string, unknown>[] = [], defaultElementType: ContainerElementType = "text") {
+  return Array.from({ length: containerPatternSlotCount(pattern) }, (_, index) => {
+    const item = items[index] && typeof items[index] === "object" ? items[index] : {};
+    const elementType = typeof item.elementType === "string" ? item.elementType as ContainerElementType : defaultElementType;
+    return createContainerSlotItem(index, elementType || defaultElementType || "text", item);
+  });
+}
+
+function normalizeContainerSlotContent(pattern: string, items: ContainerSlotContentItem[], defaultElementType: ContainerElementType) {
+  const slotCount = containerPatternSlotCount(pattern);
+  return Array.from({ length: slotCount }, (_, index) => {
+    const currentItem = items[index];
+    if (currentItem?.type && currentItem.props && typeof currentItem.props === "object") return currentItem;
+    return createContainerSlotItem(index, defaultElementType);
+  });
+}
+
+function getLayoutItemProps(item: VisualPageLayoutData["content"][number]) {
+  return item.props && typeof item.props === "object" ? item.props as Record<string, unknown> : {};
+}
+
+function normalizeCustomSectionContainerData<T extends Record<string, unknown>>(data: T): T {
+  const props = (data.props && typeof data.props === "object" ? data.props : {}) as Record<string, unknown>;
+  const containerPattern = typeof props.containerPattern === "string" ? props.containerPattern : "1/1";
+  const componentType = typeof data.type === "string" ? data.type : "";
+  const defaultElementType = defaultContainerElementTypeForModule(componentType, getCustomSectionModuleType(props.moduleType));
+  const slotCount = containerPatternSlotCount(containerPattern);
+  const currentItems = Array.isArray(props.containerItems) ? props.containerItems as Record<string, unknown>[] : [];
+  const currentContent = Array.isArray(props.slotItems) ? props.slotItems as ContainerSlotContentItem[] : [];
+  const nextItems = Array.from({ length: slotCount }, (_, index) => ({
+    ...blankContainerItem(),
+    ...(currentItems[index] && typeof currentItems[index] === "object" ? currentItems[index] : {})
+  }));
+
+  const nextContent = currentContent.length > 0
+    ? normalizeContainerSlotContent(containerPattern, currentContent, defaultElementType)
+    : createContainerSlotContent(containerPattern, nextItems, defaultElementType);
+
+  if (currentItems.length === slotCount && currentContent.length === slotCount) return data;
+
+  const nextProps = {
+    ...props,
+    slotItems: nextContent,
+    containerItems: nextItems
+  };
+
+  return { ...data, props: nextProps } as T;
+}
 const rootDropZone = "root:default-zone";
 
 const baseLayoutOrder: PageLayoutKey[] = [
@@ -94,8 +519,40 @@ function cloneLayoutData(data?: VisualPageLayoutData): VisualPageLayoutData {
   return data ? JSON.parse(JSON.stringify(data)) as VisualPageLayoutData : blankData();
 }
 
+function localizedTemplateText(value: Translation | undefined, locale: LocaleCode, fallback = "") {
+  return value?.[locale] || value?.zh || value?.en || fallback;
+}
+
+function dataWithFooterDraftProps(data: VisualPageLayoutData | undefined, state: AdminState, locale: LocaleCode): VisualPageLayoutData {
+  const cloned = cloneLayoutData(data);
+  const rootProps = (cloned.root?.props ?? {}) as Record<string, unknown>;
+  return {
+    ...cloned,
+    root: {
+      ...cloned.root,
+      props: {
+        ...rootProps,
+        footerTagline: localizedTemplateText(state.templateSettings.footerTagline, locale, "Carbide end mills, drill bits, OEM tooling, and export-ready packing for global buyers."),
+        footerCopyright: localizedTemplateText(state.templateSettings.footerCopyright, locale, "Copyright © {year} {brand}. All rights reserved."),
+        footerCredit: localizedTemplateText(state.templateSettings.footerCredit, locale, "Built for precision tooling and B2B export orders.")
+      } as VisualPageLayoutData["root"]["props"]
+    }
+  };
+}
+
+function translationFromFooterDraft(value: unknown, fallback: Translation): Translation {
+  const textValue = typeof value === "string" ? value.trim() : "";
+  if (!textValue) return fallback;
+  return {
+    ...fallback,
+    zh: textValue,
+    en: fallback.en || textValue
+  };
+}
+
 function customSectionDefaultProps(moduleType: CustomSectionModuleType = "media") {
   const moduleLabel = getCustomSectionModuleLabel(moduleType);
+  const defaultElementType = defaultContainerElementTypeForModule("", moduleType);
 
   return {
     moduleType,
@@ -127,11 +584,60 @@ function customSectionDefaultProps(moduleType: CustomSectionModuleType = "media"
     buttonLabel: "了解更多",
     buttonHref: "#rfq",
     buttonStyle: "primary",
-    layout: moduleType === "text" || moduleType === "cta" ? "stacked" : "media-left",
+    containerPattern: moduleType === "container" ? "1/3-1/3-1/3" : "1/1",
+    containerItems: [
+      { elementType: defaultElementType, title: "产品入口", body: "用于放置产品、服务或卖点说明。", href: "/products", buttonLabel: "查看产品", imageUrl: "" },
+      { elementType: defaultElementType, title: "技术资料", body: "用于放置文章、下载资料或参数说明。", href: "/articles", buttonLabel: "阅读资料", imageUrl: "" },
+      { elementType: defaultElementType, title: "询盘转化", body: "用于放置报价、联系或行动按钮。", href: "#rfq", buttonLabel: "获取报价", imageUrl: "" }
+    ],
+    showSummary: true,
+    layout: moduleType === "text" || moduleType === "cta" || moduleType === "container" ? "stacked" : "media-left",
     align: "left",
     width: "contained",
     tone: "light",
     spacing: "normal"
+  };
+}
+
+function customSectionContainerOnlyProps(componentType: string, containerPattern: string) {
+  const moduleType = componentType === "CustomTextSection"
+    ? "text"
+    : componentType === "CustomVideoSection"
+      ? "video"
+      : componentType === "CustomCtaSection"
+        ? "cta"
+        : componentType === "CustomSection"
+          ? "container"
+          : "media";
+  const defaultElementType = defaultContainerElementTypeForModule(componentType, moduleType);
+
+  const containerItems = Array.from({ length: containerPatternSlotCount(containerPattern) }, () => ({
+    ...blankContainerItem(),
+    elementType: defaultElementType
+  }));
+
+  return {
+    ...customSectionDefaultProps(moduleType),
+    eyebrow: "",
+    title: "",
+    body: "",
+    mediaLibraryUrl: "",
+    mediaUrl: "",
+    imageMode: "none",
+    imageItems: [],
+    imageUrls: "",
+    backgroundImageUrl: "",
+    videoLibraryUrl: "",
+    videoUrl: "",
+    videoPosterUrl: "",
+    buttonLabel: "",
+    buttonHref: "",
+    containerPattern,
+    containerItems,
+    slotItems: createContainerSlotContent(containerPattern, containerItems, defaultElementType),
+    showSummary: true,
+    layout: "stacked",
+    align: "left"
   };
 }
 
@@ -156,6 +662,29 @@ function booleanField(label: string) {
       { label: "隐藏", value: false }
     ]
   };
+}
+
+function yesNoField(label: string) {
+  return {
+    type: "radio" as const,
+    label,
+    options: [
+      { label: "是", value: true },
+      { label: "否", value: false }
+    ]
+  };
+}
+
+function editableTextField(type: "text" | "textarea", label: string, extra: Record<string, unknown> = {}) {
+  return { type, label, contentEditable: true, ...extra };
+}
+
+function slotField(label: string, allow = containerSlotComponentTypes) {
+  return { type: "slot" as const, label, allow };
+}
+
+function hiddenSlotField(label: string, allow = containerSlotComponentTypes) {
+  return { ...slotField(label, allow), visible: false };
 }
 
 function compactLabel(value: string, fallback: string) {
@@ -361,7 +890,7 @@ function imageListField(label: string, mediaItems: MediaPickerItem[]) {
 }
 
 function getCustomSectionModuleType(value: unknown): CustomSectionModuleType {
-  return value === "text" || value === "video" || value === "cta" ? value : "media";
+  return value === "text" || value === "video" || value === "cta" || value === "container" ? value : "media";
 }
 
 function getCustomSectionModuleLabel(value: unknown) {
@@ -369,7 +898,147 @@ function getCustomSectionModuleLabel(value: unknown) {
   if (moduleType === "text") return "纯文字模块";
   if (moduleType === "video") return "视频模块";
   if (moduleType === "cta") return "行动按钮模块";
+  if (moduleType === "container") return "栅格容器";
   return "图文模块";
+}
+
+function containerItemsField(imageItems: MediaPickerItem[], videoItems: MediaPickerItem[]) {
+  return {
+    type: "array" as const,
+    label: "容器项目",
+    min: 1,
+    max: 6,
+    arrayFields: {
+      elementType: selectField("元素类型", containerElementChoices),
+      title: field("text", "标题"),
+      body: field("textarea", "文字 / HTML"),
+      source: mediaPickerField("图片：从媒体库选择", imageItems, "image"),
+      imageUrl: field("text", "图片 URL"),
+      videoSource: mediaPickerField("视频：从媒体库选择", videoItems, "video"),
+      videoUrl: field("text", "视频 URL / iframe URL"),
+      href: field("text", "链接"),
+      buttonLabel: field("text", "按钮文字")
+    },
+    defaultItemProps: { elementType: "", title: "", body: "", source: "", imageUrl: "", videoSource: "", videoUrl: "", href: "", buttonLabel: "" },
+    getItemSummary: (item: { elementType?: string; title?: string; body?: string }, index?: number) => {
+      const elementLabel = containerElementChoices.find((choice) => choice.value === item.elementType)?.label;
+      return item.title || elementLabel || item.body || `容器 ${(index ?? 0) + 1}`;
+    }
+  };
+}
+
+function containerBaseElementFields() {
+  return {
+    adminLabel: field("text", "元素备注（仅后台）"),
+    isHidden: yesNoField("隐藏此元素"),
+    align: radioField("内容对齐", containerAlignChoices),
+    verticalAlign: radioField("垂直位置", containerVerticalAlignChoices),
+    padding: radioField("内边距", containerPaddingChoices),
+    minHeight: radioField("最小高度", containerMinHeightChoices),
+    background: radioField("容器背景", containerBackgroundChoices),
+    customBackground: field("text", "自定义背景色"),
+    textColor: field("text", "文字颜色"),
+    accentColor: field("text", "强调颜色"),
+    borderStyle: radioField("边框", containerBorderChoices),
+    radius: radioField("圆角", containerRadiusChoices),
+    shadow: radioField("阴影", containerShadowChoices)
+  };
+}
+
+function containerTextFields() {
+  return {
+    eyebrow: editableTextField("text", "眉标 / 小标签"),
+    title: editableTextField("text", "标题"),
+    body: editableTextField("textarea", "正文"),
+    textSize: radioField("文字大小", containerTextSizeChoices),
+    href: field("text", "整块链接"),
+    openInNewTab: yesNoField("链接新窗口打开"),
+    ...containerBaseElementFields()
+  };
+}
+
+function containerImageFields(imageItems: MediaPickerItem[]) {
+  return {
+    imageUrl: mediaPickerField("图片：从媒体库选择", imageItems, "image"),
+    externalImageUrl: field("text", "外部图片 URL"),
+    alt: editableTextField("text", "替代文字 Alt"),
+    caption: editableTextField("text", "图片说明"),
+    href: field("text", "图片链接"),
+    openInNewTab: yesNoField("链接新窗口打开"),
+    imageRatio: radioField("图片比例", mediaAspectChoices),
+    imageFit: radioField("图片显示", mediaFitChoices),
+    ...containerBaseElementFields()
+  };
+}
+
+function containerImageTextFields(imageItems: MediaPickerItem[]) {
+  return {
+    imageUrl: mediaPickerField("图片：从媒体库选择", imageItems, "image"),
+    externalImageUrl: field("text", "外部图片 URL"),
+    imagePlacement: radioField("图片位置", imagePlacementChoices),
+    imageRatio: radioField("图片比例", mediaAspectChoices),
+    imageFit: radioField("图片显示", mediaFitChoices),
+    eyebrow: editableTextField("text", "眉标 / 小标签"),
+    title: editableTextField("text", "标题"),
+    body: editableTextField("textarea", "正文"),
+    textSize: radioField("文字大小", containerTextSizeChoices),
+    href: field("text", "链接"),
+    openInNewTab: yesNoField("链接新窗口打开"),
+    buttonLabel: editableTextField("text", "按钮文字"),
+    buttonStyle: radioField("按钮样式", buttonStyleChoices),
+    ...containerBaseElementFields()
+  };
+}
+
+function containerVideoFields(imageItems: MediaPickerItem[], videoItems: MediaPickerItem[]) {
+  return {
+    videoUrl: mediaPickerField("视频：从媒体库选择", videoItems, "video"),
+    externalVideoUrl: field("text", "外部视频 / iframe URL"),
+    posterUrl: mediaPickerField("封面图", imageItems, "image"),
+    videoRatio: radioField("视频比例", mediaAspectChoices),
+    autoplay: yesNoField("自动播放"),
+    muted: yesNoField("静音"),
+    loop: yesNoField("循环播放"),
+    title: editableTextField("text", "标题"),
+    body: editableTextField("textarea", "说明"),
+    textSize: radioField("文字大小", containerTextSizeChoices),
+    ...containerBaseElementFields()
+  };
+}
+
+function containerButtonFields() {
+  return {
+    buttonLabel: editableTextField("text", "按钮文字"),
+    href: field("text", "按钮链接"),
+    openInNewTab: yesNoField("新窗口打开"),
+    buttonStyle: radioField("按钮样式", buttonStyleChoices),
+    buttonSize: radioField("按钮尺寸", buttonSizeChoices),
+    title: editableTextField("text", "辅助标题"),
+    body: editableTextField("textarea", "辅助说明"),
+    textSize: radioField("文字大小", containerTextSizeChoices),
+    ...containerBaseElementFields()
+  };
+}
+
+function containerHtmlFields() {
+  return {
+    body: editableTextField("textarea", "HTML / Markdown"),
+    renderMode: radioField("渲染模式", [
+      { label: "Markdown", value: "markdown" },
+      { label: "HTML", value: "html" },
+      { label: "纯文本", value: "plain" }
+    ]),
+    ...containerBaseElementFields()
+  };
+}
+
+function containerSeparatorFields() {
+  return {
+    separatorStyle: radioField("线条样式", separatorStyleChoices),
+    separatorWidth: radioField("线条宽度", separatorWidthChoices),
+    thickness: field("number", "线条粗细", { min: 1, max: 12 }),
+    ...containerBaseElementFields()
+  };
 }
 
 function createCustomSectionFields(
@@ -386,14 +1055,9 @@ function createCustomSectionFields(
       { label: "图文模块", value: "media" },
       { label: "纯文字模块", value: "text" },
       { label: "视频模块", value: "video" },
-      { label: "行动按钮模块", value: "cta" }
+      { label: "行动按钮模块", value: "cta" },
+      { label: "栅格容器", value: "container" }
     ]
-  };
-  const contentFields = {
-    ...(includeModuleType ? { moduleType: moduleTypeField } : {}),
-    eyebrow: field("text", "眉标"),
-    title: field("textarea", "标题"),
-    body: field("textarea", "正文 Markdown")
   };
   const layoutFields = {
     align: radioField("对齐", [
@@ -417,97 +1081,31 @@ function createCustomSectionFields(
       { label: "宽松", value: "large" }
     ])
   };
-  const buttonFields = {
-    buttonLabel: field("text", "按钮文字"),
-    buttonHref: field("text", "按钮链接"),
-    buttonStyle: radioField("按钮样式", [
-      { label: "主按钮", value: "primary" },
-      { label: "次按钮", value: "secondary" },
-      { label: "文字链接", value: "text" }
-    ])
-  };
-  const splitLayoutField = {
-    layout: radioField("布局", [
-      { label: "上下排列", value: "stacked" },
-      { label: "媒体在左", value: "media-left" },
-      { label: "媒体在右", value: "media-right" }
-    ])
+  const moduleFields = {
+    ...(includeModuleType ? { moduleType: moduleTypeField } : {}),
+    containerPattern: selectField("容器比例", containerPatternChoices),
+    slotItems: hiddenSlotField("容器内部元素"),
+    backgroundImageUrl: mediaPickerField("模块背景图", imageItems, "image"),
+    ...layoutFields
   };
 
   if (moduleType === "text") {
-    return {
-      ...contentFields,
-      ...layoutFields
-    };
+    return moduleFields;
   }
 
   if (moduleType === "video") {
-    return {
-      ...contentFields,
-      videoLibraryUrl: mediaPickerField("视频：从媒体库选择", videoItems, "video"),
-      videoUrl: field("text", "视频 URL / iframe URL"),
-      videoPosterUrl: mediaPickerField("视频封面", imageItems, "image"),
-      ...splitLayoutField,
-      ...buttonFields,
-      ...layoutFields
-    };
+    return moduleFields;
   }
 
   if (moduleType === "cta") {
-    return {
-      ...contentFields,
-      ...buttonFields,
-      backgroundImageUrl: mediaPickerField("背景图：从媒体库选择", imageItems, "image"),
-      ...layoutFields
-    };
+    return moduleFields;
   }
 
-  return {
-    ...contentFields,
-    imageMode: selectField("图片模式", [
-      { label: "不显示图片", value: "none" },
-      { label: "单图", value: "single" },
-      { label: "图库", value: "gallery" },
-      { label: "轮播", value: "carousel" },
-      { label: "背景图", value: "background" }
-    ]),
-    mediaLibraryUrl: mediaPickerField("主图：从媒体库选择", imageItems, "image"),
-    mediaUrl: field("text", "主图：手填 URL"),
-    imageItems: imageListField("逐张图片（可多选）", imageItems),
-    imageUrls: field("textarea", "批量图片 URL（每行一个）"),
-    imageLimit: imageCountField(),
-    imageLayout: radioField("图片布局", [
-      { label: "网格", value: "grid" },
-      { label: "马赛克", value: "mosaic" },
-      { label: "横向滑动", value: "strip" },
-      { label: "堆叠", value: "stacked" }
-    ]),
-    imageFit: radioField("图片裁切", [
-      { label: "填满裁切", value: "cover" },
-      { label: "完整显示", value: "contain" }
-    ]),
-    imageAspect: radioField("图片比例", [
-      { label: "16:9", value: "wide" },
-      { label: "4:3", value: "standard" },
-      { label: "1:1", value: "square" },
-      { label: "3:4", value: "portrait" }
-    ]),
-    imageFrame: radioField("图片边框", [
-      { label: "柔和卡片", value: "soft" },
-      { label: "无边框", value: "none" },
-      { label: "细线", value: "line" },
-      { label: "重阴影", value: "shadow" }
-    ]),
-    imageTone: radioField("图片效果", [
-      { label: "原图", value: "normal" },
-      { label: "冷色工业", value: "cool" },
-      { label: "黑白", value: "mono" }
-    ]),
-    backgroundImageUrl: mediaPickerField("背景图：从媒体库选择", imageItems, "image"),
-    ...splitLayoutField,
-    ...buttonFields,
-    ...layoutFields
-  };
+  if (moduleType === "container") {
+    return moduleFields;
+  }
+
+  return moduleFields;
 }
 
 function createPageOptions(state: AdminState): PageOption[] {
@@ -547,11 +1145,13 @@ function preventPreviewNavigation(event: MouseEvent<HTMLElement>) {
 
 function PuckPreviewShell({
   children,
+  footerDraft,
   layoutKey,
   locale,
   state
 }: {
   children: ReactNode;
+  footerDraft?: FooterDraftProps;
   layoutKey: PageLayoutKey;
   locale: LocaleCode;
   state: AdminState;
@@ -573,6 +1173,9 @@ function PuckPreviewShell({
       <PublicFooterShell
         brandName={state.siteSettings.title}
         channels={state.contactChannels}
+        copyright={footerDraft?.footerCopyright ? { zh: footerDraft.footerCopyright, en: footerDraft.footerCopyright } : state.templateSettings.footerCopyright}
+        credit={footerDraft?.footerCredit ? { zh: footerDraft.footerCredit, en: footerDraft.footerCredit } : state.templateSettings.footerCredit}
+        tagline={footerDraft?.footerTagline ? { zh: footerDraft.footerTagline, en: footerDraft.footerTagline } : state.templateSettings.footerTagline}
         locale={locale}
         navigation={state.navigation}
         preventNavigation
@@ -582,18 +1185,19 @@ function PuckPreviewShell({
 }
 
 function getPuckItemProps(item: VisualPageLayoutData["content"][number]) {
-  return item.props && typeof item.props === "object" ? item.props as Record<string, unknown> : {};
+  return getLayoutItemProps(item);
 }
 
 function getPuckItemTitle(config: Config, item: VisualPageLayoutData["content"][number], index: number) {
   const props = getPuckItemProps(item);
   const componentLabel = config.components[item.type]?.label ?? item.type;
+  const adminLabel = typeof props.adminLabel === "string" ? props.adminLabel.trim() : "";
   const title = typeof props.title === "string" ? props.title.trim() : "";
   const presetLabel = customSectionPresetLabels[item.type];
 
   if (presetLabel) {
     return {
-      title: presetLabel,
+      title: adminLabel || presetLabel,
       detail: title && title !== presetLabel ? title : "自定义模块"
     };
   }
@@ -601,15 +1205,79 @@ function getPuckItemTitle(config: Config, item: VisualPageLayoutData["content"][
   if (item.type === "CustomSection") {
     const moduleLabel = getCustomSectionModuleLabel(props.moduleType);
     return {
-      title: moduleLabel,
+      title: adminLabel || moduleLabel,
       detail: title && title !== "自定义模块" ? title : "自定义模块"
     };
   }
 
   return {
-    title: componentLabel,
+    title: adminLabel || componentLabel,
     detail: title || `模块 ${index + 1}`
   };
+}
+
+function PuckTemplateComponentItem({
+  canManage,
+  children,
+  name
+}: {
+  canManage: boolean;
+  children: ReactNode;
+  name: string;
+}) {
+  const config = useTypedPuck((puck) => puck.config);
+  const quickAddModule = customQuickAddModules.find((module) => module.type === name);
+  const moduleLabel = quickAddModule?.label ?? config.components[name]?.label ?? name;
+  const isQuickAddModule = Boolean(quickAddModule);
+  const lastRequestAtRef = useRef(0);
+  const requestAdd = useCallback((event?: SyntheticEvent<HTMLElement>) => {
+    if (!canManage) return;
+    event?.preventDefault();
+    event?.stopPropagation();
+    const now = Date.now();
+    if (now - lastRequestAtRef.current < 250) return;
+    lastRequestAtRef.current = now;
+    window.dispatchEvent(new CustomEvent<PuckTemplateAddRequest>("puck-template-request-add", {
+      detail: { label: moduleLabel, type: name }
+    }));
+  }, [canManage, moduleLabel, name]);
+
+  if (isQuickAddModule) {
+    return (
+      <div className="puck-template-component-item is-ratio-first">
+        <div className="puck-template-component-item-row">
+          <div
+            className="puck-template-component-drag puck-template-component-ratio-trigger"
+            data-puck-template-add-label={moduleLabel}
+            data-puck-template-add-type={name}
+            title={`选择${moduleLabel}容器比例`}
+          >
+            {children}
+          </div>
+          <button
+            aria-label={`添加${moduleLabel}`}
+            className="puck-template-component-add"
+            data-puck-template-add-label={moduleLabel}
+            data-puck-template-add-type={name}
+            disabled={!canManage}
+            title={`选择${moduleLabel}容器比例`}
+            type="button"
+            onClick={(event) => requestAdd(event)}
+          >
+            <Plus size={14} />
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="puck-template-component-item is-native">
+      <div className="puck-template-component-item-row is-native">
+        <div className="puck-template-component-drag">{children}</div>
+      </div>
+    </div>
+  );
 }
 
 function PuckTemplateBlocksPanel({ canManage }: { canManage: boolean }) {
@@ -622,8 +1290,10 @@ function PuckTemplateBlocksPanel({ canManage }: { canManage: boolean }) {
   const [leftPanelCollapsed, setLeftPanelCollapsed] = useState(false);
   const [structureCollapsed, setStructureCollapsed] = useState(false);
   const [libraryCollapsed, setLibraryCollapsed] = useState(false);
+  const [pendingAddModule, setPendingAddModule] = useState<PuckTemplateAddRequest | null>(null);
+  const [editingStructureLabel, setEditingStructureLabel] = useState<{ index: number; value: string } | null>(null);
   const lastExpandedWidthRef = useRef(puckLeftPanelExpandedWidth);
-  const content = (appState.data?.content ?? []) as VisualPageLayoutData["content"];
+  const content = useMemo(() => (appState.data?.content ?? []) as VisualPageLayoutData["content"], [appState.data?.content]);
   const selectedId = selectedItem?.props?.id;
 
   useEffect(() => {
@@ -632,9 +1302,68 @@ function PuckTemplateBlocksPanel({ canManage }: { canManage: boolean }) {
     }
   }, [leftPanelCollapsed, leftSideBarWidth]);
 
+  useEffect(() => {
+    const handleAddRequest = (event: Event) => {
+      const detail = (event as CustomEvent<PuckTemplateAddRequest>).detail;
+      if (!detail?.type) return;
+      setLibraryCollapsed(false);
+      setPendingAddModule(detail);
+    };
+
+    window.addEventListener("puck-template-request-add", handleAddRequest);
+    return () => window.removeEventListener("puck-template-request-add", handleAddRequest);
+  }, []);
+
+  useEffect(() => {
+    const handleEditFieldRequest = (event: Event) => {
+      const detail = (event as CustomEvent<PuckTemplateEditFieldRequest>).detail;
+      if (!detail?.field) return;
+
+      if (detail.componentId) {
+        const selector = findPuckItemSelectorById(content, detail.componentId);
+        if (selector) {
+          dispatch({ type: "setUi", ui: { itemSelector: selector } });
+        }
+      }
+
+      window.setTimeout(() => focusPuckFieldControl(detail), 80);
+      window.setTimeout(() => focusPuckFieldControl(detail), 220);
+    };
+
+    window.addEventListener("puck-template-request-edit-field", handleEditFieldRequest);
+    return () => window.removeEventListener("puck-template-request-edit-field", handleEditFieldRequest);
+  }, [content, dispatch]);
+
   const selectItem = useCallback((index: number) => {
     dispatch({ type: "setUi", ui: { itemSelector: { index, zone: rootDropZone } } });
   }, [dispatch]);
+
+  const saveStructureLabel = useCallback((index: number, value: string) => {
+    const item = content[index];
+    if (!canManage || !item) {
+      setEditingStructureLabel(null);
+      return;
+    }
+
+    const trimmedValue = value.trim();
+    const currentProps = getPuckItemProps(item);
+    dispatch({
+      type: "replace",
+      destinationIndex: index,
+      destinationZone: rootDropZone,
+      data: {
+        ...item,
+        props: {
+          ...currentProps,
+          id: typeof currentProps.id === "string" ? currentProps.id : `${item.type}-${index}`,
+          adminLabel: trimmedValue
+        }
+      } as VisualPageLayoutData["content"][number],
+      recordHistory: true
+    });
+    dispatch({ type: "setUi", ui: { itemSelector: { index, zone: rootDropZone } } });
+    setEditingStructureLabel(null);
+  }, [canManage, content, dispatch]);
 
   const moveItem = useCallback((sourceIndex: number, destinationIndex: number) => {
     if (!canManage || sourceIndex === destinationIndex || sourceIndex < 0 || destinationIndex < 0 || sourceIndex >= content.length || destinationIndex >= content.length) return;
@@ -647,6 +1376,58 @@ function PuckTemplateBlocksPanel({ canManage }: { canManage: boolean }) {
     });
     dispatch({ type: "setUi", ui: { itemSelector: { index: destinationIndex, zone: rootDropZone } } });
   }, [canManage, content.length, dispatch]);
+
+  const addModuleWithContainerPattern = useCallback((componentType: string, containerPattern: string) => {
+    const componentConfig = config.components[componentType];
+    if (!canManage || !componentConfig) return;
+
+    const id = `${componentType}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 7)}`;
+    const defaultProps = "defaultProps" in componentConfig && componentConfig.defaultProps
+      ? JSON.parse(JSON.stringify(componentConfig.defaultProps)) as Record<string, unknown>
+      : {};
+    const isCustomContainerModule = customQuickAddModules.some((module) => module.type === componentType);
+    const selectedIndex = selectedId ? content.findIndex((item) => getPuckItemProps(item).id === selectedId) : -1;
+    const destinationIndex = selectedIndex >= 0 ? selectedIndex + 1 : content.length;
+    const nextItem = {
+      type: componentType,
+      props: {
+        ...defaultProps,
+        ...(isCustomContainerModule ? customSectionContainerOnlyProps(componentType, containerPattern) : {}),
+        id,
+        containerPattern
+      }
+    };
+    if (!pendingAddModule?.target) {
+      ratioHandledInsertIds.add(id);
+      dispatch({
+        type: "insert",
+        componentType,
+        destinationIndex,
+        destinationZone: rootDropZone,
+        id,
+        recordHistory: true
+      });
+    }
+
+    const targetIndex = pendingAddModule?.target?.index ?? destinationIndex;
+    const targetZone = pendingAddModule?.target?.zone ?? rootDropZone;
+    const targetId = pendingAddModule?.target?.id ?? id;
+    dispatch({
+      type: "replace",
+      destinationIndex: targetIndex,
+      destinationZone: targetZone,
+      data: {
+        ...nextItem,
+        props: {
+          ...nextItem.props,
+          id: targetId
+        }
+      },
+      recordHistory: true
+    });
+    dispatch({ type: "setUi", ui: { itemSelector: { index: targetIndex, zone: targetZone } } });
+    setPendingAddModule(null);
+  }, [canManage, config.components, content, dispatch, pendingAddModule?.target, selectedId]);
 
   const handleDrop = (event: DragEvent<HTMLLIElement>, destinationIndex: number) => {
     event.preventDefault();
@@ -739,6 +1520,7 @@ function PuckTemplateBlocksPanel({ canManage }: { canManage: boolean }) {
                 const itemId = typeof itemProps.id === "string" ? itemProps.id : "";
                 const isSelected = Boolean(itemId && selectedId === itemId);
                 const label = getPuckItemTitle(config, item, index);
+                const isEditingLabel = editingStructureLabel?.index === index;
 
                 return (
                   <li
@@ -759,10 +1541,43 @@ function PuckTemplateBlocksPanel({ canManage }: { canManage: boolean }) {
                     }}
                     onDrop={(event) => handleDrop(event, index)}
                   >
-                    <button className="puck-template-structure-main" type="button" onClick={() => selectItem(index)}>
+                    <button
+                      className="puck-template-structure-main"
+                      type="button"
+                      onClick={() => selectItem(index)}
+                      onDoubleClick={(event) => {
+                        if (!canManage) return;
+                        event.preventDefault();
+                        event.stopPropagation();
+                        selectItem(index);
+                        setEditingStructureLabel({ index, value: label.title });
+                      }}
+                    >
                       <GripVertical size={15} aria-hidden="true" />
                       <span>
-                        <strong>{label.title}</strong>
+                        {isEditingLabel ? (
+                          <input
+                            autoFocus
+                            className="puck-template-structure-label-input"
+                            value={editingStructureLabel.value}
+                            onBlur={() => saveStructureLabel(index, editingStructureLabel.value)}
+                            onChange={(event) => setEditingStructureLabel({ index, value: event.target.value })}
+                            onClick={(event) => event.stopPropagation()}
+                            onDoubleClick={(event) => event.stopPropagation()}
+                            onKeyDown={(event) => {
+                              if (event.key === "Enter") {
+                                event.preventDefault();
+                                saveStructureLabel(index, editingStructureLabel.value);
+                              }
+                              if (event.key === "Escape") {
+                                event.preventDefault();
+                                setEditingStructureLabel(null);
+                              }
+                            }}
+                          />
+                        ) : (
+                          <strong title="双击修改模块名称">{label.title}</strong>
+                        )}
                         <small>{label.detail}</small>
                       </span>
                     </button>
@@ -801,6 +1616,34 @@ function PuckTemplateBlocksPanel({ canManage }: { canManage: boolean }) {
           </button>
         </div>
         <div className="puck-template-panel-body" hidden={libraryCollapsed} id="puck-template-library-body">
+          {pendingAddModule ? (
+            <div
+              className="puck-template-add-ratio-dialog"
+              role="dialog"
+              aria-label={`选择${pendingAddModule.label}容器比例`}
+              onMouseDown={(event) => event.stopPropagation()}
+              onPointerDown={(event) => event.stopPropagation()}
+            >
+              <div className="puck-template-add-ratio-head">
+                <strong>{pendingAddModule.label}</strong>
+                <button aria-label="关闭容器比例选择" type="button" onClick={() => setPendingAddModule(null)}>
+                  <X size={13} />
+                </button>
+              </div>
+              <span>先选择容器比例，再添加模块内容。</span>
+              <div className="puck-template-add-ratio-grid">
+                {containerPatternChoices.map((choice) => (
+                  <button
+                    key={choice.value}
+                    type="button"
+                    onClick={() => addModuleWithContainerPattern(pendingAddModule.type, choice.value)}
+                  >
+                    {choice.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          ) : null}
           <Puck.Components />
         </div>
       </section>
@@ -831,12 +1674,28 @@ function createConfig(state: AdminState, locale: LocaleCode, layoutKey: PageLayo
   const customCtaSectionFields = createCustomSectionFields("cta", imageMediaItems, videoMediaItems, { includeModuleType: false });
   const render = (type: string) => {
     function PuckBlockPreview(props: Record<string, unknown>) {
+      const componentId = typeof props.id === "string" && props.id ? props.id : type;
+      const editTarget = getPrimaryEditTarget(type, props);
+      const editTitle = editTarget.kind === "video"
+        ? `双击编辑${editTarget.label}，右侧会定位到视频属性`
+        : editTarget.kind === "image"
+          ? `双击编辑${editTarget.label}，右侧会定位到图片属性`
+          : `双击编辑${editTarget.label}`;
+
       return (
-        <div className="puck-editor-preview-scope">
+        <div
+          className={`puck-editor-preview-scope puck-editor-preview-scope--${editTarget.kind}`}
+          data-puck-edit-component={componentId}
+          data-puck-edit-field={editTarget.field}
+          data-puck-edit-kind={editTarget.kind}
+          title={editTitle}
+          onDoubleClick={(event) => requestPuckFieldEdit({ ...editTarget, componentId }, event)}
+        >
           <PuckVisualBlock
             currentArticle={firstArticle}
             currentProduct={firstProduct}
-            item={{ type, props: { id: String(props.id ?? type), ...props } }}
+            editable
+            item={{ type, props: { ...props, id: componentId } }}
             locale={locale}
             state={state}
           />
@@ -850,17 +1709,33 @@ function createConfig(state: AdminState, locale: LocaleCode, layoutKey: PageLayo
 
   return {
     root: {
-      render: ({ children }: { children: ReactNode }) => (
-        <PuckPreviewShell layoutKey={layoutKey} locale={locale} state={state}>
+      fields: {
+        title: field("text", "页面标题"),
+        footerTagline: field("textarea", "页脚说明"),
+        footerCopyright: field("text", "页脚版权行"),
+        footerCredit: field("text", "页脚右侧说明")
+      },
+      render: ({ children, footerCopyright, footerCredit, footerTagline }: { children: ReactNode } & FooterDraftProps) => (
+        <PuckPreviewShell
+          footerDraft={{ footerCopyright, footerCredit, footerTagline }}
+          layoutKey={layoutKey}
+          locale={locale}
+          state={state}
+        >
           {children}
         </PuckPreviewShell>
       )
     },
     categories: {
       custom: {
-        title: "添加模块类型",
+        title: "模块类型",
         components: ["CustomMediaSection", "CustomTextSection", "CustomVideoSection", "CustomCtaSection", "CustomSection"],
         defaultExpanded: true
+      },
+      containerElements: {
+        title: "容器元素",
+        components: containerSlotComponentTypes,
+        defaultExpanded: false
       },
       other: {
         visible: false
@@ -1347,28 +2222,74 @@ function createConfig(state: AdminState, locale: LocaleCode, layoutKey: PageLayo
         defaultProps: {},
         render: render("FileList")
       },
+      ContainerTextElement: {
+        label: "容器文字",
+        fields: containerTextFields(),
+        defaultProps: { title: "内容标题", eyebrow: "", body: "双击可直接编辑文字，也可以在右侧属性面板修改。", textSize: "normal", href: "", openInNewTab: false, align: "left", verticalAlign: "start", padding: "normal", minHeight: "auto", background: "transparent", customBackground: "", textColor: "", accentColor: "", borderStyle: "line", radius: "medium", shadow: "none", isHidden: false, adminLabel: "" },
+        render: render("ContainerTextElement")
+      },
+      ContainerImageElement: {
+        label: "容器图片",
+        fields: containerImageFields(imageMediaItems),
+        defaultProps: { imageUrl: "/assets/current-template/hero-tooling-range.jpg", externalImageUrl: "", alt: "Container image", caption: "", href: "", openInNewTab: false, imageRatio: "wide", imageFit: "cover", align: "left", verticalAlign: "start", padding: "normal", minHeight: "auto", background: "transparent", customBackground: "", textColor: "", accentColor: "", borderStyle: "line", radius: "medium", shadow: "none", isHidden: false, adminLabel: "" },
+        render: render("ContainerImageElement")
+      },
+      ContainerImageTextElement: {
+        label: "容器图文",
+        fields: containerImageTextFields(imageMediaItems),
+        defaultProps: { imageUrl: "/assets/current-template/hero-tooling-range.jpg", externalImageUrl: "", imagePlacement: "top", imageRatio: "wide", imageFit: "cover", eyebrow: "", title: "图文内容", body: "选择这个元素后，可在右侧修改图片、标题、正文和链接。", textSize: "normal", href: "", openInNewTab: false, buttonLabel: "", buttonStyle: "text", align: "left", verticalAlign: "start", padding: "normal", minHeight: "auto", background: "transparent", customBackground: "", textColor: "", accentColor: "", borderStyle: "line", radius: "medium", shadow: "none", isHidden: false, adminLabel: "" },
+        render: render("ContainerImageTextElement")
+      },
+      ContainerVideoElement: {
+        label: "容器视频",
+        fields: containerVideoFields(imageMediaItems, videoMediaItems),
+        defaultProps: { videoUrl: "", externalVideoUrl: "", title: "视频内容", body: "", posterUrl: "", videoRatio: "wide", autoplay: false, muted: true, loop: false, textSize: "normal", align: "left", verticalAlign: "start", padding: "normal", minHeight: "auto", background: "transparent", customBackground: "", textColor: "", accentColor: "", borderStyle: "line", radius: "medium", shadow: "none", isHidden: false, adminLabel: "" },
+        render: render("ContainerVideoElement")
+      },
+      ContainerButtonElement: {
+        label: "容器按钮",
+        fields: containerButtonFields(),
+        defaultProps: { buttonLabel: "了解更多", href: "#rfq", openInNewTab: false, buttonStyle: "primary", buttonSize: "normal", title: "", body: "", textSize: "normal", align: "left", verticalAlign: "start", padding: "normal", minHeight: "auto", background: "transparent", customBackground: "", textColor: "", accentColor: "", borderStyle: "line", radius: "medium", shadow: "none", isHidden: false, adminLabel: "" },
+        render: render("ContainerButtonElement")
+      },
+      ContainerHtmlElement: {
+        label: "容器 HTML",
+        fields: containerHtmlFields(),
+        defaultProps: { body: "<p>HTML / Markdown content</p>", renderMode: "markdown", align: "left", verticalAlign: "start", padding: "normal", minHeight: "auto", background: "transparent", customBackground: "", textColor: "", accentColor: "", borderStyle: "line", radius: "medium", shadow: "none", isHidden: false, adminLabel: "" },
+        render: render("ContainerHtmlElement")
+      },
+      ContainerSeparatorElement: {
+        label: "容器分隔线",
+        fields: containerSeparatorFields(),
+        defaultProps: { separatorStyle: "solid", separatorWidth: "full", thickness: 1, align: "center", verticalAlign: "center", padding: "normal", minHeight: "auto", background: "transparent", customBackground: "", textColor: "", accentColor: "", borderStyle: "none", radius: "none", shadow: "none", isHidden: false, adminLabel: "" },
+        render: render("ContainerSeparatorElement")
+      },
       CustomMediaSection: {
         label: "图文模块",
         fields: customMediaSectionFields,
-        defaultProps: customSectionDefaultProps("media"),
+        resolveData: (data) => normalizeCustomSectionContainerData(data as Record<string, unknown>),
+        defaultProps: customSectionContainerOnlyProps("CustomMediaSection", "1/1"),
         render: render("CustomSection")
       },
       CustomTextSection: {
         label: "纯文字模块",
         fields: customTextSectionFields,
-        defaultProps: customSectionDefaultProps("text"),
+        resolveData: (data) => normalizeCustomSectionContainerData(data as Record<string, unknown>),
+        defaultProps: customSectionContainerOnlyProps("CustomTextSection", "1/1"),
         render: render("CustomSection")
       },
       CustomVideoSection: {
         label: "视频模块",
         fields: customVideoSectionFields,
-        defaultProps: customSectionDefaultProps("video"),
+        resolveData: (data) => normalizeCustomSectionContainerData(data as Record<string, unknown>),
+        defaultProps: customSectionContainerOnlyProps("CustomVideoSection", "1/1"),
         render: render("CustomSection")
       },
       CustomCtaSection: {
         label: "行动按钮模块",
         fields: customCtaSectionFields,
-        defaultProps: customSectionDefaultProps("cta"),
+        resolveData: (data) => normalizeCustomSectionContainerData(data as Record<string, unknown>),
+        defaultProps: customSectionContainerOnlyProps("CustomCtaSection", "1/1"),
         render: render("CustomSection")
       },
       CustomSection: {
@@ -1378,7 +2299,8 @@ function createConfig(state: AdminState, locale: LocaleCode, layoutKey: PageLayo
           const props = "props" in data && data.props && typeof data.props === "object" ? data.props as Record<string, unknown> : data as Record<string, unknown>;
           return createCustomSectionFields(getCustomSectionModuleType(props.moduleType), imageMediaItems, videoMediaItems);
         },
-        defaultProps: customSectionDefaultProps(),
+        resolveData: (data) => normalizeCustomSectionContainerData(data as Record<string, unknown>),
+        defaultProps: customSectionContainerOnlyProps("CustomSection", "1/1"),
         render: render("CustomSection")
       }
     }
@@ -1423,12 +2345,34 @@ function PuckTemplateHeaderActions({
   );
 }
 
+function PuckTemplateHeaderMeta({
+  blockCount,
+  innerRef,
+  pageLabel,
+  updatedAt
+}: {
+  blockCount: number;
+  innerRef?: Ref<HTMLDivElement>;
+  pageLabel: string;
+  updatedAt?: string;
+}) {
+  return (
+    <div className="puck-template-inline-meta" aria-label="当前模板页面状态" ref={innerRef}>
+      <span>当前页面：{pageLabel}</span>
+      <span>区块数：{blockCount}</span>
+      <span>最近保存：{updatedAt ? new Date(updatedAt).toLocaleString() : "尚未保存"}</span>
+    </div>
+  );
+}
+
 export function PuckTemplateEditor({ state, locale, canManage, onStateChange, onStatus }: PuckTemplateEditorProps) {
   const packageInputRef = useRef<HTMLInputElement>(null);
+  const headerMetaRef = useRef<HTMLDivElement>(null);
+  const puckShellRef = useRef<HTMLDivElement>(null);
   const options = useMemo(() => createPageOptions(state), [state]);
   const [selectedKey, setSelectedKey] = useState<PageLayoutKey>("home");
   const selectedOption = options.find((option) => option.key === selectedKey) ?? options[0];
-  const [draftData, setDraftData] = useState<VisualPageLayoutData>(() => cloneLayoutData(selectedOption?.layout?.data));
+  const [draftData, setDraftData] = useState<VisualPageLayoutData>(() => dataWithFooterDraftProps(selectedOption?.layout?.data, state, locale));
   const [saving, setSaving] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [packageBusy, setPackageBusy] = useState(false);
@@ -1449,10 +2393,10 @@ export function PuckTemplateEditor({ state, locale, canManage, onStateChange, on
 
   useEffect(() => {
     if (!selectedOptionKey) return;
-    setDraftData(cloneLayoutData(selectedOptionData));
+    setDraftData(dataWithFooterDraftProps(selectedOptionData, state, locale));
     setEditorResetKey((current) => current + 1);
     setCloseDialogOpen(false);
-  }, [selectedOptionKey, selectedOptionUpdatedAt, selectedOptionData]);
+  }, [selectedOptionKey, selectedOptionUpdatedAt, selectedOptionData, state, locale]);
 
   useEffect(() => {
     if (selectedOption) return;
@@ -1476,13 +2420,26 @@ export function PuckTemplateEditor({ state, locale, canManage, onStateChange, on
     };
   }, [isFullscreen]);
 
+  useEffect(() => {
+    const meta = headerMetaRef.current;
+    const shell = puckShellRef.current;
+    const titleSlot = shell?.querySelector<HTMLElement>('[class*="_PuckHeader-title"]');
+
+    if (!meta || !shell || !titleSlot) return;
+    if (meta.parentElement !== titleSlot) titleSlot.insertBefore(meta, titleSlot.firstChild);
+
+    return () => {
+      if (meta.parentElement !== shell) shell.insertBefore(meta, shell.firstChild);
+    };
+  }, [editorResetKey, isFullscreen, selectedOptionKey]);
+
   const closeEditorWithoutSaving = useCallback(() => {
-    setDraftData(cloneLayoutData(selectedOptionData));
+    setDraftData(dataWithFooterDraftProps(selectedOptionData, state, locale));
     setEditorResetKey((current) => current + 1);
     setIsFullscreen(false);
     setCloseDialogOpen(false);
     onStatus("已关闭编辑，未保存的模板改动已丢弃");
-  }, [onStatus, selectedOptionData]);
+  }, [locale, onStatus, selectedOptionData, state]);
 
   const saveLayout = useCallback(async (nextData: Data = draftData) => {
     if (!canManage || !selectedOption) {
@@ -1494,13 +2451,20 @@ export function PuckTemplateEditor({ state, locale, canManage, onStateChange, on
     onStatus("正在保存 Puck 页面布局...");
 
     try {
+      const nextRootProps = (((nextData as VisualPageLayoutData).root?.props ?? {}) as Record<string, unknown>);
+      const nextFooterSettings = {
+        footerTagline: translationFromFooterDraft(nextRootProps.footerTagline, state.templateSettings.footerTagline),
+        footerCopyright: translationFromFooterDraft(nextRootProps.footerCopyright, state.templateSettings.footerCopyright),
+        footerCredit: translationFromFooterDraft(nextRootProps.footerCredit, state.templateSettings.footerCredit)
+      };
       const response = await fetch("/api/admin/page-layouts", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           key: selectedOption.key,
           label: selectedOption.label,
-          data: nextData
+          data: nextData,
+          templateSettings: nextFooterSettings
         })
       });
 
@@ -1511,16 +2475,21 @@ export function PuckTemplateEditor({ state, locale, canManage, onStateChange, on
       }
 
       onStateChange(payload.state);
-      setDraftData(cloneLayoutData(nextData as VisualPageLayoutData));
+      setDraftData(dataWithFooterDraftProps(nextData as VisualPageLayoutData, payload.state, locale));
       onStatus("Puck 页面布局已保存并发布");
     } catch (error) {
       onStatus(error instanceof Error ? error.message : "Puck 页面布局保存失败");
     } finally {
       setSaving(false);
     }
-  }, [canManage, draftData, onStateChange, onStatus, selectedOption]);
+  }, [canManage, draftData, locale, onStateChange, onStatus, selectedOption, state.templateSettings.footerCopyright, state.templateSettings.footerCredit, state.templateSettings.footerTagline]);
 
   const puckOverrides = useMemo(() => ({
+    drawerItem: ({ children, name }: { children: ReactNode; name: string }) => (
+      <PuckTemplateComponentItem canManage={canManage} name={name}>
+        {children}
+      </PuckTemplateComponentItem>
+    ),
     headerActions: () => (
       <PuckTemplateHeaderActions
         canManage={canManage}
@@ -1530,6 +2499,30 @@ export function PuckTemplateEditor({ state, locale, canManage, onStateChange, on
       />
     )
   }), [canManage, saveLayout, saving]);
+
+  const handlePuckAction = useCallback((action: PuckAction) => {
+    if (!canManage || action.type !== "insert") return;
+    if (action.id && ratioHandledInsertIds.has(action.id)) {
+      ratioHandledInsertIds.delete(action.id);
+      return;
+    }
+    const quickAddModule = customQuickAddModules.find((module) => module.type === action.componentType);
+    if (!quickAddModule) return;
+
+    window.setTimeout(() => {
+      window.dispatchEvent(new CustomEvent<PuckTemplateAddRequest>("puck-template-request-add", {
+        detail: {
+          label: quickAddModule.label,
+          target: {
+            id: action.id,
+            index: action.destinationIndex,
+            zone: action.destinationZone
+          },
+          type: action.componentType
+        }
+      }));
+    }, 0);
+  }, [canManage]);
 
   async function exportTemplatePackage() {
     if (!canManage) {
@@ -1651,12 +2644,13 @@ export function PuckTemplateEditor({ state, locale, canManage, onStateChange, on
           />
         </div>
       </div>
-      <div className="puck-template-meta">
-        <span>当前页面：{selectedOption.label}</span>
-        <span>区块数：{draftData.content.length}</span>
-        <span>最近保存：{selectedOption.layout?.updatedAt ? new Date(selectedOption.layout.updatedAt).toLocaleString() : "尚未保存"}</span>
-      </div>
-      <div className="puck-template-shell">
+      <div className="puck-template-shell" ref={puckShellRef}>
+        <PuckTemplateHeaderMeta
+          blockCount={draftData.content.length}
+          innerRef={headerMetaRef}
+          pageLabel={selectedOption.label}
+          updatedAt={selectedOption.layout?.updatedAt}
+        />
         <Puck
           config={config}
           data={draftData}
@@ -1664,6 +2658,7 @@ export function PuckTemplateEditor({ state, locale, canManage, onStateChange, on
           headerTitle="ExportForge Puck"
           height={isFullscreen ? "100%" : puckTemplateEditorHeight}
           key={`${selectedOption.key}-${editorResetKey}`}
+          onAction={handlePuckAction}
           onChange={(nextData) => setDraftData(nextData as VisualPageLayoutData)}
           onPublish={(nextData) => void saveLayout(nextData)}
           overrides={puckOverrides}

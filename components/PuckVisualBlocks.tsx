@@ -1,5 +1,5 @@
 /* eslint-disable @next/next/no-img-element */
-import type { CSSProperties } from "react";
+import type { CSSProperties, ReactNode } from "react";
 import { ArticleContent } from "@/components/ArticleContent";
 import { HeroPosterCarousel } from "@/components/HeroPosterCarousel";
 import { ProductGrid } from "@/components/ProductGrid";
@@ -12,6 +12,8 @@ import type { AdminState, Article, LocaleCode, ProductCategory, SitePage, Visual
 
 type PuckVisualItem = VisualPageLayoutData["content"][number];
 
+type SlotRenderer = (props?: { className?: string; style?: CSSProperties }) => ReactNode;
+
 type PuckVisualBlockProps = {
   item: PuckVisualItem;
   state: AdminState;
@@ -19,11 +21,23 @@ type PuckVisualBlockProps = {
   currentProduct?: ProductCategory;
   currentArticle?: Article;
   currentPage?: SitePage;
+  editable?: boolean;
 };
 
 function propString(props: Record<string, unknown>, key: string, fallback = "") {
   const value = props[key];
   return typeof value === "string" ? value : fallback;
+}
+
+function propNode(props: Record<string, unknown>, key: string, fallback: ReactNode = ""): ReactNode {
+  const value = props[key];
+  if (typeof value === "string" || typeof value === "number") return value;
+  if (value) return value as ReactNode;
+  return fallback;
+}
+
+function nodeToString(value: ReactNode, fallback = "") {
+  return typeof value === "string" || typeof value === "number" ? String(value) : fallback;
 }
 
 function propNumber(props: Record<string, unknown>, key: string, fallback = 0) {
@@ -133,12 +147,40 @@ function renderImageSet({
   );
 }
 
+function preventEditablePreviewNavigation(event: { preventDefault: () => void; stopPropagation: () => void }) {
+  event.preventDefault();
+  event.stopPropagation();
+}
+
 function localizeHref(href: string, locale: LocaleCode) {
   const value = href.trim();
   if (!value) return "#";
   if (/^(https?:|mailto:|tel:|#)/i.test(value)) return value;
   if (value.startsWith(`/${locale}/`) || value === `/${locale}`) return value;
   return `/${locale}${value.startsWith("/") ? value : `/${value}`}`;
+}
+
+function containerPatternClass(value: string) {
+  return value.replace(/\//g, "x").replace(/[^a-zA-Z0-9-]/g, "");
+}
+
+function containerPatternSlotCount(value: string) {
+  return Math.max(1, value.split("-").filter(Boolean).length);
+}
+
+function isDefaultContainerPlaceholder(value: string) {
+  return value.trim().toLowerCase() === "container item";
+}
+
+function normalizeContainerElementType(item: Record<string, unknown>, title: string, body: string, imageUrl: string, videoUrl: string, buttonLabel: string) {
+  const value = propString(item, "elementType");
+  if (value === "image" || value === "text" || value === "imageText" || value === "video" || value === "button" || value === "html" || value === "separator") return value;
+  if (videoUrl) return "video";
+  if (imageUrl && (title || body || buttonLabel)) return "imageText";
+  if (imageUrl) return "image";
+  if (buttonLabel || propString(item, "href")) return "button";
+  if (title || body) return "text";
+  return "";
 }
 
 function formatFileSize(size: number) {
@@ -466,6 +508,179 @@ function VideoSection({ props }: { props: Record<string, unknown> }) {
   );
 }
 
+function containerCardClass(editable?: boolean, extra = "") {
+  return `puck-public-custom-container-card${editable ? " is-editable" : ""}${extra ? ` ${extra}` : ""}`;
+}
+
+function containerElementClass(editable: boolean, props: Record<string, unknown>, extra = "") {
+  const align = propString(props, "align", "left");
+  const verticalAlign = propString(props, "verticalAlign", "start");
+  const padding = propString(props, "padding", "normal");
+  const minHeight = propString(props, "minHeight", "auto");
+  const background = propString(props, "background", "transparent");
+  const borderStyle = propString(props, "borderStyle", "line");
+  const radius = propString(props, "radius", "medium");
+  const shadow = propString(props, "shadow", "none");
+  const textSize = propString(props, "textSize", "normal");
+
+  return containerCardClass(
+    editable,
+    `${extra} align-${align} valign-${verticalAlign} pad-${padding} min-${minHeight} bg-${background} border-${borderStyle} radius-${radius} shadow-${shadow} text-${textSize}`
+  );
+}
+
+function containerElementStyle(props: Record<string, unknown>): CSSProperties | undefined {
+  const style: CSSProperties & Record<string, string> = {};
+  const background = propString(props, "customBackground");
+  const textColor = propString(props, "textColor");
+  const accentColor = propString(props, "accentColor");
+
+  if (background) style["--container-custom-bg"] = background;
+  if (textColor) style["--container-text-color"] = textColor;
+  if (accentColor) style["--container-accent-color"] = accentColor;
+
+  return Object.keys(style).length > 0 ? style : undefined;
+}
+
+function containerLinkProps(href: string, locale: LocaleCode, openInNewTab: boolean) {
+  return {
+    href: localizeHref(href, locale),
+    rel: openInNewTab ? "noopener noreferrer" : undefined,
+    target: openInNewTab ? "_blank" : undefined
+  };
+}
+
+function buttonStyleClass(props: Record<string, unknown>) {
+  const style = propString(props, "buttonStyle", "primary");
+  const size = propString(props, "buttonSize", "normal");
+  return `button container-button is-${style} size-${size}`;
+}
+
+function ContainerTextElement({ editable = false, props, locale }: { editable?: boolean; props: Record<string, unknown>; locale: LocaleCode }) {
+  if (propBoolean(props, "isHidden")) return null;
+  const eyebrow = propNode(props, "eyebrow");
+  const title = propNode(props, "title", "内容标题");
+  const body = propNode(props, "body");
+  const href = propString(props, "href");
+  const content = (
+    <article className={containerElementClass(editable, props, "puck-container-slot-element type-text")} style={containerElementStyle(props)} title={editable ? "点击选择，双击文字可直接编辑" : undefined}>
+      {eyebrow ? <span>{eyebrow}</span> : null}
+      {title ? <h3>{title}</h3> : null}
+      {body ? <p>{body}</p> : null}
+    </article>
+  );
+
+  return href ? <a {...containerLinkProps(href, locale, propBoolean(props, "openInNewTab"))}>{content}</a> : content;
+}
+
+function ContainerImageElement({ editable = false, props, locale }: { editable?: boolean; props: Record<string, unknown>; locale: LocaleCode }) {
+  if (propBoolean(props, "isHidden")) return null;
+  const imageUrl = propString(props, "imageUrl") || propString(props, "externalImageUrl");
+  const alt = nodeToString(propNode(props, "alt"), "Container image");
+  const caption = propNode(props, "caption");
+  const href = propString(props, "href");
+  const imageClass = `container-media aspect-${propString(props, "imageRatio", "wide")} fit-${propString(props, "imageFit", "cover")}`;
+  const content = (
+    <figure className={containerElementClass(editable, props, "puck-container-slot-element type-image")} style={containerElementStyle(props)} title={editable ? "点击选择图片元素" : undefined}>
+      {imageUrl ? <img className={imageClass} src={imageUrl} alt={alt} loading="lazy" /> : <em>选择图片</em>}
+      {caption ? <figcaption>{caption}</figcaption> : null}
+    </figure>
+  );
+
+  return href ? <a {...containerLinkProps(href, locale, propBoolean(props, "openInNewTab"))}>{content}</a> : content;
+}
+
+function ContainerImageTextElement({ editable = false, props, locale }: { editable?: boolean; props: Record<string, unknown>; locale: LocaleCode }) {
+  if (propBoolean(props, "isHidden")) return null;
+  const imageUrl = propString(props, "imageUrl") || propString(props, "externalImageUrl");
+  const eyebrow = propNode(props, "eyebrow");
+  const title = propNode(props, "title", "图文内容");
+  const body = propNode(props, "body");
+  const buttonLabel = propNode(props, "buttonLabel");
+  const href = propString(props, "href");
+  const imageClass = `container-media aspect-${propString(props, "imageRatio", "wide")} fit-${propString(props, "imageFit", "cover")}`;
+  const imageNode = imageUrl ? <img className={imageClass} src={imageUrl} alt={nodeToString(title, "Container image")} loading="lazy" /> : null;
+  const content = (
+    <article className={containerElementClass(editable, props, `puck-container-slot-element type-image-text image-${propString(props, "imagePlacement", "top")}`)} style={containerElementStyle(props)} title={editable ? "点击选择，双击文字可直接编辑" : undefined}>
+      {imageNode}
+      <div className="container-card-copy">
+        {eyebrow ? <span>{eyebrow}</span> : null}
+        {title ? <h3>{title}</h3> : null}
+        {body ? <p>{body}</p> : null}
+        {buttonLabel ? <strong className={`container-card-link is-${propString(props, "buttonStyle", "text")}`}>{buttonLabel}</strong> : null}
+      </div>
+    </article>
+  );
+
+  return href ? <a {...containerLinkProps(href, locale, propBoolean(props, "openInNewTab"))}>{content}</a> : content;
+}
+
+function ContainerVideoElement({ editable = false, props }: { editable?: boolean; props: Record<string, unknown> }) {
+  if (propBoolean(props, "isHidden")) return null;
+  const videoUrl = propString(props, "videoUrl") || propString(props, "externalVideoUrl");
+  const title = propNode(props, "title", "视频内容");
+  const body = propNode(props, "body");
+  const isDirectVideo = /\.(mp4|webm|ogg|mov)(\?.*)?$/i.test(videoUrl);
+
+  return (
+    <article className={containerElementClass(editable, props, "puck-container-slot-element type-video")} style={containerElementStyle(props)} title={editable ? "点击选择视频元素" : undefined}>
+      {videoUrl ? (
+        <div className={`puck-public-container-video aspect-${propString(props, "videoRatio", "wide")}`}>
+          {isDirectVideo ? (
+            <video autoPlay={propBoolean(props, "autoplay")} loop={propBoolean(props, "loop")} muted={propBoolean(props, "muted", true)} poster={propString(props, "posterUrl") || undefined} src={videoUrl} controls={!propBoolean(props, "autoplay")} preload="metadata" />
+          ) : (
+            <iframe src={videoUrl} title={nodeToString(title, "Container video")} allow="autoplay; fullscreen; picture-in-picture" allowFullScreen />
+          )}
+        </div>
+      ) : <em>选择视频</em>}
+      {title ? <h3>{title}</h3> : null}
+      {body ? <p>{body}</p> : null}
+    </article>
+  );
+}
+
+function ContainerButtonElement({ editable = false, props, locale }: { editable?: boolean; props: Record<string, unknown>; locale: LocaleCode }) {
+  if (propBoolean(props, "isHidden")) return null;
+  const title = propNode(props, "title");
+  const body = propNode(props, "body");
+  const buttonLabel = propNode(props, "buttonLabel", "了解更多");
+  const href = localizeHref(propString(props, "href", "#rfq"), locale);
+  const openInNewTab = propBoolean(props, "openInNewTab");
+
+  return (
+    <article className={containerElementClass(editable, props, "puck-container-slot-element type-button")} style={containerElementStyle(props)} title={editable ? "点击选择，双击按钮文字可直接编辑" : undefined}>
+      {title ? <h3>{title}</h3> : null}
+      {body ? <p>{body}</p> : null}
+      <a className={buttonStyleClass(props)} href={href} rel={openInNewTab ? "noopener noreferrer" : undefined} target={openInNewTab ? "_blank" : undefined} onClick={editable ? preventEditablePreviewNavigation : undefined}>{buttonLabel}</a>
+    </article>
+  );
+}
+
+function ContainerHtmlElement({ editable = false, props }: { editable?: boolean; props: Record<string, unknown> }) {
+  if (propBoolean(props, "isHidden")) return null;
+  const body = propNode(props, "body");
+  const renderMode = propString(props, "renderMode", "markdown");
+
+  return (
+    <article className={containerElementClass(editable, props, "puck-container-slot-element type-html")} style={containerElementStyle(props)} title={editable ? "点击选择 HTML 元素" : undefined}>
+      {typeof body === "string" && renderMode === "html" ? <div dangerouslySetInnerHTML={{ __html: body }} /> : null}
+      {typeof body === "string" && renderMode === "plain" ? <pre>{body}</pre> : null}
+      {typeof body === "string" && renderMode !== "html" && renderMode !== "plain" ? <ArticleContent body={body} /> : null}
+      {typeof body !== "string" ? body : null}
+    </article>
+  );
+}
+
+function ContainerSeparatorElement({ editable = false, props }: { editable?: boolean; props: Record<string, unknown> }) {
+  if (propBoolean(props, "isHidden")) return null;
+  const thickness = Math.max(1, Math.min(12, propNumber(props, "thickness", 1)));
+  return (
+    <div className={containerElementClass(editable, props, `puck-container-slot-element type-separator line-${propString(props, "separatorStyle", "solid")} width-${propString(props, "separatorWidth", "full")}`)} style={{ ...containerElementStyle(props), "--separator-thickness": `${thickness}px` } as CSSProperties} title={editable ? "点击选择分隔线" : undefined}>
+      <hr />
+    </div>
+  );
+}
+
 function CtaSection({ props, locale }: { props: Record<string, unknown>; locale: LocaleCode }) {
   const imageUrl = propString(props, "mediaLibraryUrl") || propString(props, "imageUrl");
   const style = imageUrl ? { "--cta-bg-image": `url(${imageUrl})` } as CSSProperties : undefined;
@@ -494,7 +709,7 @@ function CtaSection({ props, locale }: { props: Record<string, unknown>; locale:
   );
 }
 
-function CustomSection({ props, locale }: { props: Record<string, unknown>; locale: LocaleCode }) {
+function CustomSection({ editable = false, props, locale, state }: { editable?: boolean; props: Record<string, unknown>; locale: LocaleCode; state: AdminState }) {
   const moduleType = propString(props, "moduleType", "media");
   const title = propString(props, "title", "自定义模块");
   const body = propString(props, "body");
@@ -504,15 +719,48 @@ function CustomSection({ props, locale }: { props: Record<string, unknown>; loca
   const images = imageMode === "none"
     ? []
     : collectedImages.slice(0, imageMode === "single" ? 1 : imageLimit > 0 ? imageLimit : 12);
+  const containerPattern = propString(props, "containerPattern", "none");
+  const hasContainerLayout = moduleType === "container" || containerPattern !== "none";
   const backgroundImageUrl = imageMode === "background"
     ? propString(props, "backgroundImageUrl") || images[0]?.url || ""
+    : moduleType === "cta" || hasContainerLayout
+      ? propString(props, "backgroundImageUrl")
     : "";
   const videoUrl = propString(props, "videoLibraryUrl") || propString(props, "videoUrl");
   const buttonLabel = propString(props, "buttonLabel");
   const buttonHref = localizeHref(propString(props, "buttonHref", "#rfq"), locale);
+  const componentId = propString(props, "id");
   const tone = propString(props, "tone", "light");
   const align = propString(props, "align", "left");
-  const layout = propString(props, "layout", moduleType === "text" || moduleType === "cta" ? "stacked" : "media-left");
+  const layout = propString(props, "layout", moduleType === "text" || moduleType === "cta" || moduleType === "container" ? "stacked" : "media-left");
+  const showSummary = propBoolean(props, "showSummary", true);
+  const rawContainerItems = propArray<Record<string, unknown>>(props, "containerItems");
+  const slotContent = props.slotItems;
+  const hasSlotRenderer = typeof slotContent === "function";
+  const slotItems = Array.isArray(slotContent) ? slotContent as PuckVisualItem[] : [];
+  const containerSlotCount = containerPatternSlotCount(containerPattern === "none" ? "1/1" : containerPattern);
+  const containerItems = Array.from({ length: containerSlotCount }, (_, index) => rawContainerItems[index] ?? {})
+    .map((item) => {
+      const rawTitle = propString(item, "title");
+      const title = isDefaultContainerPlaceholder(rawTitle) ? "" : rawTitle;
+      const body = propString(item, "body");
+      const href = propString(item, "href");
+      const buttonLabel = propString(item, "buttonLabel");
+      const imageUrl = propString(item, "source") || propString(item, "imageUrl");
+      const videoUrl = propString(item, "videoSource") || propString(item, "videoUrl");
+      const elementType = normalizeContainerElementType(item, title, body, imageUrl, videoUrl, buttonLabel);
+
+      return {
+        elementType,
+        title,
+        body,
+        href,
+        buttonLabel,
+        imageUrl,
+        videoUrl,
+        isEmpty: !elementType && !title && !body && !href && !buttonLabel && !imageUrl && !videoUrl
+      };
+    });
   const isDirectVideo = /\.(mp4|webm|ogg|mov)(\?.*)?$/i.test(videoUrl);
   const sectionStyle = backgroundImageUrl ? { "--custom-bg-image": `url(${backgroundImageUrl})` } as CSSProperties : undefined;
   const mediaNode = moduleType === "video" && videoUrl ? (
@@ -536,11 +784,73 @@ function CustomSection({ props, locale }: { props: Record<string, unknown>; loca
       tone: propString(props, "imageTone", "normal")
     })
   ) : null;
+  const containerGridClassName = `puck-public-custom-container-grid pattern-${containerPatternClass(containerPattern === "none" ? "1/3-1/3-1/3" : containerPattern)}`;
+  const containerNode = hasContainerLayout && (hasSlotRenderer || slotItems.length > 0) ? (
+    typeof slotContent === "function" ? (
+      (slotContent as SlotRenderer)({ className: containerGridClassName })
+    ) : (
+      <div className={containerGridClassName}>
+        {slotItems.map((item, index) => (
+          <PuckVisualBlock
+            editable={editable}
+            item={item}
+            key={String(item.props?.id ?? `${item.type}-${index}`)}
+            locale={locale}
+            state={state}
+          />
+        ))}
+      </div>
+    )
+  ) : hasContainerLayout && containerItems.length > 0 ? (
+    <div className={containerGridClassName}>
+      {containerItems.map((item, index) => {
+        const containerVideoIsDirect = /\.(mp4|webm|ogg|mov)(\?.*)?$/i.test(item.videoUrl);
+        const content = (
+          <article
+            className={`puck-public-custom-container-card${item.isEmpty ? " is-empty" : ""}${editable ? " is-editable" : ""}`}
+            role={editable ? "button" : undefined}
+            tabIndex={editable ? 0 : undefined}
+            data-puck-container-slot={editable ? `${componentId}:${index}` : undefined}
+            title={editable ? "旧容器元素：请在右侧模块属性中调整，或新增 slot 元素后单独编辑。" : undefined}
+          >
+            {item.elementType === "separator" ? <hr /> : null}
+            {(item.elementType === "image" || item.elementType === "imageText") && item.imageUrl ? <img src={item.imageUrl} alt={item.title || ""} loading="lazy" /> : null}
+            {item.elementType === "video" && item.videoUrl ? (
+              <div className="puck-public-container-video">
+                {containerVideoIsDirect ? (
+                  <video src={item.videoUrl} controls preload="metadata" />
+                ) : (
+                  <iframe src={item.videoUrl} title={item.title || `Container video ${index + 1}`} allow="autoplay; fullscreen; picture-in-picture" allowFullScreen />
+                )}
+              </div>
+            ) : null}
+            {item.isEmpty || item.elementType === "separator" ? null : <span>{String(index + 1).padStart(2, "0")}</span>}
+            {(item.elementType === "text" || item.elementType === "imageText" || item.elementType === "button") && item.title ? <h3>{item.title}</h3> : null}
+            {(item.elementType === "text" || item.elementType === "imageText") && showSummary && item.body ? <p>{item.body}</p> : null}
+            {item.elementType === "html" && item.body ? <ArticleContent body={item.body} /> : null}
+            {item.elementType === "button" && item.buttonLabel ? <strong>{item.buttonLabel}</strong> : null}
+            {item.isEmpty ? <em>选择元素</em> : null}
+          </article>
+        );
+
+        return item.href ? (
+          <a href={localizeHref(item.href, locale)} key={`${item.title}-${index}`}>
+            {content}
+          </a>
+        ) : (
+          <div key={`${item.title}-${index}`}>
+            {content}
+          </div>
+        );
+      })}
+    </div>
+  ) : null;
   const copyNode = (
     <div className="puck-public-custom-copy">
       {propString(props, "eyebrow") ? <span className="eyebrow">{propString(props, "eyebrow")}</span> : null}
       {title ? <h2>{title}</h2> : null}
       {body ? <ArticleContent body={body} /> : null}
+      {containerNode}
       {(moduleType === "cta" || buttonLabel) ? (
         <a className={`button ${propString(props, "buttonStyle", "primary")}`} href={buttonHref}>{buttonLabel || "了解更多"}</a>
       ) : null}
@@ -549,7 +859,7 @@ function CustomSection({ props, locale }: { props: Record<string, unknown>; loca
 
   return (
     <section
-      className={`section puck-public-custom-section type-${moduleType} theme-${tone} align-${align} layout-${layout} width-${propString(props, "width", "contained")} spacing-${propString(props, "spacing", "normal")}${backgroundImageUrl ? " has-bg" : ""}`}
+      className={`section puck-public-custom-section type-${moduleType} theme-${tone} align-${align} layout-${layout} pattern-${containerPatternClass(containerPattern === "none" ? "1/1" : containerPattern)} width-${propString(props, "width", "contained")} spacing-${propString(props, "spacing", "normal")}${backgroundImageUrl ? " has-bg" : ""}`}
       style={sectionStyle}
     >
       <div className="puck-public-custom-inner">
@@ -641,7 +951,7 @@ function ContactChannels({ props, state, locale }: { props: Record<string, unkno
   );
 }
 
-export function PuckVisualBlock({ item, state, locale, currentProduct, currentArticle }: PuckVisualBlockProps) {
+export function PuckVisualBlock({ item, state, locale, currentProduct, currentArticle, editable }: PuckVisualBlockProps) {
   const props = item.props as Record<string, unknown>;
 
   switch (item.type) {
@@ -676,7 +986,21 @@ export function PuckVisualBlock({ item, state, locale, currentProduct, currentAr
     case "CustomVideoSection":
     case "CustomCtaSection":
     case "CustomSection":
-      return <CustomSection props={props} locale={locale} />;
+      return <CustomSection editable={editable} props={props} locale={locale} state={state} />;
+    case "ContainerTextElement":
+      return <ContainerTextElement editable={editable} props={props} locale={locale} />;
+    case "ContainerImageElement":
+      return <ContainerImageElement editable={editable} props={props} locale={locale} />;
+    case "ContainerImageTextElement":
+      return <ContainerImageTextElement editable={editable} props={props} locale={locale} />;
+    case "ContainerVideoElement":
+      return <ContainerVideoElement editable={editable} props={props} />;
+    case "ContainerButtonElement":
+      return <ContainerButtonElement editable={editable} props={props} locale={locale} />;
+    case "ContainerHtmlElement":
+      return <ContainerHtmlElement editable={editable} props={props} />;
+    case "ContainerSeparatorElement":
+      return <ContainerSeparatorElement editable={editable} props={props} />;
     case "ProductDetail":
       return <ProductDetail currentProduct={currentProduct} locale={locale} />;
     case "ArticleDetail":
