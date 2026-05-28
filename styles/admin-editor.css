@@ -475,11 +475,11 @@
 
 .admin-editor-quickbar {
   display: grid;
-  grid-template-columns: repeat(8, 28px);
-  gap: 4px;
+  grid-template-columns: repeat(auto-fill, 30px);
+  gap: 6px;
   align-items: center;
-  width: min(100%, 252px);
-  min-height: 28px;
+  width: 100%;
+  min-height: 30px;
   padding: 0;
 }
 
@@ -487,20 +487,22 @@
 .admin-editor-quickbar .article-image-inline-upload {
   display: inline-flex;
   flex: 0 0 auto;
-  width: 28px;
-  height: 28px;
-  min-height: 28px;
+  width: 30px;
+  height: 30px;
+  min-height: 30px;
   align-items: center;
   justify-content: center;
-  border: 0;
-  border-radius: 5px;
+  border: 1px solid color-mix(in srgb, var(--line), white 26%);
+  border-radius: 6px;
   padding: 0;
   overflow: hidden;
-  color: var(--baseText, var(--muted));
-  background: transparent;
+  color: #12384d;
+  background: #fff;
   font-size: 0;
   font-weight: 900;
+  line-height: 1;
   cursor: pointer;
+  box-shadow: 0 1px 1px rgb(15 45 68 / 4%);
 }
 
 .admin-editor-quickbar button svg,
@@ -518,8 +520,9 @@
 
 .admin-editor-quickbar button:hover,
 .admin-editor-quickbar .article-image-inline-upload:hover {
-  color: var(--baseTextContrast, var(--ink));
-  background: var(--baseBgHover, #e5eef2);
+  border-color: color-mix(in srgb, var(--primary), white 38%);
+  color: var(--primary);
+  background: color-mix(in srgb, var(--primary), white 94%);
 }
 
 .admin-markdown-editor,
@@ -599,18 +602,24 @@
   height: 18px;
 }
 
+.admin-markdown-toolbar-actions .admin-editor-quickbar button,
+.admin-markdown-toolbar-actions .admin-editor-quickbar .article-image-inline-upload {
+  width: 30px;
+  height: 30px !important;
+  min-height: 30px !important;
+}
+
 .admin-markdown-toolbar-actions {
-  display: inline-flex;
-  flex-wrap: wrap;
+  display: block;
   order: 10;
   flex: 0 0 100%;
-  align-items: center;
-  gap: 4px;
-  min-height: 28px;
+  min-height: 30px;
   max-width: 100%;
-  margin-top: 2px;
-  padding-top: 6px;
+  margin-top: 4px;
+  padding: 8px;
   border-top: 1px solid color-mix(in srgb, var(--line), white 45%);
+  border-radius: 0 0 6px 6px;
+  background: color-mix(in srgb, #f8fbfc, white 42%);
 }
 
 .admin-markdown-editor-content {

@@ -4382,11 +4382,6 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
         <button title="插入二级标题" aria-label="插入二级标题" type="button" onClick={() => insertSnippet("二级标题", "\n\n## 小标题\n\n")}><Heading2 size={16} />H2</button>
         <button title="插入三级标题" aria-label="插入三级标题" type="button" onClick={() => insertSnippet("三级标题", "\n\n### 小标题\n\n")}><Heading3 size={16} />H3</button>
         <button title="插入引用" aria-label="插入引用" type="button" onClick={() => insertSnippet("引用", "\n\n> 在这里填写引用内容。\n\n")}><Quote size={16} />引用</button>
-        <button title="插入无序清单" aria-label="插入无序清单" type="button" onClick={() => insertSnippet("无序清单", "\n\n- 清单项目\n- 清单项目\n\n")}><List size={16} />清单</button>
-        <button title="插入有序清单" aria-label="插入有序清单" type="button" onClick={() => insertSnippet("有序清单", "\n\n1. 第一步\n2. 第二步\n\n")}><ListOrdered size={16} />编号</button>
-        <button title="插入表格" aria-label="插入表格" type="button" onClick={() => insertSnippet("表格", "\n\n| 项目 | 说明 |\n| --- | --- |\n| 示例 | 在这里填写内容 |\n\n")}><Table2 size={16} />表格</button>
-        <button title="插入分隔线" aria-label="插入分隔线" type="button" onClick={() => insertSnippet("分隔线", "\n\n---\n\n")}><Minus size={16} />分割</button>
-        <button title="插入代码块" aria-label="插入代码块" type="button" onClick={() => insertSnippet("代码块", "\n\n```text\n在这里填写代码\n```\n\n")}><Code2 size={16} />代码</button>
         <button title="插入视频链接" aria-label="插入视频链接" type="button" onClick={() => openVideoDialog(target)}><Video size={16} />视频</button>
         <label aria-label="上传并插入媒体" className="article-image-inline-upload" title="上传并插入媒体">
           <Paperclip size={16} />
