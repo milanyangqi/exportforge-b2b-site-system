@@ -4,7 +4,7 @@ import { preserveUserPasswordHashes, readAdminState, readStoredFile, sanitizeAdm
 import type { AdminState, RoleKey } from "@/types/site";
 import type { StoredUploadFile } from "@/lib/server/admin-store";
 
-type BackupSectionKey = keyof Pick<AdminState, "products" | "pages" | "articles" | "leads" | "contactChannels" | "uploadedFiles" | "users" | "navigation" | "siteSettings" | "templateSettings" | "aiSettings" | "aiCreditSettings" | "aiUsageRecords" | "activeTheme" | "enabledLocales">;
+type BackupSectionKey = keyof Pick<AdminState, "products" | "pages" | "articles" | "leads" | "contactChannels" | "uploadedFiles" | "users" | "rolePermissions" | "navigation" | "siteSettings" | "templateSettings" | "pageLayouts" | "aiSettings" | "aiCreditSettings" | "aiUsageRecords" | "activeTheme" | "enabledLocales">;
 
 type BackupPayload = {
   format: "exportforge-site-backup";
@@ -31,16 +31,18 @@ const sectionKeys = new Set<BackupSectionKey>([
   "contactChannels",
   "uploadedFiles",
   "users",
+  "rolePermissions",
   "navigation",
   "siteSettings",
   "templateSettings",
+  "pageLayouts",
   "aiSettings",
   "aiCreditSettings",
   "aiUsageRecords",
   "activeTheme",
   "enabledLocales"
 ]);
-const superAdminOnlySections = new Set<BackupSectionKey>(["users", "aiSettings", "aiCreditSettings", "aiUsageRecords"]);
+const superAdminOnlySections = new Set<BackupSectionKey>(["users", "rolePermissions", "aiSettings", "aiCreditSettings", "aiUsageRecords"]);
 
 function parseSections(sections?: string[]) {
   return (sections ?? []).filter((section): section is BackupSectionKey => sectionKeys.has(section as BackupSectionKey));

@@ -1,4 +1,5 @@
 import { ActiveTemplate } from "@/components/templates/ActiveTemplate";
+import { PuckPageRenderer } from "@/components/PuckPageRenderer";
 import { readAdminState } from "@/lib/server/admin-store";
 import { buildOrganizationJsonLd, buildPageMetadata, buildWebsiteJsonLd, homeContentComplete, jsonLd, localePath, localized } from "@/lib/seo";
 import type { LocaleCode } from "@/types/site";
@@ -28,8 +29,7 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: L
 export default async function LocaleHome({ params }: { params: Promise<{ locale: LocaleCode }> }) {
   const { locale } = await params;
   const state = await readAdminState();
-
-  return (
+  const structuredData = (
     <>
       <script
         type="application/ld+json"
@@ -39,7 +39,16 @@ export default async function LocaleHome({ params }: { params: Promise<{ locale:
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: jsonLd(buildWebsiteJsonLd(state, locale)) }}
       />
-      <ActiveTemplate locale={locale} state={state} />
     </>
+  );
+
+  return (
+    <PuckPageRenderer
+      fallback={<>{structuredData}<ActiveTemplate locale={locale} state={state} /></>}
+      layoutKey="home"
+      locale={locale}
+      prefix={structuredData}
+      state={state}
+    />
   );
 }

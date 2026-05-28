@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import { ArticleContent } from "@/components/ArticleContent";
+import { PuckPageRenderer } from "@/components/PuckPageRenderer";
 import { t } from "@/lib/i18n";
 import { readAdminState } from "@/lib/server/admin-store";
 import { buildBreadcrumbJsonLd, buildPageMetadata, compactDescription, jsonLd, localePath, pageContentComplete } from "@/lib/seo";
@@ -47,18 +48,20 @@ export default async function SitePageDetail({
   if (!page) {
     notFound();
   }
-
-  return (
+  const structuredData = (
+    <script
+      type="application/ld+json"
+      dangerouslySetInnerHTML={{
+        __html: jsonLd(buildBreadcrumbJsonLd(state, [
+          { name: state.siteSettings.title, path: localePath(locale) },
+          { name: t(page.title, locale), path: localePath(locale, `/pages/${page.slug}`) }
+        ]))
+      }}
+    />
+  );
+  const fallback = (
     <main className="subpage">
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{
-          __html: jsonLd(buildBreadcrumbJsonLd(state, [
-            { name: state.siteSettings.title, path: localePath(locale) },
-            { name: t(page.title, locale), path: localePath(locale, `/pages/${page.slug}`) }
-          ]))
-        }}
-      />
+      {structuredData}
       <article className="content-detail">
         <span className="eyebrow">Page</span>
         <h1>{t(page.title, locale)}</h1>
@@ -66,5 +69,16 @@ export default async function SitePageDetail({
         <ArticleContent body={t(page.body, locale)} />
       </article>
     </main>
+  );
+
+  return (
+    <PuckPageRenderer
+      currentPage={page}
+      fallback={fallback}
+      layoutKey={`page:${page.slug}`}
+      locale={locale}
+      prefix={structuredData}
+      state={state}
+    />
   );
 }

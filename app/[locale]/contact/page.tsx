@@ -1,5 +1,6 @@
 import { RfqForm } from "@/components/RfqForm";
 import { PublicContactList } from "@/components/PublicContactList";
+import { PuckPageRenderer } from "@/components/PuckPageRenderer";
 import { readAdminState } from "@/lib/server/admin-store";
 import { absoluteUrl, buildBreadcrumbJsonLd, buildPageMetadata, jsonLd, localePath } from "@/lib/seo";
 import type { LocaleCode } from "@/types/site";
@@ -31,9 +32,8 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: L
 export default async function ContactPage({ params }: { params: Promise<{ locale: LocaleCode }> }) {
   const { locale } = await params;
   const state = await readAdminState();
-
-  return (
-    <main className="subpage">
+  const structuredData = (
+    <>
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{
@@ -55,6 +55,11 @@ export default async function ContactPage({ params }: { params: Promise<{ locale
           ]))
         }}
       />
+    </>
+  );
+  const fallback = (
+    <main className="subpage">
+      {structuredData}
       <section className="section split contact-section">
         <div className="contact-copy">
           <span className="eyebrow">Contact</span>
@@ -69,5 +74,15 @@ export default async function ContactPage({ params }: { params: Promise<{ locale
         </div>
       </section>
     </main>
+  );
+
+  return (
+    <PuckPageRenderer
+      fallback={fallback}
+      layoutKey="contact"
+      locale={locale}
+      prefix={structuredData}
+      state={state}
+    />
   );
 }

@@ -1,4 +1,5 @@
 import { ProductGrid } from "@/components/ProductGrid";
+import { PuckPageRenderer } from "@/components/PuckPageRenderer";
 import { readAdminState } from "@/lib/server/admin-store";
 import { buildBreadcrumbJsonLd, buildPageMetadata, jsonLd, localePath, productContentComplete } from "@/lib/seo";
 import type { LocaleCode } from "@/types/site";
@@ -33,18 +34,20 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: L
 export default async function ProductsPage({ params }: { params: Promise<{ locale: LocaleCode }> }) {
   const { locale } = await params;
   const state = await readAdminState();
-
-  return (
+  const structuredData = (
+    <script
+      type="application/ld+json"
+      dangerouslySetInnerHTML={{
+        __html: jsonLd(buildBreadcrumbJsonLd(state, [
+          { name: state.siteSettings.title, path: localePath(locale) },
+          { name: "Products", path: localePath(locale, "/products") }
+        ]))
+      }}
+    />
+  );
+  const fallback = (
     <main className="subpage products-subpage">
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{
-          __html: jsonLd(buildBreadcrumbJsonLd(state, [
-            { name: state.siteSettings.title, path: localePath(locale) },
-            { name: "Products", path: localePath(locale, "/products") }
-          ]))
-        }}
-      />
+      {structuredData}
       <section className="section">
         <div className="section-head">
           <span className="eyebrow">KeyproTools products</span>
@@ -54,5 +57,16 @@ export default async function ProductsPage({ params }: { params: Promise<{ local
         <ProductGrid locale={locale} products={state.products} />
       </section>
     </main>
+  );
+
+  return (
+    <PuckPageRenderer
+      className="subpage products-subpage puck-public-page"
+      fallback={fallback}
+      layoutKey="products-index"
+      locale={locale}
+      prefix={structuredData}
+      state={state}
+    />
   );
 }

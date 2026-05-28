@@ -1,5 +1,6 @@
 /* eslint-disable @next/next/no-img-element */
 import { notFound } from "next/navigation";
+import { PuckPageRenderer } from "@/components/PuckPageRenderer";
 import { RfqForm } from "@/components/RfqForm";
 import { t } from "@/lib/i18n";
 import { readAdminState } from "@/lib/server/admin-store";
@@ -49,9 +50,8 @@ export default async function ProductCategoryPage({
   if (!product) {
     notFound();
   }
-
-  return (
-    <main className="subpage">
+  const structuredData = (
+    <>
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: jsonLd(buildProductJsonLd(state, product, locale)) }}
@@ -66,6 +66,11 @@ export default async function ProductCategoryPage({
           ]))
         }}
       />
+    </>
+  );
+  const fallback = (
+    <main className="subpage">
+      {structuredData}
       <section className="product-detail">
         <div>
           <span className="eyebrow">Product category</span>
@@ -100,5 +105,16 @@ export default async function ProductCategoryPage({
         <RfqForm locale={locale} />
       </section>
     </main>
+  );
+
+  return (
+    <PuckPageRenderer
+      currentProduct={product}
+      fallback={fallback}
+      layoutKey="product-detail"
+      locale={locale}
+      prefix={structuredData}
+      state={state}
+    />
   );
 }
