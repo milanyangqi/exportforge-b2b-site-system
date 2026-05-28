@@ -469,17 +469,23 @@
   margin-bottom: 7px;
 }
 
+.admin-markdown-editor-shell {
+  min-width: 0;
+}
+
 .admin-editor-quickbar {
   display: inline-flex;
-  flex-wrap: nowrap;
+  flex-wrap: wrap;
   gap: 2px;
   align-items: center;
+  min-height: 28px;
   padding: 0;
 }
 
 .admin-editor-quickbar button,
 .admin-editor-quickbar .article-image-inline-upload {
-  display: inline-grid;
+  display: inline-flex;
+  flex: 0 0 auto;
   width: 28px;
   height: 28px;
   min-height: 28px;
@@ -500,6 +506,8 @@
 .admin-editor-quickbar .article-image-inline-upload svg {
   width: 16px;
   height: 16px;
+  display: block;
+  flex: 0 0 auto;
 }
 
 .admin-editor-quickbar button:disabled {
@@ -548,19 +556,47 @@
 }
 
 .admin-markdown-editor-toolbar {
+  display: flex;
   flex-wrap: wrap;
   align-items: center;
+  gap: 4px;
   border-bottom: 1px solid var(--line);
   border-radius: 0;
   padding: 8px 10px;
   background: #f8fbfc;
 }
 
+.admin-markdown-editor-toolbar button,
+.admin-markdown-editor-toolbar [role="button"],
+.admin-markdown-editor-toolbar select {
+  display: inline-flex !important;
+  min-width: 28px;
+  min-height: 28px !important;
+  height: 28px;
+  align-items: center !important;
+  justify-content: center !important;
+  vertical-align: middle;
+}
+
+.admin-markdown-editor-toolbar svg {
+  display: block;
+  width: 16px;
+  height: 16px;
+  flex: 0 0 auto;
+}
+
+.admin-markdown-editor-toolbar [role="separator"] {
+  align-self: center;
+  height: 18px;
+}
+
 .admin-markdown-toolbar-actions {
   display: inline-flex;
-  flex-wrap: nowrap;
+  flex-wrap: wrap;
   align-items: center;
   gap: 2px;
+  min-height: 28px;
+  max-width: 100%;
 }
 
 .admin-markdown-editor-content {
@@ -1478,4 +1514,3 @@
 .settings-panel-head.with-action .template-save-button:disabled svg {
   opacity: 0.55;
 }
-

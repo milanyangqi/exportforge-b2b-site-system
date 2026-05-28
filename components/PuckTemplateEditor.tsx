@@ -3,11 +3,12 @@
 /* eslint-disable @next/next/no-img-element */
 
 import { type DragEvent, type MouseEvent, type ReactNode, type Ref, type SyntheticEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { ArrowDown, ArrowUp, ChevronDown, ChevronsLeft, ChevronsRight, Download, FileUp, GripVertical, ImageIcon, Layers, Maximize2, Minimize2, Plus, Save, Search, Video, X } from "lucide-react";
+import { ArrowDown, ArrowUp, ChevronDown, ChevronsLeft, ChevronsRight, Download, FileUp, GripVertical, ImageIcon, Layers, LayoutTemplate, Maximize2, Minimize2, Plus, Save, Search, Sparkles, Video, X } from "lucide-react";
 import { Puck, createUsePuck } from "@puckeditor/core";
 import type { Config, Data, Permissions, Plugin, PuckAction, Viewports } from "@puckeditor/core";
 import { PublicFooterShell, PublicHeaderShell } from "@/components/PublicSiteShell";
 import { PuckVisualBlock } from "@/components/PuckVisualBlocks";
+import { blockPresetCategories, blockPresetCategoryLabels, blockPresets, currentTemplateAssetPaths, pagePresets, type BlockPreset, type PagePreset } from "@/lib/puck-presets";
 import { getBaseLayoutLabels } from "@/lib/puck-layouts";
 import type { AdminState, LocaleCode, PageLayoutKey, SitePageLayout, TemplatePackagePayload, Translation, VisualPageLayoutData } from "@/types/site";
 
@@ -226,7 +227,14 @@ const imageCaptionPlacementChoices = [
 const buttonStyleChoices = [
   { label: "主按钮", value: "primary" },
   { label: "次按钮", value: "secondary" },
-  { label: "文字链接", value: "text" }
+  { label: "文字链接", value: "text" },
+  { label: "描边按钮", value: "outline" },
+  { label: "幽灵按钮", value: "ghost" },
+  { label: "胶囊按钮", value: "pill" },
+  { label: "右箭头行动", value: "arrow" },
+  { label: "光扫按钮", value: "sheen" },
+  { label: "立体按压", value: "press" },
+  { label: "玻璃质感", value: "glass" }
 ];
 
 const buttonSizeChoices = [
@@ -543,6 +551,56 @@ function blankData(): VisualPageLayoutData {
 
 function cloneLayoutData(data?: VisualPageLayoutData): VisualPageLayoutData {
   return data ? JSON.parse(JSON.stringify(data)) as VisualPageLayoutData : blankData();
+}
+
+function createPresetInstanceId(sourceId: string, index: number) {
+  return `${sourceId || "preset"}-${Date.now().toString(36)}-${index}-${Math.random().toString(36).slice(2, 7)}`;
+}
+
+function clonePresetContent(content: VisualPageLayoutData["content"]): VisualPageLayoutData["content"] {
+  let idIndex = 0;
+  const cloneItem = (item: VisualPageLayoutData["content"][number]): VisualPageLayoutData["content"][number] => {
+    const props = getPuckItemProps(item);
+    const nextProps: Record<string, unknown> = {
+      ...props,
+      id: createPresetInstanceId(typeof props.id === "string" ? props.id : item.type, idIndex)
+    };
+    idIndex += 1;
+
+    if (Array.isArray(props.slotItems)) {
+      nextProps.slotItems = (props.slotItems as VisualPageLayoutData["content"]).map(cloneItem);
+    }
+
+    return {
+      ...item,
+      props: nextProps as VisualPageLayoutData["content"][number]["props"]
+    };
+  };
+
+  return content.map(cloneItem);
+}
+
+function clonePresetData(data: VisualPageLayoutData): VisualPageLayoutData {
+  const cloned = cloneLayoutData(data);
+  return {
+    ...cloned,
+    content: clonePresetContent(cloned.content ?? []),
+    zones: cloned.zones ?? {}
+  };
+}
+
+function uploadedFileUrls(state: AdminState) {
+  return new Set(state.uploadedFiles.map((file) => file.url).filter(Boolean));
+}
+
+function listMissingPresetAssets(requiredAssets: string[], state: AdminState) {
+  const uploadedUrls = uploadedFileUrls(state);
+  return requiredAssets.filter((asset) => {
+    if (!asset.trim()) return false;
+    if (currentTemplateAssetPaths.has(asset)) return false;
+    if (uploadedUrls.has(asset)) return false;
+    return !/^https?:\/\//i.test(asset);
+  });
 }
 
 function localizedTemplateText(value: Translation | undefined, locale: LocaleCode, fallback = "") {
@@ -1320,6 +1378,174 @@ function PuckTemplateComponentItem({
   );
 }
 
+function PuckTemplatePresetPanel({
+  canManage,
+  onApplyPagePreset,
+  selectedLayoutKey,
+  state
+}: {
+  canManage: boolean;
+  onApplyPagePreset: (preset: PagePreset) => void;
+  selectedLayoutKey: PageLayoutKey;
+  state: AdminState;
+}) {
+  const appState = useTypedPuck((puck) => puck.appState);
+  const dispatch = useTypedPuck((puck) => puck.dispatch);
+  const selectedItem = useTypedPuck((puck) => puck.selectedItem);
+  const [activePresetCategory, setActivePresetCategory] = useState<BlockPreset["category"] | "all">("all");
+  const content = useMemo(() => (appState.data?.content ?? []) as VisualPageLayoutData["content"], [appState.data?.content]);
+  const selectedId = selectedItem?.props?.id;
+  const visibleBlockPresets = useMemo(() => (
+    activePresetCategory === "all"
+      ? blockPresets
+      : blockPresets.filter((preset) => preset.category === activePresetCategory)
+  ), [activePresetCategory]);
+  const presetCountByCategory = useMemo(() => {
+    const counts = new Map<string, number>();
+    blockPresets.forEach((preset) => counts.set(preset.category, (counts.get(preset.category) ?? 0) + 1));
+    return counts;
+  }, []);
+  const activePresetCategoryMeta = activePresetCategory === "all"
+    ? { label: "全部分类", description: "所有已添加的区块预设都会显示在这里。" }
+    : blockPresetCategories.find((category) => category.key === activePresetCategory);
+
+  const addBlockPreset = useCallback((preset: BlockPreset) => {
+    const missingAssets = listMissingPresetAssets(preset.requiredAssets, state);
+    if (!canManage || missingAssets.length > 0) return;
+
+    const presetItems = clonePresetContent(preset.puckData);
+    const selectedIndex = selectedId ? content.findIndex((item) => getPuckItemProps(item).id === selectedId) : -1;
+    const destinationIndex = selectedIndex >= 0 ? selectedIndex + 1 : content.length;
+
+    presetItems.forEach((item, offset) => {
+      const props = getPuckItemProps(item);
+      const itemId = typeof props.id === "string" ? props.id : createPresetInstanceId(item.type, offset);
+      ratioHandledInsertIds.add(itemId);
+      dispatch({
+        type: "insert",
+        componentType: item.type,
+        destinationIndex: destinationIndex + offset,
+        destinationZone: rootDropZone,
+        id: itemId,
+        recordHistory: true
+      });
+      dispatch({
+        type: "replace",
+        destinationIndex: destinationIndex + offset,
+        destinationZone: rootDropZone,
+        data: {
+          ...item,
+          props: {
+            ...props,
+            id: itemId
+          }
+        },
+        recordHistory: true
+      });
+    });
+
+    if (presetItems.length > 0) {
+      dispatch({ type: "setUi", ui: { itemSelector: { index: destinationIndex + presetItems.length - 1, zone: rootDropZone } } });
+    }
+  }, [canManage, content, dispatch, selectedId, state]);
+
+  return (
+    <div className="puck-template-left-panel puck-template-presets-plugin">
+      <section className="puck-template-preset-panel">
+        <div className="puck-template-panel-head">
+          <div>
+            <strong>行业区块 / 页面预设</strong>
+            <span>预留开源预设入口；转换为结构化 Puck JSON 后可直接添加</span>
+          </div>
+        </div>
+        <div className="puck-template-panel-body" id="puck-template-preset-body">
+          <div className="puck-template-preset-tabs" aria-label="区块分类">
+            <button className={activePresetCategory === "all" ? "is-active" : ""} type="button" onClick={() => setActivePresetCategory("all")}>
+              <span>全部</span>
+              <em>{blockPresets.length}</em>
+            </button>
+            {blockPresetCategories.map((category) => (
+              <button
+                className={activePresetCategory === category.key ? "is-active" : ""}
+                key={category.key}
+                title={category.description}
+                type="button"
+                onClick={() => setActivePresetCategory(category.key)}
+              >
+                <span>{category.label}</span>
+                <em>{presetCountByCategory.get(category.key) ?? 0}</em>
+              </button>
+            ))}
+          </div>
+          <div className="puck-template-preset-category-note">
+            <strong>{activePresetCategoryMeta?.label}</strong>
+            <span>{activePresetCategoryMeta?.description}</span>
+          </div>
+          {visibleBlockPresets.length > 0 ? (
+            <div className="puck-template-preset-grid">
+              {visibleBlockPresets.map((preset) => {
+                const missingAssets = listMissingPresetAssets(preset.requiredAssets, state);
+                const disabled = !canManage || missingAssets.length > 0;
+                return (
+                  <button
+                    className="puck-template-preset-card"
+                    disabled={disabled}
+                    key={preset.id}
+                    title={missingAssets.length > 0 ? `缺少素材：${missingAssets.join(", ")}` : "插入到当前选中模块之后"}
+                    type="button"
+                    onClick={() => addBlockPreset(preset)}
+                  >
+                    <span className="puck-template-preset-thumb">
+                      <img src={preset.thumbnail} alt="" loading="lazy" />
+                    </span>
+                    <span className="puck-template-preset-copy">
+                      <strong><Sparkles size={13} />{preset.label}</strong>
+                      <small>{preset.description}</small>
+                      {missingAssets.length > 0 ? <em>缺少素材 {missingAssets.length} 个</em> : <em>{blockPresetCategoryLabels[preset.category]}</em>}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          ) : (
+            <div className="puck-template-preset-empty">
+              <Sparkles size={15} />
+              <span>暂无{activePresetCategoryMeta?.label || "当前分类"}预设。后续把好看的开源区块发给我，我会按这个分类转换成 Puck JSON 并加入这里。</span>
+            </div>
+          )}
+          <div className="puck-template-page-presets">
+            <strong><LayoutTemplate size={14} />整页预设</strong>
+            {pagePresets.length > 0 ? pagePresets.map((preset) => {
+              const missingAssets = listMissingPresetAssets(preset.requiredAssets, state);
+              const layoutMismatch = preset.layoutKey !== selectedLayoutKey;
+              const disabled = !canManage || missingAssets.length > 0 || layoutMismatch;
+              return (
+                <button
+                  className="puck-template-page-preset"
+                  disabled={disabled}
+                  key={preset.id}
+                  title={layoutMismatch ? `这个预设适用于 ${preset.layoutKey}` : missingAssets.length > 0 ? `缺少素材：${missingAssets.join(", ")}` : "用此预设替换当前页面草稿"}
+                  type="button"
+                  onClick={() => onApplyPagePreset(preset)}
+                >
+                  <img src={preset.thumbnail} alt="" loading="lazy" />
+                  <span>
+                    <strong>{preset.label}</strong>
+                    <small>{layoutMismatch ? `适用于 ${preset.layoutKey}` : preset.description}</small>
+                    {missingAssets.length > 0 ? <em>缺少素材 {missingAssets.length} 个</em> : null}
+                  </span>
+                </button>
+              );
+            }) : (
+              <div className="puck-template-preset-empty is-compact">暂无整页预设。</div>
+            )}
+          </div>
+        </div>
+      </section>
+    </div>
+  );
+}
+
 function PuckTemplateBlocksPanel({ canManage }: { canManage: boolean }) {
   const appState = useTypedPuck((puck) => puck.appState);
   const config = useTypedPuck((puck) => puck.config);
@@ -1691,13 +1917,40 @@ function PuckTemplateBlocksPanel({ canManage }: { canManage: boolean }) {
   );
 }
 
-function createPuckPlugins(canManage: boolean): Plugin[] {
+function createPuckPlugins({
+  canManage,
+  onApplyPagePreset,
+  selectedLayoutKey,
+  state
+}: {
+  canManage: boolean;
+  onApplyPagePreset: (preset: PagePreset) => void;
+  selectedLayoutKey: PageLayoutKey;
+  state: AdminState;
+}): Plugin[] {
   return [
     {
       name: "blocks",
       label: "Blocks",
       icon: <Layers size={16} />,
-      render: () => <PuckTemplateBlocksPanel canManage={canManage} />
+      render: () => (
+        <PuckTemplateBlocksPanel
+          canManage={canManage}
+        />
+      )
+    },
+    {
+      name: "presets",
+      label: "Presets",
+      icon: <LayoutTemplate size={16} />,
+      render: () => (
+        <PuckTemplatePresetPanel
+          canManage={canManage}
+          onApplyPagePreset={onApplyPagePreset}
+          selectedLayoutKey={selectedLayoutKey}
+          state={state}
+        />
+      )
     }
   ];
 }
@@ -2024,8 +2277,10 @@ function createConfig(state: AdminState, locale: LocaleCode, layoutKey: PageLayo
           body: field("textarea", "说明"),
           buttonLabel: field("text", "按钮文字"),
           href: field("text", "按钮链接"),
+          buttonStyle: radioField("主按钮样式", buttonStyleChoices),
           secondaryLabel: field("text", "次按钮文字"),
           secondaryHref: field("text", "次按钮链接"),
+          secondaryButtonStyle: radioField("次按钮样式", buttonStyleChoices),
           mediaLibraryUrl: mediaPickerField("背景/配图", imageMediaItems, "image"),
           imageUrl: field("text", "手填背景图片 URL"),
           align: radioField("对齐", [
@@ -2044,7 +2299,7 @@ function createConfig(state: AdminState, locale: LocaleCode, layoutKey: PageLayo
             { label: "宽松", value: "large" }
           ])
         },
-        defaultProps: { eyebrow: "RFQ", title: "Ready to quote?", body: "", buttonLabel: "Contact us", href: "#rfq", secondaryLabel: "", secondaryHref: "/contact", mediaLibraryUrl: "", imageUrl: "", align: "split", tone: "dark", spacing: "normal" },
+        defaultProps: { eyebrow: "RFQ", title: "Ready to quote?", body: "", buttonLabel: "Contact us", href: "#rfq", buttonStyle: "primary", secondaryLabel: "", secondaryHref: "/contact", secondaryButtonStyle: "secondary", mediaLibraryUrl: "", imageUrl: "", align: "split", tone: "dark", spacing: "normal" },
         render: render("CtaSection")
       },
       ProductList: {
@@ -2422,7 +2677,6 @@ export function PuckTemplateEditor({ state, locale, canManage, onStateChange, on
   const selectedOptionUpdatedAt = selectedOption?.layout?.updatedAt;
   const selectedOptionData = selectedOption?.layout?.data;
   const config = useMemo(() => createConfig(state, locale, selectedOptionKey ?? "home"), [state, locale, selectedOptionKey]);
-  const puckPlugins = useMemo(() => createPuckPlugins(canManage), [canManage]);
   const permissions: Partial<Permissions> = useMemo(() => ({
     drag: canManage,
     duplicate: canManage,
@@ -2480,6 +2734,34 @@ export function PuckTemplateEditor({ state, locale, canManage, onStateChange, on
     setCloseDialogOpen(false);
     onStatus("已关闭编辑，未保存的模板改动已丢弃");
   }, [locale, onStatus, selectedOptionData, state]);
+
+  const applyPagePreset = useCallback((preset: PagePreset) => {
+    if (!canManage) {
+      onStatus("当前账号没有前台模板权限");
+      return;
+    }
+    if (!selectedOption || preset.layoutKey !== selectedOption.key) {
+      onStatus("这个整页预设不适用于当前页面");
+      return;
+    }
+
+    const missingAssets = listMissingPresetAssets(preset.requiredAssets, state);
+    if (missingAssets.length > 0) {
+      onStatus(`整页预设缺少素材：${missingAssets.join(", ")}`);
+      return;
+    }
+
+    setDraftData(dataWithFooterDraftProps(clonePresetData(preset.puckData), state, locale));
+    setEditorResetKey((current) => current + 1);
+    onStatus(`已套用整页预设：${preset.label}，点击保存发布后生效`);
+  }, [canManage, locale, onStatus, selectedOption, state]);
+
+  const puckPlugins = useMemo(() => createPuckPlugins({
+    canManage,
+    onApplyPagePreset: applyPagePreset,
+    selectedLayoutKey: selectedOptionKey ?? "home",
+    state
+  }), [applyPagePreset, canManage, selectedOptionKey, state]);
 
   const saveLayout = useCallback(async (nextData: Data = draftData) => {
     if (!canManage || !selectedOption) {

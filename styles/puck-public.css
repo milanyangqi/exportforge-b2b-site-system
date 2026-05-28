@@ -697,14 +697,20 @@
   font-weight: 900;
 }
 
-.puck-public-custom-container-card .container-card-link.is-primary,
-.puck-public-custom-container-card .container-card-link.is-secondary {
+.puck-public-custom-container-card .container-card-link {
+  width: fit-content;
+}
+
+.puck-public-custom-container-card .container-card-link:not(.is-text) {
   display: inline-flex;
   min-height: 34px;
   align-items: center;
   justify-content: center;
+  gap: 7px;
   border-radius: 6px;
   padding: 0 12px;
+  line-height: 1.15;
+  text-align: center;
 }
 
 .puck-public-custom-container-card .container-card-link.is-primary {
@@ -716,6 +722,51 @@
   border: 1px solid var(--line);
   color: var(--primary);
   background: #fff;
+}
+
+.puck-public-custom-container-card .container-card-link.is-outline {
+  border: 1px solid color-mix(in srgb, var(--primary), white 58%);
+  color: var(--primary);
+  background: transparent;
+}
+
+.puck-public-custom-container-card .container-card-link.is-ghost {
+  color: var(--primary);
+  background: color-mix(in srgb, var(--primary), white 93%);
+}
+
+.puck-public-custom-container-card .container-card-link.is-pill {
+  border-radius: 999px;
+  color: #fff;
+  background: linear-gradient(135deg, var(--accent), color-mix(in srgb, var(--accent), var(--primary) 34%));
+}
+
+.puck-public-custom-container-card .container-card-link.is-arrow {
+  color: #fff;
+  background: var(--primary);
+}
+
+.puck-public-custom-container-card .container-card-link.is-arrow::after {
+  content: "->";
+}
+
+.puck-public-custom-container-card .container-card-link.is-sheen {
+  color: #fff;
+  background: linear-gradient(135deg, var(--primary), #0b5f7d);
+}
+
+.puck-public-custom-container-card .container-card-link.is-press {
+  color: #fff;
+  background: var(--accent);
+  box-shadow: 0 4px 0 color-mix(in srgb, var(--accent), #111 34%);
+}
+
+.puck-public-custom-container-card .container-card-link.is-glass {
+  border: 1px solid rgba(255, 255, 255, 0.58);
+  color: var(--primary);
+  background: rgba(255, 255, 255, 0.46);
+  box-shadow: 0 12px 28px rgba(13, 77, 100, 0.12);
+  backdrop-filter: blur(12px);
 }
 
 .container-button {
@@ -736,6 +787,12 @@
   color: var(--accent);
   background: transparent;
   box-shadow: none;
+}
+
+.container-button.is-outline,
+.container-button.is-ghost,
+.container-button.is-glass {
+  color: var(--primary);
 }
 
 .container-button.size-small {
@@ -996,4 +1053,3 @@ select,
 textarea {
   font: inherit;
 }
-

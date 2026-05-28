@@ -24,9 +24,20 @@ type PuckVisualBlockProps = {
   editable?: boolean;
 };
 
+const buttonStyleValues = new Set(["primary", "secondary", "text", "outline", "ghost", "pill", "arrow", "sheen", "press", "glass"]);
+
 function propString(props: Record<string, unknown>, key: string, fallback = "") {
   const value = props[key];
   return typeof value === "string" ? value : fallback;
+}
+
+function buttonStyleValue(value: string, fallback = "primary") {
+  return buttonStyleValues.has(value) ? value : fallback;
+}
+
+function buttonClassName(style: string, extraClassName = "") {
+  const resolvedStyle = buttonStyleValue(style);
+  return ["button", `is-${resolvedStyle}`, extraClassName].filter(Boolean).join(" ");
 }
 
 function propNode(props: Record<string, unknown>, key: string, fallback: ReactNode = ""): ReactNode {
@@ -580,7 +591,7 @@ function renderContainerImageCaption({
       {eyebrow ? <span>{eyebrow}</span> : null}
       {title ? <h3>{title}</h3> : null}
       {body ? <p>{body}</p> : null}
-      {buttonLabel ? <strong className={`container-card-link is-${buttonStyle || "text"}`}>{buttonLabel}</strong> : null}
+      {buttonLabel ? <strong className={`container-card-link is-${buttonStyleValue(buttonStyle || "text", "text")}`}>{buttonLabel}</strong> : null}
     </div>
   );
 }
@@ -645,7 +656,7 @@ function renderContainerImageStage({
 }
 
 function buttonStyleClass(props: Record<string, unknown>) {
-  const style = propString(props, "buttonStyle", "primary");
+  const style = buttonStyleValue(propString(props, "buttonStyle", "primary"));
   const size = propString(props, "buttonSize", "normal");
   return `button container-button is-${style} size-${size}`;
 }
@@ -805,11 +816,11 @@ function CtaSection({ props, locale }: { props: Record<string, unknown>; locale:
         {propString(props, "body") ? <p>{propString(props, "body")}</p> : null}
       </div>
       <div className="puck-public-cta-actions">
-        <a className="button primary" href={localizeHref(propString(props, "href", "#rfq"), locale)}>
+        <a className={buttonClassName(propString(props, "buttonStyle", "primary"))} href={localizeHref(propString(props, "href", "#rfq"), locale)}>
           {propString(props, "buttonLabel", "Learn more")}
         </a>
         {propString(props, "secondaryLabel") ? (
-          <a className="button secondary" href={localizeHref(propString(props, "secondaryHref", "/contact"), locale)}>
+          <a className={buttonClassName(propString(props, "secondaryButtonStyle", "secondary"))} href={localizeHref(propString(props, "secondaryHref", "/contact"), locale)}>
             {propString(props, "secondaryLabel")}
           </a>
         ) : null}
@@ -961,7 +972,7 @@ function CustomSection({ editable = false, props, locale, state }: { editable?: 
       {body ? <ArticleContent body={body} /> : null}
       {containerNode}
       {(moduleType === "cta" || buttonLabel) ? (
-        <a className={`button ${propString(props, "buttonStyle", "primary")}`} href={buttonHref}>{buttonLabel || "了解更多"}</a>
+        <a className={buttonClassName(propString(props, "buttonStyle", "primary"))} href={buttonHref}>{buttonLabel || "了解更多"}</a>
       ) : null}
     </div>
   );
