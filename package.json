@@ -18,11 +18,11 @@
     "template:apply": "node scripts/apply-template.mjs"
   },
   "dependencies": {
-    "@mdxeditor/editor": "^4.0.1",
     "@puckeditor/core": "^0.21.2",
     "@types/node": "^20.12.12",
     "@types/react": "^19.2.15",
     "@types/react-dom": "^19.2.3",
+    "@uiw/react-md-editor": "^4.1.1",
     "lucide-react": "^0.468.0",
     "next": "^15.5.18",
     "nodemailer": "^8.0.9",

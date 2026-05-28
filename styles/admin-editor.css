@@ -470,10 +470,19 @@
 }
 
 .admin-markdown-editor-shell {
+  display: grid;
   min-width: 0;
+  gap: 8px;
 }
 
-.admin-editor-quickbar {
+.admin-editor-media-tools {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 8px;
+  background: #f8fbfc;
+}
+
+.admin-editor-media-tools .admin-editor-quickbar {
   display: grid;
   grid-template-columns: repeat(auto-fill, 30px);
   gap: 6px;
@@ -483,8 +492,8 @@
   padding: 0;
 }
 
-.admin-editor-quickbar button,
-.admin-editor-quickbar .article-image-inline-upload {
+.admin-editor-media-tools .admin-editor-quickbar button,
+.admin-editor-media-tools .admin-editor-quickbar .article-image-inline-upload {
   display: inline-flex;
   flex: 0 0 auto;
   width: 30px;
@@ -505,21 +514,21 @@
   box-shadow: 0 1px 1px rgb(15 45 68 / 4%);
 }
 
-.admin-editor-quickbar button svg,
-.admin-editor-quickbar .article-image-inline-upload svg {
+.admin-editor-media-tools .admin-editor-quickbar button svg,
+.admin-editor-media-tools .admin-editor-quickbar .article-image-inline-upload svg {
   width: 16px;
   height: 16px;
   display: block;
   flex: 0 0 auto;
 }
 
-.admin-editor-quickbar button:disabled {
+.admin-editor-media-tools .admin-editor-quickbar button:disabled {
   opacity: 0.48;
   cursor: not-allowed;
 }
 
-.admin-editor-quickbar button:hover,
-.admin-editor-quickbar .article-image-inline-upload:hover {
+.admin-editor-media-tools .admin-editor-quickbar button:hover,
+.admin-editor-media-tools .admin-editor-quickbar .article-image-inline-upload:hover {
   border-color: color-mix(in srgb, var(--primary), white 38%);
   color: var(--primary);
   background: color-mix(in srgb, var(--primary), white 94%);
@@ -534,21 +543,7 @@
 }
 
 .admin-markdown-editor {
-  --basePageBg: #fff;
-  --baseBase: #fff;
-  --baseBgSubtle: #f8fbfc;
-  --baseBg: #eef4f6;
-  --baseBgHover: #e5eef2;
-  --baseBgActive: color-mix(in srgb, var(--primary), white 86%);
-  --baseLine: var(--line);
-  --baseBorder: var(--line);
-  --baseBorderHover: var(--primary);
-  --baseSolid: var(--muted);
-  --baseSolidHover: var(--primary);
-  --baseText: var(--muted);
-  --baseTextContrast: var(--ink);
-  --radius-base: 6px;
-  --radius-medium: 8px;
+  color: var(--ink);
 }
 
 .admin-markdown-editor-loading {
@@ -559,124 +554,64 @@
   font-weight: 900;
 }
 
-.admin-markdown-editor-toolbar {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 4px 6px;
+.admin-uiw-markdown-editor.w-md-editor {
+  min-height: 720px;
+  color: var(--ink);
+  background: #fff;
+  box-shadow: none;
+}
+
+.admin-uiw-markdown-editor .w-md-editor-toolbar {
   border-bottom: 1px solid var(--line);
-  border-radius: 0;
   padding: 8px 10px;
   background: #f8fbfc;
 }
 
-.admin-markdown-editor-toolbar > div {
+.admin-uiw-markdown-editor .w-md-editor-toolbar ul {
   display: flex;
-  width: 100%;
-  flex-wrap: wrap !important;
-  align-items: center;
-  gap: 4px 6px;
+  flex-wrap: wrap;
+  gap: 4px;
 }
 
-.admin-markdown-editor-toolbar button,
-.admin-markdown-editor-toolbar [role="button"],
-.admin-markdown-editor-toolbar select {
-  display: inline-flex !important;
-  min-width: 28px;
-  min-height: 28px !important;
-  height: 28px;
-  align-items: center !important;
-  justify-content: center !important;
-  vertical-align: middle;
-}
-
-.admin-markdown-editor-toolbar svg {
-  display: block;
-  width: 16px;
-  height: 16px;
-  flex: 0 0 auto;
-}
-
-.admin-markdown-editor-toolbar [role="separator"] {
-  align-self: center;
-  height: 18px;
-}
-
-.admin-markdown-toolbar-actions .admin-editor-quickbar button,
-.admin-markdown-toolbar-actions .admin-editor-quickbar .article-image-inline-upload {
+.admin-uiw-markdown-editor .w-md-editor-toolbar li > button {
+  display: inline-flex;
   width: 30px;
-  height: 30px !important;
-  min-height: 30px !important;
+  height: 30px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  color: #16384b;
+  line-height: 1;
 }
 
-.admin-markdown-toolbar-actions {
-  display: block;
-  order: 10;
-  flex: 0 0 100%;
-  min-height: 30px;
-  max-width: 100%;
-  margin-top: 4px;
-  padding: 8px;
-  border-top: 1px solid color-mix(in srgb, var(--line), white 45%);
-  border-radius: 0 0 6px 6px;
-  background: color-mix(in srgb, #f8fbfc, white 42%);
+.admin-uiw-markdown-editor .w-md-editor-toolbar li > button:hover {
+  color: var(--primary);
+  background: color-mix(in srgb, var(--primary), white 94%);
 }
 
-.admin-markdown-editor-content {
-  min-height: clamp(620px, 70vh, 980px);
-  padding: 20px;
-  background: #fff;
+.admin-md-command-text {
+  display: inline-grid;
+  min-width: 16px;
+  place-items: center;
+  font-size: 11px;
+  font-weight: 950;
+  line-height: 1;
+}
+
+.admin-uiw-markdown-editor .w-md-editor-text {
+  min-height: 668px;
+}
+
+.admin-uiw-markdown-editor .w-md-editor-text-input,
+.admin-uiw-markdown-editor .w-md-editor-text-pre > code {
   color: var(--ink);
-  caret-color: var(--primary);
-  font-size: 15px;
-  line-height: 1.78;
-}
-
-.admin-markdown-editor-content:focus {
-  box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--primary), white 34%);
-}
-
-.admin-markdown-editor-content p,
-.admin-markdown-editor-content ul,
-.admin-markdown-editor-content ol,
-.admin-markdown-editor-content blockquote,
-.admin-markdown-editor-content table,
-.admin-markdown-editor-content pre {
-  margin-top: 0;
-  margin-bottom: 16px;
-}
-
-.admin-markdown-editor-content h1,
-.admin-markdown-editor-content h2,
-.admin-markdown-editor-content h3,
-.admin-markdown-editor-content h4 {
-  margin: 0 0 14px;
-  color: var(--ink);
-  line-height: 1.25;
-}
-
-.admin-markdown-editor-content img {
-  max-width: 100%;
-  max-height: 380px;
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
-  object-fit: contain;
-  background: #f8fafc;
-}
-
-.admin-markdown-editor .cm-editor {
-  min-height: clamp(620px, 70vh, 980px);
-  color: var(--ink);
-  background: #fff;
   font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
-  font-size: 13px;
+  font-size: 14px !important;
+  line-height: 1.75 !important;
 }
 
-.admin-markdown-editor .cm-scroller {
-  min-height: clamp(620px, 70vh, 980px);
-}
-
-.admin-markdown-editor .cm-focused {
+.admin-uiw-markdown-editor .w-md-editor-text-input:focus {
+  box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--primary), white 34%);
   outline: none;
 }
 

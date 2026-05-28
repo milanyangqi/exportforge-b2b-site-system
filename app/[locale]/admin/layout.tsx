@@ -1,4 +1,4 @@
-import "@mdxeditor/editor/style.css";
+import "@uiw/react-md-editor/markdown-editor.css";
 import "@puckeditor/core/puck.css";
 import "@/styles/puck-editor.css";
 import "@/styles/admin-core.css";
