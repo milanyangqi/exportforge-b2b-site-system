@@ -3946,6 +3946,39 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
     });
   }
 
+  function clearPageBody() {
+    if (!activePage) return;
+    pageMarkdownEditorRef.current?.setMarkdown("");
+    updatePageBody("");
+    setStatus("页面正文已清空，点击保存或发布后生效");
+    window.requestAnimationFrame(() => {
+      pageMarkdownEditorRef.current?.focus();
+    });
+  }
+
+  function renderMarkdownEditorToolbarActions(target: VideoDialogTarget) {
+    const isPage = target === "page";
+
+    return (
+      <div className="admin-editor-quickbar" aria-label={isPage ? "页面编辑器快捷工具" : "文章编辑器快捷工具"}>
+        <button title="插入视频链接" aria-label="插入视频链接" type="button" onClick={() => openVideoDialog(target)}><Video size={16} />视频</button>
+        <label className="article-image-inline-upload" title="上传并插入媒体">
+          <Paperclip size={16} />
+          媒体
+          <input
+            type="file"
+            onChange={(event) => {
+              uploadSiteFile(event.currentTarget.files?.[0] ?? null, target);
+              event.currentTarget.value = "";
+            }}
+          />
+        </label>
+        <button disabled={(state?.uploadedFiles.length ?? 0) === 0} title="从媒体库插入" type="button" onClick={() => setMediaPickerTarget(target)}><Library size={16} />媒体库</button>
+        <button title="清空正文" type="button" onClick={isPage ? clearPageBody : clearArticleBody}><Trash2 size={16} />清空</button>
+      </div>
+    );
+  }
+
   function clearArticleFormatting() {
     if (!activeArticle) return;
     if (articleEditorView === "visual" && visualEditorRef.current) {
@@ -5854,28 +5887,13 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
                       <label>页面摘要<textarea className="wp-excerpt" value={activePage.excerpt.zh ?? activePage.excerpt.en ?? ""} onChange={(event) => updatePageExcerpt(event.target.value)} /></label>
                       <div className="admin-markdown-field">
                         <span className="admin-markdown-label">页面正文</span>
-                        <div className="admin-editor-quickbar" aria-label="页面编辑器快捷工具">
-                          <button title="插入视频链接" aria-label="插入视频链接" type="button" onClick={() => openVideoDialog("page")}><Video size={16} />视频</button>
-                          <label className="article-image-inline-upload" title="上传并插入媒体">
-                            <Paperclip size={16} />
-                            媒体
-                            <input
-                              type="file"
-                              onChange={(event) => {
-                                uploadSiteFile(event.currentTarget.files?.[0] ?? null, "page");
-                                event.currentTarget.value = "";
-                              }}
-                            />
-                          </label>
-                          <button disabled={state.uploadedFiles.length === 0} title="从媒体库插入" type="button" onClick={() => setMediaPickerTarget("page")}><Library size={16} />媒体库</button>
-                          <button title="清空正文" type="button" onClick={() => updatePageBody("")}><Trash2 size={16} />清空</button>
-                        </div>
                         <AdminMarkdownEditor
                           editorId={`page-${activePage.id ?? activePage.slug}-${locale}`}
                           onChange={updatePageBody}
                           onImageUpload={(file) => uploadMarkdownEditorImage("page", file)}
                           placeholder="在这里填写页面内容。"
                           ref={pageMarkdownEditorRef}
+                          toolbarActions={renderMarkdownEditorToolbarActions("page")}
                           value={pickLocalizedText(activePage.body, locale)}
                         />
                       </div>
@@ -6159,28 +6177,13 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
                       <label>摘要<textarea className="wp-excerpt" value={activeArticle.excerpt.zh ?? activeArticle.excerpt.en ?? ""} onChange={(event) => updateArticleExcerpt(event.target.value)} /></label>
                       <div className="admin-markdown-field">
                         <span className="admin-markdown-label">文章正文</span>
-                        <div className="admin-editor-quickbar" aria-label="文章编辑器快捷工具">
-                          <button title="插入视频链接" aria-label="插入视频链接" type="button" onClick={() => openVideoDialog("article")}><Video size={16} />视频</button>
-                          <label className="article-image-inline-upload" title="上传并插入媒体">
-                            <Paperclip size={16} />
-                            媒体
-                            <input
-                              type="file"
-                              onChange={(event) => {
-                                uploadSiteFile(event.currentTarget.files?.[0] ?? null, "article");
-                                event.currentTarget.value = "";
-                              }}
-                            />
-                          </label>
-                          <button disabled={state.uploadedFiles.length === 0} title="从媒体库插入" type="button" onClick={() => setMediaPickerTarget("article")}><Library size={16} />媒体库</button>
-                          <button title="清空正文" type="button" onClick={clearArticleBody}><Trash2 size={16} />清空</button>
-                        </div>
                         <AdminMarkdownEditor
                           editorId={`article-${activeArticle.id ?? activeArticle.slug}-${locale}`}
                           onChange={updateArticleBody}
                           onImageUpload={(file) => uploadMarkdownEditorImage("article", file)}
                           placeholder="在这里填写文章正文。"
                           ref={articleMarkdownEditorRef}
+                          toolbarActions={renderMarkdownEditorToolbarActions("article")}
                           value={activeArticleBody}
                         />
                       </div>

@@ -1,6 +1,6 @@
 "use client";
 
-import { type ForwardedRef, useEffect, useMemo, useRef } from "react";
+import { type ForwardedRef, type ReactNode, useEffect, useMemo, useRef } from "react";
 import {
   BlockTypeSelect,
   BoldItalicUnderlineToggles,
@@ -38,6 +38,7 @@ export type AdminMarkdownEditorProps = {
   editorId: string;
   value: string;
   placeholder?: string;
+  toolbarActions?: ReactNode;
   onChange: (value: string) => void;
   onImageUpload: (file: File) => Promise<string>;
 };
@@ -60,6 +61,7 @@ export default function AdminMarkdownEditorInner({
   editorRef,
   value,
   placeholder,
+  toolbarActions,
   onChange,
   onImageUpload
 }: AdminMarkdownEditorInnerProps) {
@@ -118,6 +120,12 @@ export default function AdminMarkdownEditorInner({
               {
                 fallback: () => (
                   <>
+                    {toolbarActions ? (
+                      <>
+                        <div className="admin-markdown-toolbar-actions">{toolbarActions}</div>
+                        <Separator />
+                      </>
+                    ) : null}
                     <UndoRedo />
                     <Separator />
                     <BlockTypeSelect />
@@ -142,7 +150,7 @@ export default function AdminMarkdownEditorInner({
         </DiffSourceToggleWrapper>
       )
     })
-  ], []);
+  ], [toolbarActions]);
 
   return (
     <MDXEditor

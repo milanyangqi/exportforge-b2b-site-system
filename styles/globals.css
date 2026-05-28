@@ -4967,17 +4967,23 @@ textarea:disabled {
   flex-wrap: wrap;
   gap: 6px;
   align-items: center;
-  border: 1px solid var(--line);
-  border-bottom: 0;
-  border-radius: var(--radius) var(--radius) 0 0;
-  padding: 10px;
-  background: #f8fbfc;
+  padding: 0;
 }
 
 .admin-editor-quickbar button,
 .admin-editor-quickbar .article-image-inline-upload {
+  display: inline-flex;
   min-height: 34px;
+  align-items: center;
+  justify-content: center;
   gap: 6px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 0 10px;
+  color: var(--primary);
+  background: #fff;
+  font-weight: 900;
+  cursor: pointer;
 }
 
 .admin-editor-quickbar button:disabled {
@@ -4985,11 +4991,17 @@ textarea:disabled {
   cursor: not-allowed;
 }
 
+.admin-editor-quickbar button:hover,
+.admin-editor-quickbar .article-image-inline-upload:hover {
+  border-color: var(--primary);
+  background: color-mix(in srgb, var(--primary), white 93%);
+}
+
 .admin-markdown-editor,
 .admin-markdown-editor-loading {
   overflow: hidden;
   border: 1px solid var(--line);
-  border-radius: 0 0 var(--radius) var(--radius);
+  border-radius: var(--radius);
   background: #fff;
 }
 
@@ -5026,6 +5038,13 @@ textarea:disabled {
   border-radius: 0;
   padding: 8px 10px;
   background: #f8fbfc;
+}
+
+.admin-markdown-toolbar-actions {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
 }
 
 .admin-markdown-editor-content {
