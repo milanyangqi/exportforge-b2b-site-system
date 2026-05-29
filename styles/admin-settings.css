@@ -1459,6 +1459,19 @@
   resize: vertical;
 }
 
+.mail-hidden-note {
+  display: block;
+  min-height: 15px;
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 780;
+  line-height: 15px;
+}
+
+.mail-host-field {
+  align-self: start;
+}
+
 .mail-account-grid input[type="checkbox"],
 .mail-account-grid input[type="radio"] {
   width: 18px;
@@ -1508,6 +1521,13 @@
   gap: 10px;
 }
 
+.mail-account-actions-inline {
+  grid-column: 2;
+  align-self: center;
+  justify-content: flex-start;
+  min-height: 35px;
+}
+
 .mail-account-actions button {
   border: 1px solid #7c5cff;
   padding: 0 22px;
@@ -1520,6 +1540,19 @@
 .mail-account-actions button:nth-child(3) {
   color: #7c5cff;
   background: #fff;
+}
+
+.mail-account-actions .mail-clear-button {
+  border-color: #cbd5e1;
+  color: #475569;
+  background: #f8fafc;
+  box-shadow: none;
+}
+
+.mail-account-actions .mail-clear-button:hover {
+  border-color: #fca5a5;
+  color: #b91c1c;
+  background: #fff1f2;
 }
 
 .mail-account-actions button:disabled {

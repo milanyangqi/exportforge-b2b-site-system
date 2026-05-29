@@ -76,6 +76,21 @@ function createSmtpTransportOptions(settings: SiteSettings) {
   };
 }
 
+function getSmtpMissingMessage(settings: SiteSettings) {
+  const host = settings.mailSmtpHost?.trim();
+  const port = Number(settings.mailSmtpPort || 465);
+  const user = getSmtpUser(settings);
+  const password = decryptMailSecret(settings.mailSmtpPassword);
+  const missing: string[] = [];
+
+  if (!host) missing.push("SMTP 主机");
+  if (!port) missing.push("端口");
+  if (!user) missing.push("账号");
+  if (!password) missing.push("授权码/密码");
+
+  return missing.length > 0 ? `请先填写：${missing.join("、")}。` : "";
+}
+
 function appendLeadContext(body: string, lead?: AdminLead) {
   if (!lead) return body;
 
@@ -103,15 +118,10 @@ async function sendSmtp(settings: SiteSettings, draft: MailDraft, lead?: AdminLe
     };
   }
 
-  const host = settings.mailSmtpHost?.trim();
-  const port = Number(settings.mailSmtpPort || 465);
-  const user = getSmtpUser(settings);
-  const password = decryptMailSecret(settings.mailSmtpPassword);
   const from = buildFrom(settings);
 
-  if (!host || !port || !user || !password) {
-    return { ok: false, provider: "smtp", message: "请先填写 SMTP 服务器、端口、账号和授权码/密码。" };
-  }
+  const missingMessage = getSmtpMissingMessage(settings);
+  if (missingMessage) return { ok: false, provider: "smtp", message: missingMessage };
   if (!from) return { ok: false, provider: "smtp", message: "请先填写有效的发件人邮箱。" };
 
   const nodemailer = await import(/* webpackIgnore: true */ "nodemailer");
@@ -190,14 +200,8 @@ export async function verifyMailConnection(settings: SiteSettings): Promise<Mail
     };
   }
 
-  const host = settings.mailSmtpHost?.trim();
-  const port = Number(settings.mailSmtpPort || 465);
-  const user = getSmtpUser(settings);
-  const password = decryptMailSecret(settings.mailSmtpPassword);
-
-  if (!host || !port || !user || !password) {
-    return { ok: false, provider, message: "请先填写 SMTP 服务器、端口、账号和授权码/密码。" };
-  }
+  const missingMessage = getSmtpMissingMessage(settings);
+  if (missingMessage) return { ok: false, provider, message: missingMessage };
 
   try {
     const nodemailer = await import(/* webpackIgnore: true */ "nodemailer");

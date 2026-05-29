@@ -93,9 +93,9 @@ const defaultSiteSettings: SiteSettings = {
   fontFamily: "\"Manrope\", \"PingFang SC\", \"Microsoft YaHei\", sans-serif",
   siteUrl: process.env.NEXT_PUBLIC_SITE_URL ?? "https://exportforge-b2b-site-system.437991663.workers.dev",
   adminEmail: process.env.INITIAL_ADMIN_EMAIL ?? "admin@example.com",
-  mailFromEmail: process.env.INITIAL_ADMIN_EMAIL ?? "admin@example.com",
-  mailFromName: siteSettings.brand,
-  mailReplyToEmail: process.env.INITIAL_ADMIN_EMAIL ?? "admin@example.com",
+  mailFromEmail: "",
+  mailFromName: "",
+  mailReplyToEmail: "",
   mailProvider: "mailto",
   mailSmtpHost: "",
   mailSmtpPort: 465,
@@ -383,11 +383,19 @@ export function sanitizeSiteSettingsSecrets(settings: SiteSettings): SiteSetting
 function preserveMailSecrets(nextSettings: SiteSettings, existingSettings: SiteSettings): SiteSettings {
   const smtpPassword = nextSettings.mailSmtpPassword?.trim();
   const apiKey = nextSettings.mailApiKey?.trim();
+  const nextSmtpPassword = smtpPassword === "__CLEAR_MAIL_SECRET__"
+    ? ""
+    : smtpPassword
+      ? encryptMailSecret(smtpPassword)
+      : existingSettings.mailSmtpPassword || "";
+  const nextApiKey = apiKey ? encryptMailSecret(apiKey) : existingSettings.mailApiKey || "";
 
   return {
     ...nextSettings,
-    mailSmtpPassword: smtpPassword ? encryptMailSecret(smtpPassword) : existingSettings.mailSmtpPassword || "",
-    mailApiKey: apiKey ? encryptMailSecret(apiKey) : existingSettings.mailApiKey || ""
+    mailSmtpPassword: nextSmtpPassword,
+    mailSmtpPasswordConfigured: Boolean(nextSmtpPassword),
+    mailApiKey: nextApiKey,
+    mailApiKeyConfigured: Boolean(nextApiKey)
   };
 }
 

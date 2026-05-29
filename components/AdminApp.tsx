@@ -195,6 +195,36 @@ type CollectorFormState = {
   category: string;
 };
 
+const customMailHostValue = "__custom__";
+const smtpHostOptions = [
+  { label: "阿里企业邮箱", value: "smtp.qiye.aliyun.com" },
+  { label: "阿里云邮箱", value: "smtp.aliyun.com" },
+  { label: "腾讯企业邮箱", value: "smtp.exmail.qq.com" },
+  { label: "QQ 邮箱", value: "smtp.qq.com" },
+  { label: "网易 163 邮箱", value: "smtp.163.com" },
+  { label: "网易 126 邮箱", value: "smtp.126.com" },
+  { label: "Gmail", value: "smtp.gmail.com" },
+  { label: "Outlook / Office 365", value: "smtp.office365.com" },
+  { label: "Yahoo Mail", value: "smtp.mail.yahoo.com" },
+  { label: "Zoho Mail", value: "smtp.zoho.com" },
+  { label: "Yandex Mail", value: "smtp.yandex.com" },
+  { label: "iCloud Mail", value: "smtp.mail.me.com" }
+];
+const imapHostOptions = [
+  { label: "阿里企业邮箱", value: "imap.qiye.aliyun.com" },
+  { label: "阿里云邮箱", value: "imap.aliyun.com" },
+  { label: "腾讯企业邮箱", value: "imap.exmail.qq.com" },
+  { label: "QQ 邮箱", value: "imap.qq.com" },
+  { label: "网易 163 邮箱", value: "imap.163.com" },
+  { label: "网易 126 邮箱", value: "imap.126.com" },
+  { label: "Gmail", value: "imap.gmail.com" },
+  { label: "Outlook / Office 365", value: "outlook.office365.com" },
+  { label: "Yahoo Mail", value: "imap.mail.yahoo.com" },
+  { label: "Zoho Mail", value: "imap.zoho.com" },
+  { label: "Yandex Mail", value: "imap.yandex.com" },
+  { label: "iCloud Mail", value: "imap.mail.me.com" }
+];
+
 const tabs: { key: Tab; label: string; icon: typeof Gauge }[] = [
   { key: "overview", label: "仪表盘", icon: Gauge },
   { key: "products", label: "分类", icon: FolderTree },
@@ -1422,7 +1452,8 @@ function getRolePermissions(role: RoleKey, rolePermissions?: AdminState["rolePer
 function getAllowedTabsForUser(user?: AdminUser, rolePermissions?: AdminState["rolePermissions"]) {
   const role = user?.role ?? "viewer";
   const roleConfig = getRolePermissions(role, rolePermissions);
-  return roleConfig.allowedTabs;
+  const userAllowedTabs = user?.allowedTabs?.filter((item): item is Tab => tabKeys.has(item as Tab) && item !== "account");
+  return userAllowedTabs && userAllowedTabs.length > 0 ? userAllowedTabs : roleConfig.allowedTabs;
 }
 
 function getAllowedSettingsSectionsForUser(user?: AdminUser, rolePermissions?: AdminState["rolePermissions"]) {
@@ -1468,6 +1499,12 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
   const [replacingArticleVideoUrl, setReplacingArticleVideoUrl] = useState<string | null>(null);
   const [mailDraftLeadId, setMailDraftLeadId] = useState<string | null>(null);
   const [mailDraftEdit, setMailDraftEdit] = useState<LeadMailDraftEdit | null>(null);
+  const [mailSmtpPasswordDraft, setMailSmtpPasswordDraft] = useState("");
+  const [mailSensitiveTouched, setMailSensitiveTouched] = useState({
+    smtpPassword: false
+  });
+  const [mailSmtpHostCustom, setMailSmtpHostCustom] = useState(false);
+  const [mailImapHostCustom, setMailImapHostCustom] = useState(false);
   const [collapsedMailSections, setCollapsedMailSections] = useState<Record<MailSectionKey, boolean>>({
     smtp: true,
     imap: true,
@@ -1826,8 +1863,8 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
     const user = getCurrentUser(sourceState);
     if (!user) return false;
     if (frontendManagerRoles.has(user.role)) return true;
-    const permissions = getRolePermissions(user.role, sourceState?.rolePermissions);
-    return permissions.allowedTabs.some((item) => ["navigation", "templates", "settings", "languages", "themes", "ai"].includes(item));
+    const allowedTabs = getAllowedTabsForUser(user, sourceState?.rolePermissions);
+    return allowedTabs.some((item) => ["navigation", "templates", "settings", "languages", "themes", "ai", "mail"].includes(item));
   }
 
   function guardFrontendSettingsAccess() {
@@ -1847,6 +1884,78 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
       }
     });
     setFrontendSettingsDirty(true);
+  }
+
+  async function clearMailSettings() {
+    if (!state) return;
+    const nextState = {
+      ...state,
+      siteSettings: {
+        ...state.siteSettings,
+        mailProvider: "smtp" as const,
+        mailFromName: "",
+        mailFromEmail: "",
+        mailReplyToEmail: "",
+        mailSmtpAccountName: "",
+        mailSmtpUseDifferentAccountName: false,
+        mailSmtpHost: "",
+        mailSmtpPort: 465,
+        mailSmtpEncryption: "ssl" as const,
+        mailSmtpSecure: true,
+        mailSmtpUser: "",
+        mailSmtpPassword: "__CLEAR_MAIL_SECRET__",
+        mailReplyToDifferent: false,
+        mailImapHost: "",
+        mailImapPort: 993,
+        mailImapEncryption: "ssl" as const,
+        mailImapCollectExternalReplies: false
+      }
+    };
+
+    setMailSmtpPasswordDraft("");
+    setMailSensitiveTouched({ smtpPassword: false });
+    setMailSmtpHostCustom(false);
+    setMailImapHostCustom(false);
+    setState(nextState);
+    setMailActionRunning(true);
+    setMailActionStatus("正在清除邮箱账户设置...");
+    try {
+      const saved = await save(nextState);
+      setMailActionStatus(saved ? "邮箱账户设置已清除。" : "清除设置失败，请检查本地服务或登录状态。");
+    } finally {
+      setMailActionRunning(false);
+    }
+  }
+
+  function buildMailSettingsStateForSave() {
+    if (!state) return null;
+    const nextSettings = {
+      ...state.siteSettings,
+      mailProvider: "smtp" as const
+    };
+    if (mailSensitiveTouched.smtpPassword) {
+      nextSettings.mailSmtpPassword = mailSmtpPasswordDraft.trim() ? mailSmtpPasswordDraft : "__CLEAR_MAIL_SECRET__";
+    }
+
+    return {
+      ...state,
+      siteSettings: nextSettings
+    };
+  }
+
+  async function saveMailSettings() {
+    const nextState = buildMailSettingsStateForSave();
+    if (!nextState) return;
+    setState(nextState);
+    setMailActionStatus("正在保存邮件设置...");
+    const saved = await save(nextState);
+    if (saved) {
+      setMailSensitiveTouched({ smtpPassword: false });
+      setMailSmtpPasswordDraft("");
+      setMailActionStatus("邮件设置已保存到后台数据。");
+    } else {
+      setMailActionStatus("保存邮件设置失败，请检查本地服务或登录状态。");
+    }
   }
 
   function addWorldClockCity() {
@@ -1986,16 +2095,24 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
     setStatus("已将询盘信息带入邮件草稿");
   }
 
-  async function sendMailRequest(path: "/api/admin/mail/test" | "/api/admin/mail/send" | "/api/admin/mail/verify", body: Record<string, unknown>, stateOverride?: AdminState) {
+  async function sendMailRequest(
+    path: "/api/admin/mail/test" | "/api/admin/mail/send" | "/api/admin/mail/verify",
+    body: Record<string, unknown>,
+    stateOverride?: AdminState,
+    options: { saveBeforeRequest?: boolean } = {}
+  ) {
     const stateToSave = stateOverride ?? state;
     if (!stateToSave) return;
+    const shouldSaveBeforeRequest = options.saveBeforeRequest ?? true;
     setMailActionRunning(true);
     try {
-      setMailActionStatus("正在保存邮件设置...");
-      const saved = await save(stateToSave);
-      if (!saved) {
-        setMailActionStatus("保存邮件设置失败，请检查本地服务或登录状态。");
-        return;
+      if (shouldSaveBeforeRequest) {
+        setMailActionStatus("正在保存邮件设置...");
+        const saved = await save(stateToSave);
+        if (!saved) {
+          setMailActionStatus("保存邮件设置失败，请检查本地服务或登录状态。");
+          return;
+        }
       }
       setMailActionStatus(path === "/api/admin/mail/verify" ? "正在测试邮件连通..." : "正在发送邮件...");
 
@@ -2024,12 +2141,11 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
   }
 
   function verifyMailConnectionAction() {
-    if (!state) return;
-    const nextState = state.siteSettings.mailProvider === "smtp"
-      ? state
-      : { ...state, siteSettings: { ...state.siteSettings, mailProvider: "smtp" as const } };
-    setState(nextState);
-    void sendMailRequest("/api/admin/mail/verify", {}, nextState);
+    const nextState = buildMailSettingsStateForSave();
+    if (!nextState) return;
+    const shouldSaveBeforeVerify = frontendSettingsDirty || mailSensitiveTouched.smtpPassword;
+    if (shouldSaveBeforeVerify) setState(nextState);
+    void sendMailRequest("/api/admin/mail/verify", {}, nextState, { saveBeforeRequest: shouldSaveBeforeVerify });
   }
 
   function sendSelectedLeadMail() {
@@ -4752,7 +4868,8 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
   const mailProvider = state.siteSettings.mailProvider || "mailto";
   const mailSmtpEncryption = state.siteSettings.mailSmtpEncryption || (state.siteSettings.mailSmtpSecure === false ? "none" : "ssl");
   const mailImapEncryption = state.siteSettings.mailImapEncryption || "ssl";
-  const smtpPasswordConfigured = Boolean(state.siteSettings.mailSmtpPasswordConfigured);
+  const smtpHostIsCustom = mailSmtpHostCustom || Boolean(state.siteSettings.mailSmtpHost && !smtpHostOptions.some((option) => option.value === state.siteSettings.mailSmtpHost));
+  const imapHostIsCustom = mailImapHostCustom || Boolean(state.siteSettings.mailImapHost && !imapHostOptions.some((option) => option.value === state.siteSettings.mailImapHost));
   const mailApiKeyConfigured = Boolean(state.siteSettings.mailApiKeyConfigured);
   const canRunAutoTranslation = Boolean(currentUser && (
     frontendManagerRoles.has(currentUser.role)
@@ -4788,7 +4905,7 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
   const visibleAiUsageRecords = canResetUserPasswords
     ? state.aiUsageRecords
     : state.aiUsageRecords.filter((record) => record.userEmail.toLowerCase() === currentEmail.toLowerCase());
-  const shouldShowAdminStatus = Boolean(status && status !== "已连接本地后台数据" && !hiddenAdminStatusMessages.has(status));
+  const shouldShowAdminStatus = Boolean(tab !== "mail" && status && status !== "已连接本地后台数据" && !hiddenAdminStatusMessages.has(status));
   const navigationProductOptions = [...state.products].sort((a, b) => (a.name.zh || a.name.en).localeCompare(b.name.zh || b.name.en));
   const navigationArticleOptions = state.articles
     .filter((article) => article.status !== "trash")
@@ -7218,7 +7335,7 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
                         <input disabled={!canManageFrontendSettings} value={state.siteSettings.mailFromName || ""} onChange={(event) => updateSiteSettings({ mailProvider: "smtp", mailFromName: event.target.value })} />
                       </label>
                       <label>发件人邮箱地址 *
-                        <input disabled={!canManageFrontendSettings} type="email" value={state.siteSettings.mailFromEmail || state.siteSettings.adminEmail} onChange={(event) => updateSiteSettings({ mailProvider: "smtp", mailFromEmail: event.target.value, mailSmtpUser: state.siteSettings.mailSmtpUseDifferentAccountName ? state.siteSettings.mailSmtpUser : event.target.value })} />
+                        <input disabled={!canManageFrontendSettings} type="email" value={state.siteSettings.mailFromEmail || ""} onChange={(event) => updateSiteSettings({ mailProvider: "smtp", mailFromEmail: event.target.value, mailSmtpUser: state.siteSettings.mailSmtpUseDifferentAccountName ? state.siteSettings.mailSmtpUser : event.target.value })} />
                       </label>
                       <label className="mail-checkline mail-offset-field">
                         <input disabled={!canManageFrontendSettings} type="checkbox" checked={Boolean(state.siteSettings.mailSmtpUseDifferentAccountName)} onChange={(event) => updateSiteSettings({ mailProvider: "smtp", mailSmtpUseDifferentAccountName: event.target.checked })} />
@@ -7231,17 +7348,38 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
                         </label>
                       ) : null}
                       <label>密码 *
-                        <input disabled={!canManageFrontendSettings} placeholder={smtpPasswordConfigured ? "已配置，留空则不修改" : "请输入邮箱授权码或 SMTP 密码"} type="password" value={state.siteSettings.mailSmtpPassword || ""} onChange={(event) => updateSiteSettings({ mailProvider: "smtp", mailSmtpPassword: event.target.value })} />
+                        <input disabled={!canManageFrontendSettings} type="password" value={mailSmtpPasswordDraft} onChange={(event) => {
+                          setMailSmtpPasswordDraft(event.target.value);
+                          setMailSensitiveTouched((current) => ({ ...current, smtpPassword: true }));
+                          setFrontendSettingsDirty(true);
+                        }} />
+                        <small className="mail-hidden-note">{state.siteSettings.mailSmtpPasswordConfigured && !mailSensitiveTouched.smtpPassword ? "已保存，已隐藏" : "\u00a0"}</small>
                       </label>
-                      <label>主机 *
-                        <select disabled={!canManageFrontendSettings} value={state.siteSettings.mailSmtpHost || ""} onChange={(event) => updateSiteSettings({ mailProvider: "smtp", mailSmtpHost: event.target.value })}>
-                          <option value="">选择或填写 SMTP 主机</option>
-                          <option value="smtp.qiye.aliyun.com">smtp.qiye.aliyun.com</option>
-                          <option value="smtp.qq.com">smtp.qq.com</option>
-                          <option value="smtp.163.com">smtp.163.com</option>
-                          <option value="smtp.gmail.com">smtp.gmail.com</option>
-                          <option value="smtp.office365.com">smtp.office365.com</option>
+                      <label className="mail-host-field">主机 *
+                        <select
+                          disabled={!canManageFrontendSettings}
+                          value={smtpHostIsCustom ? customMailHostValue : state.siteSettings.mailSmtpHost || ""}
+                          onChange={(event) => {
+                            const value = event.target.value;
+                            const isCustom = value === customMailHostValue;
+                            setMailSmtpHostCustom(isCustom);
+                            updateSiteSettings({ mailProvider: "smtp", mailSmtpHost: isCustom ? "" : value });
+                          }}
+                        >
+                          <option value="">请选择 SMTP 主机</option>
+                          {smtpHostOptions.map((option) => (
+                            <option key={option.value} value={option.value}>{option.label} - {option.value}</option>
+                          ))}
+                          <option value={customMailHostValue}>自定义主机</option>
                         </select>
+                        {smtpHostIsCustom ? (
+                          <input
+                            disabled={!canManageFrontendSettings}
+                            placeholder="输入自定义 SMTP 主机，例如 smtp.yourdomain.com"
+                            value={state.siteSettings.mailSmtpHost || ""}
+                            onChange={(event) => updateSiteSettings({ mailProvider: "smtp", mailSmtpHost: event.target.value })}
+                          />
+                        ) : null}
                       </label>
                       <label>端口
                         <select disabled={!canManageFrontendSettings} value={state.siteSettings.mailSmtpPort || 465} onChange={(event) => updateSiteSettings({ mailProvider: "smtp", mailSmtpPort: Number(event.target.value) })}>
@@ -7264,6 +7402,11 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
                         <span>设置不同的回复地址</span>
                         <Info size={15} />
                       </label>
+                      <div className="mail-account-actions mail-account-actions-inline">
+                        <button disabled={!canManageFrontendSettings || mailActionRunning} type="button" onClick={saveMailSettings}>保存设置</button>
+                        <button disabled={!canManageFrontendSettings || mailActionRunning} type="button" onClick={verifyMailConnectionAction}>检查连接</button>
+                        <button className="mail-clear-button" disabled={!canManageFrontendSettings || mailActionRunning} type="button" onClick={clearMailSettings}>清除设置</button>
+                      </div>
                       {state.siteSettings.mailReplyToDifferent ? (
                         <label>回复地址
                           <input disabled={!canManageFrontendSettings} type="email" value={state.siteSettings.mailReplyToEmail || ""} onChange={(event) => updateSiteSettings({ mailProvider: "smtp", mailReplyToEmail: event.target.value })} />
@@ -7288,15 +7431,31 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
                         <span>我收到非发件人电子邮箱账户的回复</span>
                         <Info size={15} />
                       </label>
-                      <label>主机
-                        <select disabled={!canManageFrontendSettings} value={state.siteSettings.mailImapHost || ""} onChange={(event) => updateSiteSettings({ mailProvider: "smtp", mailImapHost: event.target.value })}>
-                          <option value="">选择或填写 IMAP 主机</option>
-                          <option value="imap.qiye.aliyun.com">imap.qiye.aliyun.com</option>
-                          <option value="imap.qq.com">imap.qq.com</option>
-                          <option value="imap.163.com">imap.163.com</option>
-                          <option value="imap.gmail.com">imap.gmail.com</option>
-                          <option value="outlook.office365.com">outlook.office365.com</option>
+                      <label className="mail-host-field">主机
+                        <select
+                          disabled={!canManageFrontendSettings}
+                          value={imapHostIsCustom ? customMailHostValue : state.siteSettings.mailImapHost || ""}
+                          onChange={(event) => {
+                            const value = event.target.value;
+                            const isCustom = value === customMailHostValue;
+                            setMailImapHostCustom(isCustom);
+                            updateSiteSettings({ mailProvider: "smtp", mailImapHost: isCustom ? "" : value });
+                          }}
+                        >
+                          <option value="">请选择 IMAP 主机</option>
+                          {imapHostOptions.map((option) => (
+                            <option key={option.value} value={option.value}>{option.label} - {option.value}</option>
+                          ))}
+                          <option value={customMailHostValue}>自定义主机</option>
                         </select>
+                        {imapHostIsCustom ? (
+                          <input
+                            disabled={!canManageFrontendSettings}
+                            placeholder="输入自定义 IMAP 主机，例如 imap.yourdomain.com"
+                            value={state.siteSettings.mailImapHost || ""}
+                            onChange={(event) => updateSiteSettings({ mailProvider: "smtp", mailImapHost: event.target.value })}
+                          />
+                        ) : null}
                       </label>
                       <label>端口
                         <select disabled={!canManageFrontendSettings} value={state.siteSettings.mailImapPort || 993} onChange={(event) => updateSiteSettings({ mailProvider: "smtp", mailImapPort: Number(event.target.value) })}>
@@ -7347,8 +7506,6 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
                         <pre>{(state.siteSettings.mailReplyTemplate || "").replaceAll("{name}", "Alex").replaceAll("{company}", "ABC Tools").replaceAll("{productType}", "carbide end mills").replaceAll("{quantity}", "500 pcs").replaceAll("{email}", "buyer@example.com").replaceAll("{siteTitle}", state.siteSettings.title || "KeyproTools")}</pre>
                       </div>
                       <div className="mail-account-actions">
-                        <button disabled={!canManageFrontendSettings || mailActionRunning} type="button" onClick={() => void save()}>保存设置</button>
-                        <button disabled={!canManageFrontendSettings || mailActionRunning} type="button" onClick={verifyMailConnectionAction}>检查连接</button>
                         <button disabled={!canManageFrontendSettings || mailActionRunning || mailProvider === "mailto"} type="button" onClick={sendTestMail}>发送测试邮件</button>
                       </div>
                     </div> : null}

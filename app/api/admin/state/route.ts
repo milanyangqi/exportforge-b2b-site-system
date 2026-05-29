@@ -4,12 +4,13 @@ import { preserveUserPasswordHashes, readAdminState, sanitizeAdminState, writeAd
 import type { AdminState, RoleKey } from "@/types/site";
 
 const frontendManagerRoles = new Set<RoleKey>(["super-admin", "admin"]);
-const frontendManagerTabs = new Set(["navigation", "templates", "settings", "languages", "themes", "ai"]);
+const frontendManagerTabs = new Set(["navigation", "templates", "settings", "languages", "themes", "ai", "mail"]);
 
-function canSaveFrontendSettings(state: AdminState, role: RoleKey | undefined) {
-  if (!role) return false;
-  if (frontendManagerRoles.has(role)) return true;
-  const permissions = state.rolePermissions?.[role];
+function canSaveFrontendSettings(state: AdminState, user: AdminState["users"][number] | undefined) {
+  if (!user) return false;
+  if (frontendManagerRoles.has(user.role)) return true;
+  if (user.allowedTabs?.some((tab) => frontendManagerTabs.has(tab))) return true;
+  const permissions = state.rolePermissions?.[user.role];
   return Boolean(permissions?.allowedTabs?.some((tab) => frontendManagerTabs.has(tab)));
 }
 
@@ -47,7 +48,7 @@ export async function PUT(request: Request) {
     || JSON.stringify(state.templateSettings ?? {}) !== JSON.stringify(existingState.templateSettings ?? {})
     || JSON.stringify(state.pageLayouts ?? []) !== JSON.stringify(existingState.pageLayouts ?? []);
 
-  if (frontendSettingsChanged && !canSaveFrontendSettings(existingState, currentUser?.role)) {
+  if (frontendSettingsChanged && !canSaveFrontendSettings(existingState, currentUser)) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
