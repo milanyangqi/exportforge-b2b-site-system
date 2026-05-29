@@ -68,8 +68,58 @@ export const blockPresetCategoryLabels = Object.fromEntries(
   blockPresetCategories.map((category) => [category.key, category.label])
 ) as Record<BlockPresetCategory, string>;
 
-// Reserved registry: add converted open-source presets here after review.
-export const blockPresets: BlockPreset[] = [];
+const loopingImageAssets = [
+  "/assets/current-template/hero-tooling-range.jpg",
+  "/assets/current-template/hero-cnc-factory.jpg",
+  "/assets/current-template/hero-export-packing.jpg",
+  "/assets/current-template/carbide-end-mills.png",
+  "/assets/current-template/drill-bits.png",
+  "/assets/current-template/coating-inspection.png",
+  "/assets/current-template/export-packaging.png"
+];
+
+// Converted from dimi.me Lab's "Looping images" interaction into a dedicated local preset block.
+export const blockPresets: BlockPreset[] = [
+  {
+    id: "looping-images-circular-gallery",
+    category: "image-carousel",
+    label: "Looping images",
+    description: "多张图片沿圆形轨道无缝循环，适合产品系列、工厂场景或案例图片展示。",
+    thumbnail: "/assets/current-template/hero-tooling-range.jpg",
+    requiredAssets: loopingImageAssets,
+    puckData: [
+      {
+        type: "LoopingImagesPreset",
+        props: {
+          id: "looping-images-preset",
+          eyebrow: "Visual loop",
+          title: "Looping images",
+          body: "Circular image motion inspired by dimi.me Lab. Replace the images from the media library after inserting.",
+          mediaLibraryUrl: "",
+          imageUrls: "",
+          imageItems: loopingImageAssets.map((url, index) => ({
+            source: url,
+            url: "",
+            alt: `Looping image ${index + 1}`,
+            caption: "",
+            linkHref: ""
+          })),
+          imageLimit: 8,
+          backgroundMode: "soft",
+          backgroundImageUrl: "",
+          externalBackgroundImageUrl: "",
+          customBackground: "",
+          stageSize: 620,
+          itemSize: 150,
+          speedSeconds: 8,
+          imageFit: "cover",
+          imageFrame: "shadow",
+          textAlign: "center"
+        }
+      }
+    ]
+  }
+];
 
 // Reserved registry: add full-page presets here after review.
 export const pagePresets: PagePreset[] = [];

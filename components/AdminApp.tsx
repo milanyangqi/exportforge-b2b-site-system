@@ -5982,7 +5982,7 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
           </div>
         </aside>
 
-        <section className="admin-workspace">
+        <section className="admin-workspace" tabIndex={-1}>
           {shouldShowAdminStatus ? (
             <div className="admin-workspace-toolbar">
               <span>{status}</span>

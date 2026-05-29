@@ -393,6 +393,10 @@ textarea:disabled {
   padding: 16px;
 }
 
+.admin-workspace:focus {
+  outline: 0;
+}
+
 .admin-workspace-toolbar {
   display: flex;
   align-items: center;
@@ -1425,3 +1429,6 @@ textarea:disabled {
   padding-top: 18px;
 }
 
+body .contact-dock {
+  display: none;
+}

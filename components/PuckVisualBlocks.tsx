@@ -2,6 +2,7 @@
 import type { CSSProperties, ReactNode } from "react";
 import { ArticleContent } from "@/components/ArticleContent";
 import { HeroPosterCarousel } from "@/components/HeroPosterCarousel";
+import { LoopingImagesOrbit } from "@/components/LoopingImagesOrbit";
 import { ProductGrid } from "@/components/ProductGrid";
 import { HomeNavigationShell } from "@/components/PublicSiteShell";
 import { PublicContactList } from "@/components/PublicContactList";
@@ -54,6 +55,11 @@ function nodeToString(value: ReactNode, fallback = "") {
 function propNumber(props: Record<string, unknown>, key: string, fallback = 0) {
   const value = Number(props[key]);
   return Number.isFinite(value) ? value : fallback;
+}
+
+function propBoundedNumber(props: Record<string, unknown>, key: string, fallback: number, min: number, max: number) {
+  const value = propNumber(props, key, fallback);
+  return Math.max(min, Math.min(max, value));
 }
 
 function propBoolean(props: Record<string, unknown>, key: string, fallback = false) {
@@ -128,6 +134,7 @@ function renderImageSet({
   frame,
   images,
   layout,
+  loopingCycleSeconds,
   tone
 }: {
   altFallback: string;
@@ -136,9 +143,28 @@ function renderImageSet({
   frame: string;
   images: VisualImageItem[];
   layout: string;
+  loopingCycleSeconds?: number;
   tone: string;
 }) {
   if (images.length === 0) return null;
+
+  if (layout === "looping") {
+    const loopImages = images.slice(0, 8);
+    const imageCount = loopImages.length;
+
+    if (imageCount < 2) {
+      return renderImageSet({ altFallback, aspect, fit, frame, images, layout: "single", tone });
+    }
+
+    return (
+      <LoopingImagesOrbit
+        altFallback={altFallback}
+        className={`puck-public-looping-images fit-${fit} frame-${frame} tone-${tone}`}
+        cycleSeconds={loopingCycleSeconds ?? 8}
+        images={loopImages.map((image) => ({ url: image.url, alt: image.alt }))}
+      />
+    );
+  }
 
   const safeLayout = layout === "carousel" && images.length < 2 ? "single" : layout;
 
@@ -483,6 +509,44 @@ function ImageGallery({ props }: { props: Record<string, unknown> }) {
         frame: "soft",
         images,
         layout: propString(props, "layout", "grid"),
+        tone: "normal"
+      })}
+    </section>
+  );
+}
+
+function LoopingImagesPreset({ props }: { props: Record<string, unknown> }) {
+  const imageLimit = propBoundedNumber(props, "imageLimit", 8, 2, 8);
+  const images = collectImages(props, [propString(props, "mediaLibraryUrl")]).slice(0, imageLimit);
+  const stageSize = propBoundedNumber(props, "stageSize", 620, 320, 760);
+  const itemSize = propBoundedNumber(props, "itemSize", 150, 72, 220);
+  const speedSeconds = propBoundedNumber(props, "speedSeconds", 8, 4, 20);
+  const backgroundMode = propString(props, "backgroundMode", "soft");
+  const backgroundImageUrl = propString(props, "backgroundImageUrl") || propString(props, "externalBackgroundImageUrl");
+  const customBackground = propString(props, "customBackground");
+  const style = {
+    "--loop-stage-size": `${stageSize}px`,
+    "--loop-item-size": `${itemSize}px`,
+    "--loop-section-bg": customBackground || "transparent",
+    "--loop-section-bg-image": backgroundImageUrl ? `url(${backgroundImageUrl})` : "none"
+  } as CSSProperties;
+
+  if (images.length < 2) return null;
+
+  return (
+    <section
+      className={`section puck-public-looping-section background-${backgroundMode} align-${propString(props, "textAlign", "center")}${backgroundImageUrl ? " has-bg-image" : ""}${customBackground ? " has-custom-bg" : ""}`}
+      style={style}
+    >
+      <SectionHead eyebrow={propString(props, "eyebrow")} title={propString(props, "title")} body={propString(props, "body")} />
+      {renderImageSet({
+        altFallback: propString(props, "title", "Looping images"),
+        aspect: "square",
+        fit: propString(props, "imageFit", "cover"),
+        frame: propString(props, "imageFrame", "shadow"),
+        images,
+        layout: "looping",
+        loopingCycleSeconds: speedSeconds,
         tone: "normal"
       })}
     </section>
@@ -1097,6 +1161,8 @@ export function PuckVisualBlock({ item, state, locale, currentProduct, currentAr
       return <RichTextBlock props={props} />;
     case "ImageGallery":
       return <ImageGallery props={props} />;
+    case "LoopingImagesPreset":
+      return <LoopingImagesPreset props={props} />;
     case "VideoSection":
       return <VideoSection props={props} />;
     case "CtaSection":

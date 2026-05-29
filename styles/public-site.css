@@ -1595,6 +1595,128 @@ html[data-theme="consumer-goods"] .dark-band {
   display: block;
 }
 
+.puck-public-looping-images {
+  --loop-rendered-stage-size: min(var(--loop-stage-size, 620px), 88vw);
+  --loop-rendered-item-size: min(var(--loop-item-size, 150px), 38vw);
+  --loop-radius: calc((var(--loop-rendered-stage-size) - var(--loop-rendered-item-size)) / 2 - 12px);
+  position: relative;
+  display: grid;
+  place-items: center;
+  min-height: var(--loop-rendered-stage-size);
+  overflow: hidden;
+}
+
+.puck-public-looping-section {
+  display: grid;
+  gap: 20px;
+  overflow: hidden;
+}
+
+.puck-public-looping-section.align-center .section-head {
+  margin-right: auto;
+  margin-left: auto;
+  text-align: center;
+}
+
+.puck-public-looping-section.background-soft {
+  background: linear-gradient(180deg, rgba(238, 247, 250, 0.82), rgba(255, 255, 255, 0));
+}
+
+.puck-public-looping-section.background-tint {
+  background: color-mix(in srgb, var(--accent), white 91%);
+}
+
+.puck-public-looping-section.background-dark {
+  color: #ffffff;
+  background: #092436;
+}
+
+.puck-public-looping-section.background-custom {
+  background: var(--loop-section-bg);
+}
+
+.puck-public-looping-section.has-custom-bg {
+  background: var(--loop-section-bg);
+}
+
+.puck-public-looping-section.has-bg-image {
+  background-image:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.78), rgba(255, 255, 255, 0.42)),
+    var(--loop-section-bg-image);
+  background-position: center;
+  background-size: cover;
+}
+
+.puck-public-looping-section.background-dark.has-bg-image {
+  background-image:
+    linear-gradient(180deg, rgba(9, 36, 54, 0.78), rgba(9, 36, 54, 0.58)),
+    var(--loop-section-bg-image);
+}
+
+.puck-public-looping-images-stage {
+  position: relative;
+  width: var(--loop-rendered-stage-size);
+  max-width: 100%;
+  aspect-ratio: 1;
+  border-radius: 999px;
+  background:
+    radial-gradient(circle, rgba(255, 255, 255, 0.72) 0 27%, transparent 28%),
+    radial-gradient(circle, color-mix(in srgb, var(--accent), transparent 90%) 0 44%, transparent 45%);
+}
+
+.puck-public-looping-image {
+  position: absolute;
+  top: calc(50% - var(--loop-rendered-item-size) / 2);
+  left: calc(50% - var(--loop-rendered-item-size) / 2);
+  width: var(--loop-rendered-item-size);
+  height: var(--loop-rendered-item-size);
+  margin: 0;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.78);
+  border-radius: 8px;
+  background: #dbe5ea;
+  box-shadow: 0 22px 54px rgba(9, 36, 54, 0.18);
+  transform: rotate(calc(var(--loop-image-angle) + var(--loop-progress-angle, 0deg))) translateX(var(--loop-radius)) rotate(calc(var(--loop-image-counter-angle) + var(--loop-progress-counter-angle, 0deg)));
+  will-change: transform;
+}
+
+.puck-public-looping-image img,
+.puck-public-looping-image-ghost img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.puck-public-looping-images.fit-contain .puck-public-looping-image img,
+.puck-public-looping-images.fit-contain .puck-public-looping-image-ghost img {
+  object-fit: contain;
+  padding: 8px;
+}
+
+.puck-public-looping-image-ghost {
+  position: absolute;
+  top: 0;
+  left: 100%;
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  border-radius: inherit;
+}
+
+@media (max-width: 720px) {
+  .puck-public-looping-images {
+    --loop-rendered-stage-size: min(var(--loop-stage-size, 430px), 92vw);
+    --loop-rendered-item-size: min(var(--loop-item-size, 96px), 28vw);
+  }
+}
+
+.puck-public-preview-shell .puck-public-looping-images {
+  --loop-rendered-stage-size: var(--loop-stage-size, 620px);
+  --loop-rendered-item-size: var(--loop-item-size, 150px);
+}
+
 .puck-public-product-list.columns-2 .product-grid,
 .puck-public-article-list.columns-2 .article-grid,
 .puck-public-feature-cards.columns-2 .theme-grid {

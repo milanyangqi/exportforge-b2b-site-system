@@ -2,8 +2,8 @@
 
 /* eslint-disable @next/next/no-img-element */
 
-import { type DragEvent, type MouseEvent, type ReactNode, type Ref, type SyntheticEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { ArrowDown, ArrowUp, ChevronDown, ChevronsLeft, ChevronsRight, Download, FileUp, GripVertical, ImageIcon, Layers, LayoutTemplate, Maximize2, Minimize2, Plus, Save, Search, Sparkles, Video, X } from "lucide-react";
+import { type DragEvent, type MouseEvent, type ReactNode, type Ref, type SyntheticEvent, type WheelEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { ArrowDown, ArrowUp, ChevronDown, ChevronsLeft, ChevronsRight, Download, FileUp, GripVertical, ImageIcon, Layers, LayoutTemplate, Maximize2, Minimize2, Plus, Save, Search, Sparkles, Trash2, Video, X } from "lucide-react";
 import { Puck, createUsePuck } from "@puckeditor/core";
 import type { Config, Data, Permissions, Plugin, PuckAction, Viewports } from "@puckeditor/core";
 import { PublicFooterShell, PublicHeaderShell } from "@/components/PublicSiteShell";
@@ -267,6 +267,23 @@ const containerSlotComponentTypes = [
 ];
 
 const ratioHandledInsertIds = new Set<string>();
+const importedPresetStorageKey = "exportforge-puck-imported-presets";
+const deletedPresetStorageKey = "exportforge-puck-deleted-presets";
+const templateWheelIgnoreSelector = [
+  "input",
+  "textarea",
+  "select",
+  "button",
+  "[contenteditable='true']",
+  ".puck-media-picker-modal",
+  ".puck-media-picker-grid",
+  ".puck-template-preset-panel",
+  "[class*='_PuckFields']",
+  "[class*='_PuckOutline']",
+  "[class*='_PuckSidebar']",
+  "[class*='_PuckDrawer']",
+  "[class*='_PuckHeader']"
+].join(",");
 
 const useTypedPuck = createUsePuck<Config>();
 
@@ -301,6 +318,7 @@ function getPrimaryEditTarget(type: string, props: Record<string, unknown>): Omi
   if (type === "TextSection") return { field: propStringFromRecord(props, "layout") === "text" ? "body" : "mediaLibraryUrl", kind: propStringFromRecord(props, "layout") === "text" ? "text" : "image", label: propStringFromRecord(props, "layout") === "text" ? "正文" : "配图" };
   if (type === "RichTextBlock") return { field: "body", kind: "text", label: "正文 Markdown" };
   if (type === "ImageGallery") return { field: "mediaLibraryUrl", kind: "image", label: "主图/首图" };
+  if (type === "LoopingImagesPreset") return { field: "imageItems", kind: "image", label: "循环图片" };
   if (type === "VideoSection") return { field: "mediaLibraryUrl", kind: "video", label: "从媒体库选择视频" };
   if (type === "CtaSection") return { field: "buttonLabel", kind: "button", label: "按钮文字" };
   if (type === "ProductList" || type === "ArticleList" || type === "FeatureCards" || type === "MarketSection" || type === "RfqSection" || type === "ContactChannels") return { field: "title", kind: "text", label: "标题" };
@@ -313,6 +331,52 @@ function getPrimaryEditTarget(type: string, props: Record<string, unknown>): Omi
   if (type === "ContainerHtmlElement") return { field: "body", kind: "html", label: "HTML / Markdown" };
   if (type === "CustomMediaSection" || type === "CustomTextSection" || type === "CustomVideoSection" || type === "CustomCtaSection" || type === "CustomSection") return getCustomSectionPrimaryEditTarget(type, props);
   return { field: "title", kind: "text", label: "标题" };
+}
+
+function hasScrollableAncestor(target: HTMLElement, boundary: HTMLElement) {
+  let node: HTMLElement | null = target;
+
+  while (node && node !== boundary) {
+    const style = window.getComputedStyle(node);
+    const canScrollY = /(auto|scroll)/.test(style.overflowY) && node.scrollHeight > node.clientHeight + 1;
+    if (canScrollY) return true;
+    node = node.parentElement;
+  }
+
+  return false;
+}
+
+function restoreTemplateScrollAfterSave(shell: HTMLElement | null, isFullscreen: boolean, previousBodyOverflow: string) {
+  if (typeof document === "undefined") return;
+
+  if (!isFullscreen) document.body.style.overflow = previousBodyOverflow;
+
+  window.requestAnimationFrame(() => {
+    const activeElement = document.activeElement;
+    const activeInPuck = activeElement instanceof HTMLElement && Boolean(shell?.contains(activeElement));
+    const activeIsPreviewFrame = activeElement instanceof HTMLIFrameElement;
+
+    if (!activeInPuck && !activeIsPreviewFrame) return;
+
+    const workspace = shell?.closest<HTMLElement>(".admin-workspace");
+    workspace?.focus({ preventScroll: true });
+  });
+}
+
+function bridgeWheelToWorkspace(event: globalThis.WheelEvent, workspace: HTMLElement) {
+  if (Math.abs(event.deltaY) <= Math.abs(event.deltaX) || workspace.scrollHeight <= workspace.clientHeight + 1) return;
+
+  const beforeScrollTop = workspace.scrollTop;
+  workspace.scrollBy({ top: event.deltaY, behavior: "auto" });
+  if (workspace.scrollTop !== beforeScrollTop) event.preventDefault();
+}
+
+function serializePuckData(data: Data | VisualPageLayoutData | undefined) {
+  try {
+    return JSON.stringify(data ?? null);
+  } catch {
+    return "";
+  }
 }
 
 function propStringFromRecord(props: Record<string, unknown>, key: string, fallback = "") {
@@ -943,6 +1007,322 @@ function mediaPickerField(label: string, items: MediaPickerItem[], kind: MediaPi
   };
 }
 
+function PuckColorCssField({
+  id,
+  label,
+  onChange,
+  readOnly,
+  value
+}: {
+  id: string;
+  label: string;
+  onChange: (value: string) => void;
+  readOnly?: boolean;
+  value?: string;
+}) {
+  const stringValue = typeof value === "string" ? value : "";
+  const colorValue = /^#[0-9a-f]{6}$/i.test(stringValue.trim()) ? stringValue.trim() : "#f2fbff";
+
+  return (
+    <label className="puck-color-css-field" htmlFor={id}>
+      <span>{label}</span>
+      <div>
+        <input
+          aria-label={`${label} 颜色选择`}
+          disabled={readOnly}
+          type="color"
+          value={colorValue}
+          onChange={(event) => onChange(event.currentTarget.value)}
+        />
+        <input
+          disabled={readOnly}
+          id={id}
+          placeholder="#f2fbff / linear-gradient(...) / color-mix(...)"
+          type="text"
+          value={stringValue}
+          onChange={(event) => onChange(event.currentTarget.value)}
+        />
+      </div>
+    </label>
+  );
+}
+
+function colorCssField(label: string) {
+  return {
+    type: "custom" as const,
+    label,
+    render: ({ id, value, onChange, readOnly }: { id: string; value?: string; onChange: (value: string) => void; readOnly?: boolean }) => (
+      <PuckColorCssField id={id} label={label} value={value} onChange={onChange} readOnly={readOnly} />
+    )
+  };
+}
+
+function PuckNumberTuningField({
+  id,
+  label,
+  max,
+  min,
+  onChange,
+  readOnly,
+  step = 1,
+  value
+}: {
+  id: string;
+  label: string;
+  max?: number;
+  min?: number;
+  onChange: (value: number) => void;
+  readOnly?: boolean;
+  step?: number;
+  value?: number | string;
+}) {
+  const numericValue = Number(value);
+  const safeValue = Number.isFinite(numericValue) ? numericValue : (min ?? 0);
+  const clamp = (nextValue: number) => {
+    if (!Number.isFinite(nextValue)) return safeValue;
+    return Math.max(min ?? nextValue, Math.min(max ?? nextValue, nextValue));
+  };
+
+  return (
+    <label className="puck-number-tuning-field" htmlFor={id}>
+      <span>{label}</span>
+      <div className="is-input-only">
+        <input
+          disabled={readOnly}
+          id={id}
+          max={max}
+          min={min}
+          step={step}
+          type="number"
+          value={safeValue}
+          onChange={(event) => onChange(clamp(Number(event.currentTarget.value)))}
+        />
+      </div>
+    </label>
+  );
+}
+
+function numberTuningField(label: string, min: number, max: number, step = 1) {
+  return {
+    type: "custom" as const,
+    label,
+    render: ({ id, value, onChange, readOnly }: { id: string; value?: number | string; onChange: (value: number) => void; readOnly?: boolean }) => (
+      <PuckNumberTuningField id={id} label={label} max={max} min={min} step={step} value={value} onChange={onChange} readOnly={readOnly} />
+    )
+  };
+}
+
+function PuckManualNumberField({
+  id,
+  label,
+  max,
+  min,
+  onChange,
+  readOnly,
+  value
+}: {
+  id: string;
+  label: string;
+  max?: number;
+  min?: number;
+  onChange: (value: number | string) => void;
+  readOnly?: boolean;
+  value?: number | string;
+}) {
+  const stringValue = value === undefined || value === null ? "" : String(value);
+  const [draftValue, setDraftValue] = useState(stringValue);
+  const [isFocused, setIsFocused] = useState(false);
+  const commitTimerRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    if (!isFocused) setDraftValue(stringValue);
+  }, [isFocused, stringValue]);
+
+  useEffect(() => () => {
+    if (commitTimerRef.current) window.clearTimeout(commitTimerRef.current);
+  }, []);
+
+  const commitPreviewValue = (nextDraftValue: string) => {
+    const nextValue = Number(nextDraftValue);
+    if (Number.isFinite(nextValue)) onChange(nextValue);
+  };
+
+  const schedulePreviewCommit = (nextDraftValue: string) => {
+    if (commitTimerRef.current) window.clearTimeout(commitTimerRef.current);
+    commitTimerRef.current = window.setTimeout(() => {
+      commitPreviewValue(nextDraftValue);
+    }, 350);
+  };
+
+  const commitValue = () => {
+    if (commitTimerRef.current) {
+      window.clearTimeout(commitTimerRef.current);
+      commitTimerRef.current = null;
+    }
+    const nextValue = Number(draftValue);
+    if (!Number.isFinite(nextValue)) {
+      setDraftValue(stringValue);
+      return;
+    }
+    const clampedValue = Math.max(min ?? nextValue, Math.min(max ?? nextValue, nextValue));
+    setDraftValue(String(clampedValue));
+    onChange(clampedValue);
+  };
+
+  return (
+    <label className="puck-manual-number-field" htmlFor={id}>
+      <span>{label}</span>
+      <input
+        disabled={readOnly}
+        id={id}
+        inputMode="numeric"
+        max={max}
+        min={min}
+        pattern="[0-9]*"
+        type="text"
+        value={draftValue}
+        onBlur={() => {
+          setIsFocused(false);
+          commitValue();
+        }}
+        onChange={(event) => {
+          const nextValue = event.currentTarget.value;
+          setDraftValue(nextValue);
+          if (nextValue.trim()) schedulePreviewCommit(nextValue);
+        }}
+        onFocus={() => setIsFocused(true)}
+        onKeyDown={(event) => {
+          if (event.key === "Enter") {
+            event.currentTarget.blur();
+          }
+        }}
+      />
+    </label>
+  );
+}
+
+function manualNumberField(label: string, min: number, max: number) {
+  return {
+    type: "custom" as const,
+    label,
+    render: ({ id, value, onChange, readOnly }: { id: string; value?: number | string; onChange: (value: number | string) => void; readOnly?: boolean }) => (
+      <PuckManualNumberField id={id} label={label} max={max} min={min} value={value} onChange={onChange} readOnly={readOnly} />
+    )
+  };
+}
+
+function LoopingImagesField({
+  id,
+  items,
+  label,
+  onChange,
+  onUploadImage,
+  readOnly,
+  value
+}: {
+  id: string;
+  items: MediaPickerItem[];
+  label: string;
+  onChange: (value: ImagePickerItem[]) => void;
+  onUploadImage?: (file: File) => Promise<string>;
+  readOnly?: boolean;
+  value?: ImagePickerItem[];
+}) {
+  const [uploadingIndex, setUploadingIndex] = useState<number | null>(null);
+  const images = Array.isArray(value) ? value : [];
+  const updateImage = (index: number, patch: Partial<ImagePickerItem>) => {
+    onChange(images.map((item, itemIndex) => itemIndex === index ? { ...item, ...patch } : item));
+  };
+  const addImage = () => {
+    const fallback = items[images.length % Math.max(items.length, 1)];
+    onChange([...images, { source: fallback?.value ?? "", url: "", alt: "", caption: "", linkHref: "" }]);
+  };
+  const removeImage = (index: number) => {
+    onChange(images.filter((_, itemIndex) => itemIndex !== index));
+  };
+  const uploadImage = async (index: number, file: File | null) => {
+    if (!file || !onUploadImage) return;
+    setUploadingIndex(index);
+    try {
+      const uploadedUrl = await onUploadImage(file);
+      updateImage(index, { source: uploadedUrl, url: "" });
+    } finally {
+      setUploadingIndex(null);
+    }
+  };
+
+  return (
+    <div className="puck-looping-images-field" id={id}>
+      <div className="puck-looping-images-field-head">
+        <span>{label}</span>
+        <button disabled={readOnly || images.length >= 8} type="button" onClick={addImage}>
+          <Plus size={13} />添加图片
+        </button>
+      </div>
+      <div className="puck-looping-images-list">
+        {images.map((image, index) => {
+          const source = image.source || image.url || "";
+          return (
+            <div className="puck-looping-image-row" key={`${source}-${index}`}>
+              <span className="puck-looping-image-thumb">
+                {source ? <img src={source} alt="" loading="lazy" /> : <ImageIcon size={18} />}
+              </span>
+              <div className="puck-looping-image-controls">
+                <div className="puck-looping-image-media-row">
+                  <strong>图片 {index + 1}</strong>
+                  <label className="puck-looping-image-upload">
+                    <input
+                      accept="image/*"
+                      disabled={readOnly || !onUploadImage || uploadingIndex === index}
+                      type="file"
+                      onChange={(event) => {
+                        void uploadImage(index, event.currentTarget.files?.[0] ?? null);
+                        event.currentTarget.value = "";
+                      }}
+                    />
+                    {uploadingIndex === index ? "上传中..." : "本地上传"}
+                  </label>
+                  <PuckMediaPickerField
+                    id={`${id}-${index}-source`}
+                    items={items}
+                    kind="image"
+                    label="从媒体库选择"
+                    readOnly={readOnly}
+                    value={image.source || ""}
+                    onChange={(nextSource) => updateImage(index, { source: nextSource })}
+                  />
+                </div>
+                <label>
+                  <span>外部图片 URL</span>
+                  <input disabled={readOnly} type="text" value={image.url || ""} onChange={(event) => updateImage(index, { url: event.currentTarget.value })} />
+                </label>
+                <label>
+                  <span>替代文字 Alt</span>
+                  <input disabled={readOnly} type="text" value={image.alt || ""} onChange={(event) => updateImage(index, { alt: event.currentTarget.value })} />
+                </label>
+              </div>
+              <button aria-label={`删除图片 ${index + 1}`} disabled={readOnly || images.length <= 2} type="button" onClick={() => removeImage(index)}>
+                <Trash2 size={13} />
+              </button>
+            </div>
+          );
+        })}
+      </div>
+      {images.length === 0 ? <div className="puck-looping-images-empty">还没有循环图片，点击“添加图片”开始。</div> : null}
+    </div>
+  );
+}
+
+function loopingImagesField(label: string, mediaItems: MediaPickerItem[], onUploadImage?: (file: File) => Promise<string>) {
+  return {
+    type: "custom" as const,
+    label,
+    render: ({ id, value, onChange, readOnly }: { id: string; value?: ImagePickerItem[]; onChange: (value: ImagePickerItem[]) => void; readOnly?: boolean }) => (
+      <LoopingImagesField id={id} items={mediaItems} label={label} value={value} onChange={onChange} onUploadImage={onUploadImage} readOnly={readOnly} />
+    )
+  };
+}
+
 function imageCountField() {
   return field("number", "图片显示张数（0 为全部）", { min: 0, max: 12 });
 }
@@ -1378,36 +1758,105 @@ function PuckTemplateComponentItem({
   );
 }
 
+type ManagedBlockPreset = BlockPreset & {
+  source: "built-in" | "imported";
+};
+
+function isBlockPreset(value: unknown): value is BlockPreset {
+  if (!value || typeof value !== "object") return false;
+  const preset = value as Partial<BlockPreset>;
+  return typeof preset.id === "string"
+    && typeof preset.category === "string"
+    && typeof preset.label === "string"
+    && typeof preset.description === "string"
+    && typeof preset.thumbnail === "string"
+    && Array.isArray(preset.requiredAssets)
+    && Array.isArray(preset.puckData);
+}
+
+function readStoredBlockPresets() {
+  if (typeof window === "undefined") return { imported: [] as BlockPreset[], deletedIds: [] as string[] };
+
+  try {
+    const imported = JSON.parse(window.localStorage.getItem(importedPresetStorageKey) || "[]");
+    const deletedIds = JSON.parse(window.localStorage.getItem(deletedPresetStorageKey) || "[]");
+
+    return {
+      imported: Array.isArray(imported) ? imported.filter(isBlockPreset) : [],
+      deletedIds: Array.isArray(deletedIds) ? deletedIds.filter((id): id is string => typeof id === "string") : []
+    };
+  } catch {
+    return { imported: [] as BlockPreset[], deletedIds: [] as string[] };
+  }
+}
+
+function writeStoredBlockPresets(imported: BlockPreset[], deletedIds: string[]) {
+  window.localStorage.setItem(importedPresetStorageKey, JSON.stringify(imported, null, 2));
+  window.localStorage.setItem(deletedPresetStorageKey, JSON.stringify(deletedIds, null, 2));
+}
+
+function downloadJsonFile(filename: string, payload: unknown) {
+  const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+  const anchor = document.createElement("a");
+  anchor.href = url;
+  anchor.download = filename;
+  anchor.click();
+  URL.revokeObjectURL(url);
+}
+
 function PuckTemplatePresetPanel({
   canManage,
   onApplyPagePreset,
+  onStatus,
   selectedLayoutKey,
   state
 }: {
   canManage: boolean;
   onApplyPagePreset: (preset: PagePreset) => void;
+  onStatus: (message: string) => void;
   selectedLayoutKey: PageLayoutKey;
   state: AdminState;
 }) {
   const appState = useTypedPuck((puck) => puck.appState);
   const dispatch = useTypedPuck((puck) => puck.dispatch);
   const selectedItem = useTypedPuck((puck) => puck.selectedItem);
-  const [activePresetCategory, setActivePresetCategory] = useState<BlockPreset["category"] | "all">("all");
+  const importInputRef = useRef<HTMLInputElement>(null);
+  const [activePresetCategory, setActivePresetCategory] = useState<BlockPreset["category"] | "all">("image-carousel");
+  const [importPresetCategory, setImportPresetCategory] = useState<BlockPreset["category"]>("image-carousel");
+  const [importedPresets, setImportedPresets] = useState<BlockPreset[]>([]);
+  const [deletedPresetIds, setDeletedPresetIds] = useState<string[]>([]);
   const content = useMemo(() => (appState.data?.content ?? []) as VisualPageLayoutData["content"], [appState.data?.content]);
   const selectedId = selectedItem?.props?.id;
+  const deletedPresetIdSet = useMemo(() => new Set(deletedPresetIds), [deletedPresetIds]);
+  const managedBlockPresets = useMemo<ManagedBlockPreset[]>(() => [
+    ...blockPresets
+      .map((preset) => ({ ...preset, source: "built-in" as const })),
+    ...importedPresets
+      .filter((preset) => !deletedPresetIdSet.has(preset.id))
+      .map((preset) => ({ ...preset, source: "imported" as const }))
+  ], [deletedPresetIdSet, importedPresets]);
   const visibleBlockPresets = useMemo(() => (
     activePresetCategory === "all"
-      ? blockPresets
-      : blockPresets.filter((preset) => preset.category === activePresetCategory)
-  ), [activePresetCategory]);
+      ? managedBlockPresets
+      : managedBlockPresets.filter((preset) => preset.category === activePresetCategory)
+  ), [activePresetCategory, managedBlockPresets]);
   const presetCountByCategory = useMemo(() => {
     const counts = new Map<string, number>();
-    blockPresets.forEach((preset) => counts.set(preset.category, (counts.get(preset.category) ?? 0) + 1));
+    managedBlockPresets.forEach((preset) => counts.set(preset.category, (counts.get(preset.category) ?? 0) + 1));
     return counts;
+  }, [managedBlockPresets]);
+  useEffect(() => {
+    const stored = readStoredBlockPresets();
+    setImportedPresets(stored.imported);
+    setDeletedPresetIds(stored.deletedIds);
   }, []);
-  const activePresetCategoryMeta = activePresetCategory === "all"
-    ? { label: "全部分类", description: "所有已添加的区块预设都会显示在这里。" }
-    : blockPresetCategories.find((category) => category.key === activePresetCategory);
+
+  const persistPresetLibrary = useCallback((nextImported: BlockPreset[], nextDeletedIds: string[]) => {
+    setImportedPresets(nextImported);
+    setDeletedPresetIds(nextDeletedIds);
+    writeStoredBlockPresets(nextImported, nextDeletedIds);
+  }, []);
 
   const addBlockPreset = useCallback((preset: BlockPreset) => {
     const missingAssets = listMissingPresetAssets(preset.requiredAssets, state);
@@ -1449,6 +1898,103 @@ function PuckTemplatePresetPanel({
     }
   }, [canManage, content, dispatch, selectedId, state]);
 
+  const exportPreset = useCallback((preset: BlockPreset) => {
+    downloadJsonFile(`${preset.id}.puck-preset.json`, { version: 1, preset });
+    onStatus(`已导出预设：${preset.label}`);
+  }, [onStatus]);
+
+  const deletePreset = useCallback((preset: ManagedBlockPreset) => {
+    if (!canManage) {
+      onStatus("当前账号没有前台模板权限");
+      return;
+    }
+
+    const nextImported = preset.source === "imported"
+      ? importedPresets.filter((item) => item.id !== preset.id)
+      : importedPresets;
+    const nextDeletedIds = Array.from(new Set([...deletedPresetIds, preset.id]));
+    persistPresetLibrary(nextImported, nextDeletedIds);
+    onStatus(`已删除预设：${preset.label}`);
+  }, [canManage, deletedPresetIds, importedPresets, onStatus, persistPresetLibrary]);
+
+  const importPresetFile = useCallback(async (file: File | null) => {
+    if (!canManage) {
+      onStatus("当前账号没有前台模板权限");
+      return;
+    }
+    if (!file) return;
+
+    try {
+      const parsed = JSON.parse(await file.text()) as { preset?: unknown } | unknown;
+      const preset = isBlockPreset((parsed as { preset?: unknown }).preset) ? (parsed as { preset: BlockPreset }).preset : parsed;
+      if (!isBlockPreset(preset)) {
+        onStatus("预设文件格式不正确");
+        return;
+      }
+
+      const nextPreset = { ...preset, id: `${preset.id}-${Date.now()}`, category: importPresetCategory };
+      const nextImported = [...importedPresets, nextPreset];
+      const nextDeletedIds = deletedPresetIds.filter((id) => id !== nextPreset.id);
+      persistPresetLibrary(nextImported, nextDeletedIds);
+      setActivePresetCategory(nextPreset.category);
+      onStatus(`已导入预设：${nextPreset.label}`);
+    } catch (error) {
+      onStatus(error instanceof Error ? error.message : "预设导入失败");
+    } finally {
+      if (importInputRef.current) importInputRef.current.value = "";
+    }
+  }, [canManage, deletedPresetIds, importPresetCategory, importedPresets, onStatus, persistPresetLibrary]);
+
+  const renderPresetList = useCallback((presets: ManagedBlockPreset[]) => {
+    if (presets.length === 0) {
+      return (
+        <div className="puck-template-preset-empty">
+          <Sparkles size={15} />
+          <span>当前分类暂无预设。后续把好看的开源区块发给我，我会按这个分类转换成 Puck JSON 并加入这里。</span>
+        </div>
+      );
+    }
+
+    return (
+      <div className="puck-template-preset-grid">
+        {presets.map((preset) => {
+          const missingAssets = listMissingPresetAssets(preset.requiredAssets, state);
+          const disabled = !canManage || missingAssets.length > 0;
+          return (
+            <div
+              className={`puck-template-preset-card${disabled ? " is-disabled" : ""}`}
+              key={preset.id}
+              title={missingAssets.length > 0 ? `缺少素材：${missingAssets.join(", ")}` : "插入到当前选中模块之后"}
+            >
+              <button className="puck-template-preset-card-main" disabled={disabled} type="button" onClick={() => addBlockPreset(preset)}>
+                <span className="puck-template-preset-thumb">
+                  <img src={preset.thumbnail} alt="" loading="lazy" />
+                </span>
+                <span className="puck-template-preset-copy">
+                  <strong><Sparkles size={13} />{preset.label}</strong>
+                  <small>{preset.description}</small>
+                  {missingAssets.length > 0 ? <em>缺少素材 {missingAssets.length} 个</em> : <em>{blockPresetCategoryLabels[preset.category]}</em>}
+                </span>
+              </button>
+              {canManage ? (
+                <span className="puck-template-preset-actions">
+                  <button title="导出此预设" type="button" onClick={() => exportPreset(preset)}>
+                    <Download size={12} />
+                  </button>
+                  {preset.source === "imported" ? (
+                    <button title="删除此预设" type="button" onClick={() => deletePreset(preset)}>
+                      <Trash2 size={12} />
+                    </button>
+                  ) : null}
+                </span>
+              ) : null}
+            </div>
+          );
+        })}
+      </div>
+    );
+  }, [addBlockPreset, canManage, deletePreset, exportPreset, state]);
+
   return (
     <div className="puck-template-left-panel puck-template-presets-plugin">
       <section className="puck-template-preset-panel">
@@ -1457,62 +2003,71 @@ function PuckTemplatePresetPanel({
             <strong>行业区块 / 页面预设</strong>
             <span>预留开源预设入口；转换为结构化 Puck JSON 后可直接添加</span>
           </div>
+          <input
+            ref={importInputRef}
+            accept="application/json,.json"
+            hidden
+            type="file"
+            onChange={(event) => void importPresetFile(event.currentTarget.files?.[0] ?? null)}
+          />
         </div>
         <div className="puck-template-panel-body" id="puck-template-preset-body">
-          <div className="puck-template-preset-tabs" aria-label="区块分类">
-            <button className={activePresetCategory === "all" ? "is-active" : ""} type="button" onClick={() => setActivePresetCategory("all")}>
-              <span>全部</span>
-              <em>{blockPresets.length}</em>
-            </button>
-            {blockPresetCategories.map((category) => (
-              <button
-                className={activePresetCategory === category.key ? "is-active" : ""}
-                key={category.key}
-                title={category.description}
-                type="button"
-                onClick={() => setActivePresetCategory(category.key)}
+          <div className="puck-template-preset-importer">
+            <label>
+              <span>导入到分类</span>
+              <select
+                disabled={!canManage}
+                value={importPresetCategory}
+                onChange={(event) => setImportPresetCategory(event.currentTarget.value)}
               >
-                <span>{category.label}</span>
-                <em>{presetCountByCategory.get(category.key) ?? 0}</em>
+                {blockPresetCategories.map((category) => (
+                  <option key={category.key} value={category.key}>{category.label}</option>
+                ))}
+              </select>
+            </label>
+            <button disabled={!canManage} type="button" onClick={() => importInputRef.current?.click()}>
+              <FileUp size={14} />导入预设
+            </button>
+          </div>
+          <div className="puck-template-preset-tabs" aria-label="区块分类">
+            <div className="puck-template-preset-category">
+              <button className={`puck-template-preset-tab-button${activePresetCategory === "all" ? " is-active" : ""}`} type="button" onClick={() => setActivePresetCategory("all")}>
+                <span>全部</span>
+                <em>{managedBlockPresets.length}</em>
               </button>
+              {activePresetCategory === "all" ? (
+                <div className="puck-template-preset-category-content">
+                  <div className="puck-template-preset-category-note">
+                    <strong>全部分类</strong>
+                    <span>所有已添加的区块预设都会显示在这里。</span>
+                  </div>
+                  {renderPresetList(visibleBlockPresets)}
+                </div>
+              ) : null}
+            </div>
+            {blockPresetCategories.map((category) => (
+              <div className="puck-template-preset-category" key={category.key}>
+                <button
+                  className={`puck-template-preset-tab-button${activePresetCategory === category.key ? " is-active" : ""}`}
+                  title={category.description}
+                  type="button"
+                  onClick={() => setActivePresetCategory(category.key)}
+                >
+                  <span>{category.label}</span>
+                  <em>{presetCountByCategory.get(category.key) ?? 0}</em>
+                </button>
+                {activePresetCategory === category.key ? (
+                  <div className="puck-template-preset-category-content">
+                    <div className="puck-template-preset-category-note">
+                      <strong>{category.label}</strong>
+                      <span>{category.description}</span>
+                    </div>
+                    {renderPresetList(visibleBlockPresets)}
+                  </div>
+                ) : null}
+              </div>
             ))}
           </div>
-          <div className="puck-template-preset-category-note">
-            <strong>{activePresetCategoryMeta?.label}</strong>
-            <span>{activePresetCategoryMeta?.description}</span>
-          </div>
-          {visibleBlockPresets.length > 0 ? (
-            <div className="puck-template-preset-grid">
-              {visibleBlockPresets.map((preset) => {
-                const missingAssets = listMissingPresetAssets(preset.requiredAssets, state);
-                const disabled = !canManage || missingAssets.length > 0;
-                return (
-                  <button
-                    className="puck-template-preset-card"
-                    disabled={disabled}
-                    key={preset.id}
-                    title={missingAssets.length > 0 ? `缺少素材：${missingAssets.join(", ")}` : "插入到当前选中模块之后"}
-                    type="button"
-                    onClick={() => addBlockPreset(preset)}
-                  >
-                    <span className="puck-template-preset-thumb">
-                      <img src={preset.thumbnail} alt="" loading="lazy" />
-                    </span>
-                    <span className="puck-template-preset-copy">
-                      <strong><Sparkles size={13} />{preset.label}</strong>
-                      <small>{preset.description}</small>
-                      {missingAssets.length > 0 ? <em>缺少素材 {missingAssets.length} 个</em> : <em>{blockPresetCategoryLabels[preset.category]}</em>}
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
-          ) : (
-            <div className="puck-template-preset-empty">
-              <Sparkles size={15} />
-              <span>暂无{activePresetCategoryMeta?.label || "当前分类"}预设。后续把好看的开源区块发给我，我会按这个分类转换成 Puck JSON 并加入这里。</span>
-            </div>
-          )}
           <div className="puck-template-page-presets">
             <strong><LayoutTemplate size={14} />整页预设</strong>
             {pagePresets.length > 0 ? pagePresets.map((preset) => {
@@ -1920,11 +2475,13 @@ function PuckTemplateBlocksPanel({ canManage }: { canManage: boolean }) {
 function createPuckPlugins({
   canManage,
   onApplyPagePreset,
+  onStatus,
   selectedLayoutKey,
   state
 }: {
   canManage: boolean;
   onApplyPagePreset: (preset: PagePreset) => void;
+  onStatus: (message: string) => void;
   selectedLayoutKey: PageLayoutKey;
   state: AdminState;
 }): Plugin[] {
@@ -1947,6 +2504,7 @@ function createPuckPlugins({
         <PuckTemplatePresetPanel
           canManage={canManage}
           onApplyPagePreset={onApplyPagePreset}
+          onStatus={onStatus}
           selectedLayoutKey={selectedLayoutKey}
           state={state}
         />
@@ -1955,7 +2513,12 @@ function createPuckPlugins({
   ];
 }
 
-function createConfig(state: AdminState, locale: LocaleCode, layoutKey: PageLayoutKey): Config {
+function createConfig(
+  state: AdminState,
+  locale: LocaleCode,
+  layoutKey: PageLayoutKey,
+  options: { onUploadImage?: (file: File) => Promise<string> } = {}
+): Config {
   const firstProduct = state.products[0];
   const firstArticle = state.articles.find((article) => article.status === "published") ?? state.articles[0];
   const imageMediaItems = createMediaPickerItems(state, "image");
@@ -2210,6 +2773,63 @@ function createConfig(state: AdminState, locale: LocaleCode, layoutKey: PageLayo
         },
         defaultProps: { body: "Write Markdown content here.", width: "normal", tone: "light" },
         render: render("RichTextBlock")
+      },
+      LoopingImagesPreset: {
+        label: "Looping images 预设",
+        fields: {
+          eyebrow: field("text", "小标题"),
+          title: field("textarea", "标题"),
+          body: field("textarea", "说明"),
+          imageItems: loopingImagesField("循环图片", imageMediaItems, options.onUploadImage),
+          imageUrls: field("textarea", "兼容批量图片 URL（每行一个）"),
+          imageLimit: manualNumberField("图片数量（2-8）", 2, 8),
+          backgroundMode: radioField("背景", [
+            { label: "柔和光晕", value: "soft" },
+            { label: "浅色强调", value: "tint" },
+            { label: "深色", value: "dark" },
+            { label: "自定义", value: "custom" },
+            { label: "透明", value: "none" }
+          ]),
+          backgroundImageUrl: mediaPickerField("背景图：从媒体库选择", imageMediaItems, "image"),
+          externalBackgroundImageUrl: field("text", "外部背景图 URL"),
+          customBackground: colorCssField("背景颜色 / CSS"),
+          stageSize: manualNumberField("轨道画布尺寸", 320, 760),
+          itemSize: manualNumberField("图片尺寸", 72, 220),
+          speedSeconds: manualNumberField("循环秒数", 4, 20),
+          imageFit: radioField("图片裁切", [
+            { label: "填满裁切", value: "cover" },
+            { label: "完整显示", value: "contain" }
+          ]),
+          imageFrame: radioField("图片边框", [
+            { label: "阴影", value: "shadow" },
+            { label: "细线", value: "line" },
+            { label: "无", value: "none" }
+          ]),
+          textAlign: radioField("文字对齐", [
+            { label: "居中", value: "center" },
+            { label: "左对齐", value: "left" }
+          ])
+        },
+        defaultProps: {
+          eyebrow: "Visual loop",
+          title: "Looping images",
+          body: "Circular image motion inspired by dimi.me Lab.",
+          mediaLibraryUrl: "",
+          imageUrls: "",
+          imageItems: [],
+          imageLimit: 8,
+          backgroundMode: "soft",
+          backgroundImageUrl: "",
+          externalBackgroundImageUrl: "",
+          customBackground: "",
+          stageSize: 620,
+          itemSize: 150,
+          speedSeconds: 8,
+          imageFit: "cover",
+          imageFrame: "shadow",
+          textAlign: "center"
+        },
+        render: render("LoopingImagesPreset")
       },
       ImageGallery: {
         label: "图库",
@@ -2609,7 +3229,7 @@ function PuckTemplateHeaderActions({
   saving
 }: {
   canManage: boolean;
-  onRequestClose: () => void;
+  onRequestClose: (data: Data) => void;
   onSave: (data: Data) => void;
   saving: boolean;
 }) {
@@ -2623,7 +3243,7 @@ function PuckTemplateHeaderActions({
         onClick={(event) => {
           event.preventDefault();
           event.stopPropagation();
-          onRequestClose();
+          onRequestClose(appState.data as Data);
         }}
       >
         关闭编辑
@@ -2664,10 +3284,13 @@ export function PuckTemplateEditor({ state, locale, canManage, onStateChange, on
   const packageInputRef = useRef<HTMLInputElement>(null);
   const headerMetaRef = useRef<HTMLDivElement>(null);
   const puckShellRef = useRef<HTMLDivElement>(null);
+  const skipNextLayoutSyncRef = useRef<{ key: PageLayoutKey; updatedAt?: string } | null>(null);
+  const stateRef = useRef(state);
   const options = useMemo(() => createPageOptions(state), [state]);
   const [selectedKey, setSelectedKey] = useState<PageLayoutKey>("home");
   const selectedOption = options.find((option) => option.key === selectedKey) ?? options[0];
   const [draftData, setDraftData] = useState<VisualPageLayoutData>(() => dataWithFooterDraftProps(selectedOption?.layout?.data, state, locale));
+  const savedDraftSignatureRef = useRef(serializePuckData(draftData));
   const [saving, setSaving] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [packageBusy, setPackageBusy] = useState(false);
@@ -2676,7 +3299,39 @@ export function PuckTemplateEditor({ state, locale, canManage, onStateChange, on
   const selectedOptionKey = selectedOption?.key;
   const selectedOptionUpdatedAt = selectedOption?.layout?.updatedAt;
   const selectedOptionData = selectedOption?.layout?.data;
-  const config = useMemo(() => createConfig(state, locale, selectedOptionKey ?? "home"), [state, locale, selectedOptionKey]);
+  useEffect(() => {
+    stateRef.current = state;
+  }, [state]);
+
+  const uploadTemplateImage = useCallback(async (file: File) => {
+    if (!canManage) {
+      onStatus("当前账号没有前台模板权限");
+      throw new Error("No template permission");
+    }
+    if (!file.type.startsWith("image/")) {
+      onStatus("请选择图片文件");
+      throw new Error("请选择图片文件");
+    }
+
+    const formData = new FormData();
+    formData.append("file", file);
+    onStatus("图片上传中...");
+
+    const response = await fetch("/api/admin/upload", { method: "POST", body: formData });
+    if (!response.ok) {
+      const payload = await response.json().catch(() => ({ error: "图片上传失败" }));
+      throw new Error(payload.error || "图片上传失败");
+    }
+
+    const payload = await response.json() as { file: { url: string }; state: AdminState };
+    onStateChange(payload.state);
+    onStatus("图片已上传，可点击保存发布模板改动");
+    return payload.file.url;
+  }, [canManage, onStateChange, onStatus]);
+  const config = useMemo(
+    () => createConfig(state, locale, selectedOptionKey ?? "home", { onUploadImage: uploadTemplateImage }),
+    [locale, selectedOptionKey, state, uploadTemplateImage]
+  );
   const permissions: Partial<Permissions> = useMemo(() => ({
     drag: canManage,
     duplicate: canManage,
@@ -2687,10 +3342,19 @@ export function PuckTemplateEditor({ state, locale, canManage, onStateChange, on
 
   useEffect(() => {
     if (!selectedOptionKey) return;
-    setDraftData(dataWithFooterDraftProps(selectedOptionData, state, locale));
+    const skipSync = skipNextLayoutSyncRef.current;
+    if (skipSync?.key === selectedOptionKey && skipSync.updatedAt === selectedOptionUpdatedAt) {
+      skipNextLayoutSyncRef.current = null;
+      setCloseDialogOpen(false);
+      return;
+    }
+
+    const nextSavedDraft = dataWithFooterDraftProps(selectedOptionData, stateRef.current, locale);
+    savedDraftSignatureRef.current = serializePuckData(nextSavedDraft);
+    setDraftData(nextSavedDraft);
     setEditorResetKey((current) => current + 1);
     setCloseDialogOpen(false);
-  }, [selectedOptionKey, selectedOptionUpdatedAt, selectedOptionData, state, locale]);
+  }, [selectedOptionKey, selectedOptionUpdatedAt, selectedOptionData, locale]);
 
   useEffect(() => {
     if (selectedOption) return;
@@ -2727,13 +3391,70 @@ export function PuckTemplateEditor({ state, locale, canManage, onStateChange, on
     };
   }, [editorResetKey, isFullscreen, selectedOptionKey]);
 
-  const closeEditorWithoutSaving = useCallback(() => {
-    setDraftData(dataWithFooterDraftProps(selectedOptionData, state, locale));
+  useEffect(() => {
+    if (isFullscreen) return;
+    const shell = puckShellRef.current;
+    const workspace = shell?.closest<HTMLElement>(".admin-workspace");
+    if (!shell || !workspace) return;
+
+    const cleanupFns: Array<() => void> = [];
+    const attachedFrames = new WeakSet<HTMLIFrameElement>();
+
+    const attachFrameWheelBridge = (frame: HTMLIFrameElement) => {
+      if (attachedFrames.has(frame)) return;
+      attachedFrames.add(frame);
+
+      const attachDocumentWheel = () => {
+        const frameDocument = frame.contentDocument;
+        if (!frameDocument) return;
+
+        const handleWheel = (event: globalThis.WheelEvent) => {
+          const target = event.target;
+          const targetElement = target && typeof (target as Element).closest === "function" ? target as Element : null;
+          if (targetElement?.closest("input, textarea, select, button, [contenteditable='true']")) return;
+          bridgeWheelToWorkspace(event, workspace);
+        };
+
+        frameDocument.addEventListener("wheel", handleWheel, { passive: false });
+        cleanupFns.push(() => frameDocument.removeEventListener("wheel", handleWheel));
+      };
+
+      frame.addEventListener("load", attachDocumentWheel);
+      cleanupFns.push(() => frame.removeEventListener("load", attachDocumentWheel));
+      attachDocumentWheel();
+    };
+
+    const attachAllFrames = () => {
+      shell.querySelectorAll<HTMLIFrameElement>("iframe").forEach(attachFrameWheelBridge);
+    };
+
+    const observer = new MutationObserver(attachAllFrames);
+    observer.observe(shell, { childList: true, subtree: true });
+    cleanupFns.push(() => observer.disconnect());
+    attachAllFrames();
+
+    return () => cleanupFns.forEach((cleanup) => cleanup());
+  }, [editorResetKey, isFullscreen, selectedOptionKey]);
+
+  const closeEditorWithoutSaving = useCallback((discardedChanges = true) => {
+    const nextSavedDraft = dataWithFooterDraftProps(selectedOptionData, stateRef.current, locale);
+    savedDraftSignatureRef.current = serializePuckData(nextSavedDraft);
+    setDraftData(nextSavedDraft);
     setEditorResetKey((current) => current + 1);
     setIsFullscreen(false);
     setCloseDialogOpen(false);
-    onStatus("已关闭编辑，未保存的模板改动已丢弃");
-  }, [locale, onStatus, selectedOptionData, state]);
+    onStatus(discardedChanges ? "已关闭编辑，未保存的模板改动已丢弃" : "已关闭编辑");
+  }, [locale, onStatus, selectedOptionData]);
+
+  const requestCloseEditor = useCallback((currentData: Data) => {
+    const hasUnsavedChanges = serializePuckData(currentData) !== savedDraftSignatureRef.current;
+    if (hasUnsavedChanges) {
+      setCloseDialogOpen(true);
+      return;
+    }
+
+    closeEditorWithoutSaving(false);
+  }, [closeEditorWithoutSaving]);
 
   const applyPagePreset = useCallback((preset: PagePreset) => {
     if (!canManage) {
@@ -2759,9 +3480,10 @@ export function PuckTemplateEditor({ state, locale, canManage, onStateChange, on
   const puckPlugins = useMemo(() => createPuckPlugins({
     canManage,
     onApplyPagePreset: applyPagePreset,
+    onStatus,
     selectedLayoutKey: selectedOptionKey ?? "home",
     state
-  }), [applyPagePreset, canManage, selectedOptionKey, state]);
+  }), [applyPagePreset, canManage, onStatus, selectedOptionKey, state]);
 
   const saveLayout = useCallback(async (nextData: Data = draftData) => {
     if (!canManage || !selectedOption) {
@@ -2769,6 +3491,7 @@ export function PuckTemplateEditor({ state, locale, canManage, onStateChange, on
       return;
     }
 
+    const previousBodyOverflow = typeof document === "undefined" ? "" : document.body.style.overflow;
     setSaving(true);
     onStatus("正在保存 Puck 页面布局...");
 
@@ -2796,15 +3519,20 @@ export function PuckTemplateEditor({ state, locale, canManage, onStateChange, on
         return;
       }
 
+      const savedLayout = payload.state.pageLayouts.find((layout) => layout.key === selectedOption.key);
+      skipNextLayoutSyncRef.current = { key: selectedOption.key, updatedAt: savedLayout?.updatedAt };
       onStateChange(payload.state);
-      setDraftData(dataWithFooterDraftProps(nextData as VisualPageLayoutData, payload.state, locale));
+      const nextSavedDraft = dataWithFooterDraftProps(nextData as VisualPageLayoutData, payload.state, locale);
+      savedDraftSignatureRef.current = serializePuckData(nextSavedDraft);
+      setDraftData(nextSavedDraft);
       onStatus("Puck 页面布局已保存并发布");
     } catch (error) {
       onStatus(error instanceof Error ? error.message : "Puck 页面布局保存失败");
     } finally {
       setSaving(false);
+      restoreTemplateScrollAfterSave(puckShellRef.current, isFullscreen, previousBodyOverflow);
     }
-  }, [canManage, draftData, locale, onStateChange, onStatus, selectedOption, state.templateSettings.footerCopyright, state.templateSettings.footerCredit, state.templateSettings.footerTagline]);
+  }, [canManage, draftData, isFullscreen, locale, onStateChange, onStatus, selectedOption, state.templateSettings.footerCopyright, state.templateSettings.footerCredit, state.templateSettings.footerTagline]);
 
   const puckOverrides = useMemo(() => ({
     drawerItem: ({ children, name }: { children: ReactNode; name: string }) => (
@@ -2815,12 +3543,12 @@ export function PuckTemplateEditor({ state, locale, canManage, onStateChange, on
     headerActions: () => (
       <PuckTemplateHeaderActions
         canManage={canManage}
-        onRequestClose={() => setCloseDialogOpen(true)}
+        onRequestClose={requestCloseEditor}
         onSave={(nextData) => void saveLayout(nextData)}
         saving={saving}
       />
     )
-  }), [canManage, saveLayout, saving]);
+  }), [canManage, requestCloseEditor, saveLayout, saving]);
 
   const handlePuckAction = useCallback((action: PuckAction) => {
     if (!canManage || action.type !== "insert") return;
@@ -2845,6 +3573,18 @@ export function PuckTemplateEditor({ state, locale, canManage, onStateChange, on
       }));
     }, 0);
   }, [canManage]);
+
+  const bridgeTemplateWheel = useCallback((event: WheelEvent<HTMLElement>) => {
+    if (isFullscreen || Math.abs(event.deltaY) <= Math.abs(event.deltaX)) return;
+    const target = event.target instanceof HTMLElement ? event.target : null;
+    const shell = puckShellRef.current;
+    if (!target || !shell || target.closest(templateWheelIgnoreSelector) || hasScrollableAncestor(target, shell)) return;
+
+    const workspace = shell.closest<HTMLElement>(".admin-workspace");
+    if (!workspace || workspace.scrollHeight <= workspace.clientHeight + 1) return;
+
+    bridgeWheelToWorkspace(event.nativeEvent, workspace);
+  }, [isFullscreen]);
 
   async function exportTemplatePackage() {
     if (!canManage) {
@@ -2966,7 +3706,7 @@ export function PuckTemplateEditor({ state, locale, canManage, onStateChange, on
           />
         </div>
       </div>
-      <div className="puck-template-shell" ref={puckShellRef}>
+      <div className="puck-template-shell" ref={puckShellRef} onWheelCapture={bridgeTemplateWheel}>
         <PuckTemplateHeaderMeta
           blockCount={draftData.content.length}
           innerRef={headerMetaRef}
@@ -3002,7 +3742,7 @@ export function PuckTemplateEditor({ state, locale, canManage, onStateChange, on
               <button className="puck-template-dialog-secondary" type="button" onClick={() => setCloseDialogOpen(false)}>
                 继续编辑
               </button>
-              <button className="puck-template-dialog-danger" type="button" onClick={closeEditorWithoutSaving}>
+              <button className="puck-template-dialog-danger" type="button" onClick={() => closeEditorWithoutSaving(true)}>
                 不保存退出
               </button>
             </div>
