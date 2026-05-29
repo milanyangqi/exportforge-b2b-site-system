@@ -51,21 +51,46 @@ function isCloudflareRuntime() {
   return typeof process !== "undefined" && process.env.NEXT_RUNTIME === "edge";
 }
 
+function getSmtpEncryption(settings: SiteSettings) {
+  if (settings.mailSmtpEncryption === "tls" || settings.mailSmtpEncryption === "none") return settings.mailSmtpEncryption;
+  return settings.mailSmtpSecure === false ? "none" : "ssl";
+}
+
+function getSmtpUser(settings: SiteSettings) {
+  if (settings.mailSmtpUseDifferentAccountName) return settings.mailSmtpAccountName?.trim() || settings.mailSmtpUser?.trim() || "";
+  return settings.mailSmtpUser?.trim() || settings.mailFromEmail?.trim() || settings.adminEmail?.trim() || "";
+}
+
+function createSmtpTransportOptions(settings: SiteSettings) {
+  const encryption = getSmtpEncryption(settings);
+
+  return {
+    host: settings.mailSmtpHost?.trim(),
+    port: Number(settings.mailSmtpPort || 465),
+    secure: encryption === "ssl",
+    requireTLS: encryption === "tls",
+    auth: {
+      user: getSmtpUser(settings),
+      pass: decryptMailSecret(settings.mailSmtpPassword)
+    }
+  };
+}
+
 function appendLeadContext(body: string, lead?: AdminLead) {
   if (!lead) return body;
 
   return [
     body,
     "---",
-    `姓名：${lead.fullName || "未填写姓名"}`,
-    `公司：${lead.company || "No company"}`,
-    `产品：${lead.productType || "No product"}`,
-    `数量：${lead.quantity || "No quantity"}`,
-    `邮箱：${lead.email || "No email"}`,
-    `WhatsApp / Phone：${lead.whatsapp || "No WhatsApp / Phone"}`,
-    `目的地：${lead.destination || "No destination"}`,
-    `材料：${lead.workpieceMaterial || "No material"}`,
-    lead.message ? `留言：${lead.message}` : ""
+    `Name: ${lead.fullName || "No name"}`,
+    `Company: ${lead.company || "No company"}`,
+    `Product: ${lead.productType || "No product"}`,
+    `Quantity: ${lead.quantity || "No quantity"}`,
+    `Email: ${lead.email || "No email"}`,
+    `WhatsApp / Phone: ${lead.whatsapp || "No WhatsApp / Phone"}`,
+    `Destination: ${lead.destination || "No destination"}`,
+    `Material: ${lead.workpieceMaterial || "No material"}`,
+    lead.message ? `Message: ${lead.message}` : ""
   ].filter(Boolean).join("\n");
 }
 
@@ -80,7 +105,7 @@ async function sendSmtp(settings: SiteSettings, draft: MailDraft, lead?: AdminLe
 
   const host = settings.mailSmtpHost?.trim();
   const port = Number(settings.mailSmtpPort || 465);
-  const user = settings.mailSmtpUser?.trim();
+  const user = getSmtpUser(settings);
   const password = decryptMailSecret(settings.mailSmtpPassword);
   const from = buildFrom(settings);
 
@@ -90,12 +115,7 @@ async function sendSmtp(settings: SiteSettings, draft: MailDraft, lead?: AdminLe
   if (!from) return { ok: false, provider: "smtp", message: "请先填写有效的发件人邮箱。" };
 
   const nodemailer = await import(/* webpackIgnore: true */ "nodemailer");
-  const transporter = nodemailer.createTransport({
-    host,
-    port,
-    secure: Boolean(settings.mailSmtpSecure),
-    auth: { user, pass: password }
-  });
+  const transporter = nodemailer.createTransport(createSmtpTransportOptions(settings));
   const info = await transporter.sendMail({
     from,
     to: draft.to,
@@ -105,6 +125,100 @@ async function sendSmtp(settings: SiteSettings, draft: MailDraft, lead?: AdminLe
   });
 
   return { ok: true, provider: "smtp", message: "邮件已通过 SMTP 发送。", id: info.messageId };
+}
+
+async function verifyTcpConnection(host: string, port: number, encrypted: boolean) {
+  const net = await import("node:net");
+  const tls = await import("node:tls");
+
+  await new Promise<void>((resolve, reject) => {
+    const socket = encrypted
+      ? tls.connect({ host, port, servername: host, rejectUnauthorized: false })
+      : net.createConnection({ host, port });
+
+    const timer = setTimeout(() => {
+      socket.destroy();
+      reject(new Error("连接超时"));
+    }, 8000);
+
+    socket.once(encrypted ? "secureConnect" : "connect", () => {
+      clearTimeout(timer);
+      socket.end();
+      resolve();
+    });
+    socket.once("error", (error) => {
+      clearTimeout(timer);
+      reject(error);
+    });
+  });
+}
+
+export async function verifyMailConnection(settings: SiteSettings): Promise<MailSendResult> {
+  const provider = settings.mailProvider || "mailto";
+
+  if (provider === "mailto") {
+    return {
+      ok: false,
+      provider,
+      message: "本机邮件客户端不需要网站后端连通测试，请直接打开邮件客户端草稿。"
+    };
+  }
+
+  if (provider === "http") {
+    const apiKey = decryptMailSecret(settings.mailApiKey);
+    const endpoint = settings.mailApiBaseUrl?.trim();
+
+    if (!endpoint || !apiKey) return { ok: false, provider, message: "请先填写第三方邮件 API 地址和 API Key。" };
+
+    try {
+      new URL(endpoint);
+      return {
+        ok: true,
+        provider,
+        message: "第三方邮件 API 地址和 API Key 已填写；该方式通常需要通过发送测试邮件验证真实发信。"
+      };
+    } catch {
+      return { ok: false, provider, message: "第三方邮件 API 地址格式不正确。" };
+    }
+  }
+
+  if (isCloudflareRuntime()) {
+    return {
+      ok: false,
+      provider,
+      message: "Cloudflare Workers 不支持传统 SMTP 直连，请改用第三方邮件 API 或本机邮件客户端。"
+    };
+  }
+
+  const host = settings.mailSmtpHost?.trim();
+  const port = Number(settings.mailSmtpPort || 465);
+  const user = getSmtpUser(settings);
+  const password = decryptMailSecret(settings.mailSmtpPassword);
+
+  if (!host || !port || !user || !password) {
+    return { ok: false, provider, message: "请先填写 SMTP 服务器、端口、账号和授权码/密码。" };
+  }
+
+  try {
+    const nodemailer = await import(/* webpackIgnore: true */ "nodemailer");
+    const transporter = nodemailer.createTransport(createSmtpTransportOptions(settings));
+
+    await transporter.verify();
+    const imapHost = settings.mailImapHost?.trim();
+    const imapPort = Number(settings.mailImapPort || 993);
+    if (settings.mailImapEnabled !== false && imapHost && imapPort) {
+      await verifyTcpConnection(imapHost, imapPort, settings.mailImapEncryption !== "none");
+      return { ok: true, provider, message: "SMTP 验证通过，IMAP 服务器端口也可连接。" };
+    }
+
+    return { ok: true, provider, message: "SMTP 连通测试通过，可以继续发送测试邮件。" };
+  } catch (error) {
+    return {
+      ok: false,
+      provider,
+      message: error instanceof Error ? `SMTP 连通测试失败：${error.message}` : "SMTP 连通测试失败，请检查服务器、端口、账号和授权码。"
+    };
+  }
 }
 
 async function sendHttp(settings: SiteSettings, draft: MailDraft, lead?: AdminLead): Promise<MailSendResult> {

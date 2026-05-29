@@ -7,6 +7,8 @@ import { PuckTemplateEditor } from "@/components/PuckTemplateEditor";
 import {
   Bot,
   Bold,
+  ChevronDown,
+  ChevronRight,
   Coins,
   Copy,
   DatabaseBackup,
@@ -18,6 +20,7 @@ import {
   Heading2,
   Heading3,
   ImageIcon,
+  Info,
   Inbox,
   Italic,
   Languages,
@@ -88,6 +91,13 @@ type MailActionResponse = {
   error?: string;
   state?: AdminState;
 };
+type LeadMailDraftEdit = {
+  leadId: string;
+  to: string;
+  subject: string;
+  body: string;
+};
+type MailSectionKey = "smtp" | "imap" | "content";
 type VisualBuilderDevice = "desktop" | "tablet" | "mobile";
 type VisualBuilderSidebarTab = "components" | "properties";
 type VisualBuilderModuleKind = "section" | "custom";
@@ -1457,6 +1467,12 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
   const [videoDialogUrl, setVideoDialogUrl] = useState("");
   const [replacingArticleVideoUrl, setReplacingArticleVideoUrl] = useState<string | null>(null);
   const [mailDraftLeadId, setMailDraftLeadId] = useState<string | null>(null);
+  const [mailDraftEdit, setMailDraftEdit] = useState<LeadMailDraftEdit | null>(null);
+  const [collapsedMailSections, setCollapsedMailSections] = useState<Record<MailSectionKey, boolean>>({
+    smtp: true,
+    imap: true,
+    content: true
+  });
   const [mailTestTo, setMailTestTo] = useState("");
   const [mailActionStatus, setMailActionStatus] = useState("");
   const [mailActionRunning, setMailActionRunning] = useState(false);
@@ -1534,11 +1550,14 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
 
   useEffect(() => {
     if (!state || tab !== "settings") return;
-    const allowedSections = getAllowedSettingsSectionsForUser(getCurrentUser(), state.rolePermissions);
+    const effectCurrentUser = state.users.find((user) => user.id === currentUserId)
+      ?? state.users.find((user) => user.email.toLowerCase() === email.toLowerCase())
+      ?? state.users[0];
+    const allowedSections = getAllowedSettingsSectionsForUser(effectCurrentUser, state.rolePermissions);
     if (allowedSections.length > 0 && !allowedSections.includes(settingsSection)) {
       setSettingsSection(allowedSections[0] as SettingsSection);
     }
-  }, [state, tab, settingsSection]);
+  }, [currentUserId, email, state, tab, settingsSection]);
 
   useEffect(() => {
     if (!aiTestStatus || aiTestStatus.includes("正在测试")) return;
@@ -1640,19 +1659,26 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
   async function save(nextState = state) {
     if (!nextState) return;
     setStatus("保存中...");
-    const response = await fetch("/api/admin/state", {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(nextState)
-    });
-    if (!response.ok) {
-      setStatus(response.status === 403 ? "保存失败：当前账号没有权限修改这些设置" : "保存失败：请检查登录状态");
-      return;
+    try {
+      const response = await fetch("/api/admin/state", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(nextState)
+      });
+      if (!response.ok) {
+        setStatus(response.status === 403 ? "保存失败：当前账号没有权限修改这些设置" : "保存失败：请检查登录状态");
+        return false;
+      }
+      const payload = (await response.json()) as AdminState;
+      setState(payload);
+      setFrontendSettingsDirty(false);
+      setStatus("已保存");
+      return true;
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "网络连接异常";
+      setStatus(`保存失败：${message}`);
+      return false;
     }
-    const payload = (await response.json()) as AdminState;
-    setState(payload);
-    setFrontendSettingsDirty(false);
-    setStatus("已保存");
   }
 
   async function discardTemplateVisualEdits() {
@@ -1907,17 +1933,17 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
 
   function formatLeadForCopy(lead: AdminState["leads"][number]) {
     return [
-      `姓名：${lead.fullName || "未填写姓名"}`,
-      `公司：${lead.company || "No company"}`,
-      `产品：${lead.productType || "No product"}`,
-      `数量：${lead.quantity || "No quantity"}`,
-      `邮箱：${lead.email || "No email"}`,
+      `Name: ${lead.fullName || "No name"}`,
+      `Company: ${lead.company || "No company"}`,
+      `Product: ${lead.productType || "No product"}`,
+      `Quantity: ${lead.quantity || "No quantity"}`,
+      `Email: ${lead.email || "No email"}`,
       `WhatsApp / Phone：${lead.whatsapp || "No WhatsApp / Phone"}`,
-      `目的地：${lead.destination || "No destination"}`,
-      `材料：${lead.workpieceMaterial || "No material"}`,
-      `状态：${lead.status}`,
-      `时间：${new Date(lead.createdAt).toLocaleString()}`,
-      lead.message ? `留言：${lead.message}` : ""
+      `Destination: ${lead.destination || "No destination"}`,
+      `Material: ${lead.workpieceMaterial || "No material"}`,
+      `Status: ${lead.status}`,
+      `Submitted at: ${new Date(lead.createdAt).toLocaleString("en-US")}`,
+      lead.message ? `Message: ${lead.message}` : ""
     ].filter(Boolean).join("\n");
   }
 
@@ -1932,31 +1958,47 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
       .replaceAll("{email}", lead.email || "")
       .replaceAll("{siteTitle}", state?.siteSettings.title || "KeyproTools");
 
-    return { subject, body };
+    return { leadId: lead.id, to: lead.email, subject, body };
   }
 
-  function buildLeadReplyMailto(lead: AdminState["leads"][number]) {
-    const { subject, body } = buildLeadReplyDraft(lead);
+  function buildLeadReplyMailto(lead: AdminState["leads"][number], draft = selectedMailDraft) {
+    const fallbackDraft = buildLeadReplyDraft(lead);
+    const to = draft?.to?.trim() || lead.email;
+    const subject = draft?.subject || fallbackDraft.subject;
+    const body = draft?.body || fallbackDraft.body;
     const cc = state?.siteSettings.mailFromEmail?.trim();
     const ccPart = cc ? `&cc=${encodeMailtoValue(cc)}` : "";
 
-    return `mailto:${encodeURIComponent(lead.email)}?subject=${encodeMailtoValue(subject)}&body=${encodeMailtoValue(body)}${ccPart}`;
+    return `mailto:${encodeURIComponent(to)}?subject=${encodeMailtoValue(subject)}&body=${encodeMailtoValue(body)}${ccPart}`;
   }
 
   function openLeadMailDraft(lead: AdminState["leads"][number]) {
+    const draft = buildLeadReplyDraft(lead);
     setMailDraftLeadId(lead.id);
+    setMailDraftEdit({
+      leadId: lead.id,
+      to: lead.email,
+      subject: draft.subject,
+      body: draft.body
+    });
+    setCollapsedMailSections({ smtp: true, imap: true, content: true });
     switchAdminTab("mail");
     setStatus("已将询盘信息带入邮件草稿");
   }
 
-  async function sendMailRequest(path: "/api/admin/mail/test" | "/api/admin/mail/send", body: Record<string, unknown>) {
-    if (!state) return;
+  async function sendMailRequest(path: "/api/admin/mail/test" | "/api/admin/mail/send" | "/api/admin/mail/verify", body: Record<string, unknown>, stateOverride?: AdminState) {
+    const stateToSave = stateOverride ?? state;
+    if (!stateToSave) return;
     setMailActionRunning(true);
-    setMailActionStatus("正在保存邮件设置...");
-    await save();
-    setMailActionStatus("正在发送邮件...");
-
     try {
+      setMailActionStatus("正在保存邮件设置...");
+      const saved = await save(stateToSave);
+      if (!saved) {
+        setMailActionStatus("保存邮件设置失败，请检查本地服务或登录状态。");
+        return;
+      }
+      setMailActionStatus(path === "/api/admin/mail/verify" ? "正在测试邮件连通..." : "正在发送邮件...");
+
       const response = await fetch(path, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -1981,6 +2023,15 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
     void sendMailRequest("/api/admin/mail/test", { to: mailTestTo.trim() });
   }
 
+  function verifyMailConnectionAction() {
+    if (!state) return;
+    const nextState = state.siteSettings.mailProvider === "smtp"
+      ? state
+      : { ...state, siteSettings: { ...state.siteSettings, mailProvider: "smtp" as const } };
+    setState(nextState);
+    void sendMailRequest("/api/admin/mail/verify", {}, nextState);
+  }
+
   function sendSelectedLeadMail() {
     if (!selectedMailLead || !selectedMailDraft) {
       setMailActionStatus("请先从询盘列表选择一条可回复的询盘。");
@@ -1989,10 +2040,17 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
 
     void sendMailRequest("/api/admin/mail/send", {
       leadId: selectedMailLead.id,
-      to: selectedMailLead.email,
+      to: selectedMailDraft.to,
       subject: selectedMailDraft.subject,
       body: selectedMailDraft.body
     });
+  }
+
+  function toggleMailSection(section: MailSectionKey) {
+    setCollapsedMailSections((current) => ({
+      ...current,
+      [section]: !current[section]
+    }));
   }
 
   function updateAiSettings(patch: Partial<AdminState["aiSettings"]>) {
@@ -4686,8 +4744,14 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
   const canManageFrontendSettings = canManageFrontendState();
   const canImportArticles = getRolePermissions(currentUser?.role ?? "viewer", state.rolePermissions).articleImportEnabled;
   const selectedMailLead = state.leads.find((lead) => lead.id === mailDraftLeadId) ?? null;
-  const selectedMailDraft = selectedMailLead ? buildLeadReplyDraft(selectedMailLead) : null;
+  const selectedMailDraft = selectedMailLead
+    ? mailDraftEdit?.leadId === selectedMailLead.id
+      ? mailDraftEdit
+      : buildLeadReplyDraft(selectedMailLead)
+    : null;
   const mailProvider = state.siteSettings.mailProvider || "mailto";
+  const mailSmtpEncryption = state.siteSettings.mailSmtpEncryption || (state.siteSettings.mailSmtpSecure === false ? "none" : "ssl");
+  const mailImapEncryption = state.siteSettings.mailImapEncryption || "ssl";
   const smtpPasswordConfigured = Boolean(state.siteSettings.mailSmtpPasswordConfigured);
   const mailApiKeyConfigured = Boolean(state.siteSettings.mailApiKeyConfigured);
   const canRunAutoTranslation = Boolean(currentUser && (
@@ -6316,7 +6380,11 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
                           </span>
                           <span>0</span>
                           {hasLongSummary && summaryExpanded ? (
-                            <div className="taxonomy-description-expanded">
+                            <div
+                              className="taxonomy-description-expanded"
+                              onDoubleClick={() => startProductInlineEdit(product, "summary")}
+                              title="双击编辑描述"
+                            >
                               {productSummary}
                             </div>
                           ) : null}
@@ -7092,7 +7160,6 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
 
           {tab === "mail" ? (
             <>
-              <h1>邮件设置</h1>
               {selectedMailLead && selectedMailDraft ? (
                 <section className="settings-panel mail-draft-panel">
                   <div className="settings-panel-head with-action">
@@ -7102,133 +7169,190 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
                     </div>
                     <div className="mail-action-group">
                       <button className="mail-draft-send" disabled={mailActionRunning} type="button" onClick={sendSelectedLeadMail}><Mail size={15} />发送邮件</button>
-                      <a className="mail-draft-send secondary" href={buildLeadReplyMailto(selectedMailLead)}><Mail size={15} />打开邮件客户端</a>
+                      <a className="mail-draft-send secondary" href={buildLeadReplyMailto(selectedMailLead, selectedMailDraft)}><Mail size={15} />打开邮件客户端</a>
                     </div>
                   </div>
                   <div className="mail-draft-grid">
-                    <label>收件人<input readOnly value={selectedMailLead.email} /></label>
-                    <label>主题<input readOnly value={selectedMailDraft.subject} /></label>
-                    <label className="wide">正文<textarea readOnly rows={9} value={`${selectedMailDraft.body}\n\n---\n${formatLeadForCopy(selectedMailLead)}`} /></label>
+                    <label>收件人
+                      <input
+                        type="email"
+                        value={selectedMailDraft.to}
+                        onChange={(event) => setMailDraftEdit({ ...selectedMailDraft, to: event.target.value })}
+                      />
+                    </label>
+                    <label>主题
+                      <input
+                        value={selectedMailDraft.subject}
+                        onChange={(event) => setMailDraftEdit({ ...selectedMailDraft, subject: event.target.value })}
+                      />
+                    </label>
+                    <label className="wide">正文
+                      <textarea
+                        rows={9}
+                        value={selectedMailDraft.body}
+                        onChange={(event) => setMailDraftEdit({ ...selectedMailDraft, body: event.target.value })}
+                      />
+                    </label>
+                    <label className="wide mail-lead-context">询盘信息
+                      <textarea readOnly rows={7} value={formatLeadForCopy(selectedMailLead)} />
+                    </label>
                   </div>
                 </section>
               ) : null}
               <section className="settings-panel mail-settings-panel">
-                <div className="settings-panel-head with-action">
-                  <div><h2>绑定邮箱</h2><span>用于询盘列表里的“发邮件”入口；支持本机邮件客户端、SMTP 授权码和第三方邮件 API。</span></div>
-                  {settingsSaveAction}
-                </div>
                 {mailActionStatus ? <div className="mail-status-note">{mailActionStatus}</div> : null}
-                <div className="wp-settings-form mail-settings-form">
-                  <label>发件人邮箱
-                    <input
-                      disabled={!canManageFrontendSettings}
-                      type="email"
-                      value={state.siteSettings.mailFromEmail || state.siteSettings.adminEmail}
-                      onChange={(event) => updateSiteSettings({ mailFromEmail: event.target.value })}
-                    />
-                  </label>
-                  <label>发件人名称
-                    <input
-                      disabled={!canManageFrontendSettings}
-                      value={state.siteSettings.mailFromName || state.siteSettings.title}
-                      onChange={(event) => updateSiteSettings({ mailFromName: event.target.value })}
-                    />
-                  </label>
-                  <label>回复邮箱
-                    <input
-                      disabled={!canManageFrontendSettings}
-                      type="email"
-                      value={state.siteSettings.mailReplyToEmail || state.siteSettings.mailFromEmail || state.siteSettings.adminEmail}
-                      onChange={(event) => updateSiteSettings({ mailReplyToEmail: event.target.value })}
-                    />
-                  </label>
-                  <label>发送方式
-                    <select
-                      disabled={!canManageFrontendSettings}
-                      value={mailProvider}
-                      onChange={(event) => updateSiteSettings({ mailProvider: event.target.value as AdminState["siteSettings"]["mailProvider"] })}
-                    >
-                      <option value="mailto">本机邮件客户端</option>
-                      <option value="smtp">SMTP 邮箱授权码</option>
-                      <option value="http">第三方邮件 API / Cloudflare 兼容</option>
-                    </select>
-                  </label>
-                  {mailProvider === "smtp" ? (
-                    <div className="mail-provider-card wide">
-                      <div className="mail-provider-card-head">
-                        <strong>SMTP 邮箱授权码</strong>
-                        <span>适合 QQ、163、Gmail、Outlook 和企业邮箱；保存后可立即发送测试邮件。</span>
+                <div className="mail-account-card">
+                  <div className="mail-account-section">
+                    <div className="mail-section-head">
+                      <span>01</span>
+                      <div>
+                        <h3>发信账户</h3>
+                        <p>用于后台询盘回复、测试邮件和邮件草稿里的发件人身份。</p>
                       </div>
-                      <label>SMTP 服务器
-                        <input disabled={!canManageFrontendSettings} placeholder="smtp.qq.com / smtp.gmail.com" value={state.siteSettings.mailSmtpHost || ""} onChange={(event) => updateSiteSettings({ mailSmtpHost: event.target.value })} />
-                      </label>
-                      <label>SMTP 端口
-                        <input disabled={!canManageFrontendSettings} min={1} type="number" value={state.siteSettings.mailSmtpPort || 465} onChange={(event) => updateSiteSettings({ mailSmtpPort: Number(event.target.value) || 465 })} />
-                      </label>
-                      <label>SMTP 账号
-                        <input disabled={!canManageFrontendSettings} value={state.siteSettings.mailSmtpUser || ""} onChange={(event) => updateSiteSettings({ mailSmtpUser: event.target.value })} />
-                      </label>
-                      <label>授权码 / 密码
-                        <input
-                          disabled={!canManageFrontendSettings}
-                          placeholder={smtpPasswordConfigured ? "已配置，留空则不修改" : "请输入邮箱授权码或 SMTP 密码"}
-                          type="password"
-                          value={state.siteSettings.mailSmtpPassword || ""}
-                          onChange={(event) => updateSiteSettings({ mailSmtpPassword: event.target.value })}
-                        />
-                      </label>
-                      <label className="checkline"><input disabled={!canManageFrontendSettings} type="checkbox" checked={state.siteSettings.mailSmtpSecure !== false} onChange={(event) => updateSiteSettings({ mailSmtpSecure: event.target.checked })} />使用 SSL/TLS 安全连接</label>
-                      <div className="mail-provider-help">QQ/163/企业邮箱通常填写授权码；Gmail/Outlook 建议使用应用专用密码。Cloudflare 线上不建议走 SMTP，请使用第三方邮件 API。</div>
+                      <button className="mail-section-toggle" type="button" onClick={() => toggleMailSection("smtp")} aria-expanded={!collapsedMailSections.smtp}>
+                        {collapsedMailSections.smtp ? <ChevronRight size={16} /> : <ChevronDown size={16} />}
+                      </button>
                     </div>
-                  ) : null}
-                  {mailProvider === "http" ? (
-                    <div className="mail-provider-card wide">
-                      <div className="mail-provider-card-head">
-                        <strong>第三方邮件 API</strong>
-                        <span>适合 Cloudflare Worker 线上发信；保存后可立即发送测试邮件。</span>
-                      </div>
-                      <label>API 服务
-                        <select disabled={!canManageFrontendSettings} value={state.siteSettings.mailApiProvider || "resend"} onChange={(event) => updateSiteSettings({ mailApiProvider: event.target.value })}>
-                          <option value="resend">Resend</option>
-                          <option value="generic">通用 Bearer API</option>
+                    {!collapsedMailSections.smtp ? <div className="mail-account-grid">
+                      <label>发件人名字 *
+                        <input disabled={!canManageFrontendSettings} value={state.siteSettings.mailFromName || ""} onChange={(event) => updateSiteSettings({ mailProvider: "smtp", mailFromName: event.target.value })} />
+                      </label>
+                      <label>发件人邮箱地址 *
+                        <input disabled={!canManageFrontendSettings} type="email" value={state.siteSettings.mailFromEmail || state.siteSettings.adminEmail} onChange={(event) => updateSiteSettings({ mailProvider: "smtp", mailFromEmail: event.target.value, mailSmtpUser: state.siteSettings.mailSmtpUseDifferentAccountName ? state.siteSettings.mailSmtpUser : event.target.value })} />
+                      </label>
+                      <label className="mail-checkline mail-offset-field">
+                        <input disabled={!canManageFrontendSettings} type="checkbox" checked={Boolean(state.siteSettings.mailSmtpUseDifferentAccountName)} onChange={(event) => updateSiteSettings({ mailProvider: "smtp", mailSmtpUseDifferentAccountName: event.target.checked })} />
+                        <span>使用不同的账户名称</span>
+                        <Info size={15} />
+                      </label>
+                      {state.siteSettings.mailSmtpUseDifferentAccountName ? (
+                        <label className="mail-offset-field">账户名称
+                          <input disabled={!canManageFrontendSettings} value={state.siteSettings.mailSmtpAccountName || ""} onChange={(event) => updateSiteSettings({ mailProvider: "smtp", mailSmtpAccountName: event.target.value })} />
+                        </label>
+                      ) : null}
+                      <label>密码 *
+                        <input disabled={!canManageFrontendSettings} placeholder={smtpPasswordConfigured ? "已配置，留空则不修改" : "请输入邮箱授权码或 SMTP 密码"} type="password" value={state.siteSettings.mailSmtpPassword || ""} onChange={(event) => updateSiteSettings({ mailProvider: "smtp", mailSmtpPassword: event.target.value })} />
+                      </label>
+                      <label>主机 *
+                        <select disabled={!canManageFrontendSettings} value={state.siteSettings.mailSmtpHost || ""} onChange={(event) => updateSiteSettings({ mailProvider: "smtp", mailSmtpHost: event.target.value })}>
+                          <option value="">选择或填写 SMTP 主机</option>
+                          <option value="smtp.qiye.aliyun.com">smtp.qiye.aliyun.com</option>
+                          <option value="smtp.qq.com">smtp.qq.com</option>
+                          <option value="smtp.163.com">smtp.163.com</option>
+                          <option value="smtp.gmail.com">smtp.gmail.com</option>
+                          <option value="smtp.office365.com">smtp.office365.com</option>
                         </select>
                       </label>
-                      <label>API 地址
-                        <input disabled={!canManageFrontendSettings} placeholder="https://api.resend.com/emails" value={state.siteSettings.mailApiBaseUrl || ""} onChange={(event) => updateSiteSettings({ mailApiBaseUrl: event.target.value })} />
+                      <label>端口
+                        <select disabled={!canManageFrontendSettings} value={state.siteSettings.mailSmtpPort || 465} onChange={(event) => updateSiteSettings({ mailProvider: "smtp", mailSmtpPort: Number(event.target.value) })}>
+                          <option value={465}>465</option>
+                          <option value={587}>587</option>
+                          <option value={25}>25</option>
+                        </select>
                       </label>
-                      <label>API Key
-                        <input
-                          disabled={!canManageFrontendSettings}
-                          placeholder={mailApiKeyConfigured ? "已配置，留空则不修改" : "请输入第三方邮件 API Key"}
-                          type="password"
-                          value={state.siteSettings.mailApiKey || ""}
-                          onChange={(event) => updateSiteSettings({ mailApiKey: event.target.value })}
-                        />
+                      <div className="mail-radio-row">
+                        {(["ssl", "tls", "none"] as const).map((mode) => (
+                          <label key={mode} className="mail-radio">
+                            <input disabled={!canManageFrontendSettings} type="radio" checked={mailSmtpEncryption === mode} onChange={() => updateSiteSettings({ mailProvider: "smtp", mailSmtpEncryption: mode, mailSmtpSecure: mode === "ssl" })} />
+                            <span>{mode === "ssl" ? "SSL" : mode === "tls" ? "TLS" : "无"}</span>
+                          </label>
+                        ))}
+                        <Info size={15} />
+                      </div>
+                      <label className="mail-checkline">
+                        <input disabled={!canManageFrontendSettings} type="checkbox" checked={Boolean(state.siteSettings.mailReplyToDifferent)} onChange={(event) => updateSiteSettings({ mailProvider: "smtp", mailReplyToDifferent: event.target.checked })} />
+                        <span>设置不同的回复地址</span>
+                        <Info size={15} />
                       </label>
-                      <div className="mail-provider-help">第三方 API 使用 HTTPS 请求发信，适合 Cloudflare Worker 线上环境；Resend 会按官方 JSON 格式发送。</div>
-                    </div>
-                  ) : null}
-                  {mailProvider === "mailto" ? <div className="mail-provider-help">本机邮件客户端不会由网站后端发送邮件，只会打开系统默认邮箱草稿；这是最安全的兜底方式。</div> : null}
-                  <div className="mail-test-card wide">
-                    <div>
-                      <strong>测试发送</strong>
-                      <span>{mailProvider === "mailto" ? "本机邮件客户端不会真实发信；SMTP 或第三方 API 可用这里测试。" : "会先保存当前邮件设置，再发送一封测试邮件。"}</span>
-                    </div>
-                    <label>测试收件人
-                      <input disabled={!canManageFrontendSettings || mailProvider === "mailto"} placeholder={state.siteSettings.adminEmail} type="email" value={mailTestTo} onChange={(event) => setMailTestTo(event.target.value)} />
-                    </label>
-                    <div className="mail-test-actions">
-                      <button disabled={!canManageFrontendSettings || mailActionRunning || mailProvider === "mailto"} type="button" onClick={sendTestMail}><Mail size={15} />保存并发送测试邮件</button>
-                    </div>
+                      {state.siteSettings.mailReplyToDifferent ? (
+                        <label>回复地址
+                          <input disabled={!canManageFrontendSettings} type="email" value={state.siteSettings.mailReplyToEmail || ""} onChange={(event) => updateSiteSettings({ mailProvider: "smtp", mailReplyToEmail: event.target.value })} />
+                        </label>
+                      ) : null}
+                    </div> : null}
                   </div>
-                  <label className="wide">询盘回复模板
-                    <textarea
-                      disabled={!canManageFrontendSettings}
-                      rows={9}
-                      value={state.siteSettings.mailReplyTemplate || ""}
-                      onChange={(event) => updateSiteSettings({ mailReplyTemplate: event.target.value })}
-                    />
-                  </label>
+                  <div className="mail-account-section">
+                    <div className="mail-section-head">
+                      <span>02</span>
+                      <div>
+                        <h3>收信同步</h3>
+                        <p>用于检查 IMAP 服务器是否可连接，后续可扩展到收取客户回复。</p>
+                      </div>
+                      <button className="mail-section-toggle" type="button" onClick={() => toggleMailSection("imap")} aria-expanded={!collapsedMailSections.imap}>
+                        {collapsedMailSections.imap ? <ChevronRight size={16} /> : <ChevronDown size={16} />}
+                      </button>
+                    </div>
+                    {!collapsedMailSections.imap ? <div className="mail-account-grid">
+                      <label className="mail-checkline mail-wide">
+                        <input disabled={!canManageFrontendSettings} type="checkbox" checked={Boolean(state.siteSettings.mailImapCollectExternalReplies)} onChange={(event) => updateSiteSettings({ mailProvider: "smtp", mailImapCollectExternalReplies: event.target.checked })} />
+                        <span>我收到非发件人电子邮箱账户的回复</span>
+                        <Info size={15} />
+                      </label>
+                      <label>主机
+                        <select disabled={!canManageFrontendSettings} value={state.siteSettings.mailImapHost || ""} onChange={(event) => updateSiteSettings({ mailProvider: "smtp", mailImapHost: event.target.value })}>
+                          <option value="">选择或填写 IMAP 主机</option>
+                          <option value="imap.qiye.aliyun.com">imap.qiye.aliyun.com</option>
+                          <option value="imap.qq.com">imap.qq.com</option>
+                          <option value="imap.163.com">imap.163.com</option>
+                          <option value="imap.gmail.com">imap.gmail.com</option>
+                          <option value="outlook.office365.com">outlook.office365.com</option>
+                        </select>
+                      </label>
+                      <label>端口
+                        <select disabled={!canManageFrontendSettings} value={state.siteSettings.mailImapPort || 993} onChange={(event) => updateSiteSettings({ mailProvider: "smtp", mailImapPort: Number(event.target.value) })}>
+                          <option value={993}>993</option>
+                          <option value={143}>143</option>
+                        </select>
+                      </label>
+                      <div className="mail-radio-row">
+                        {(["ssl", "tls", "none"] as const).map((mode) => (
+                          <label key={mode} className="mail-radio">
+                            <input disabled={!canManageFrontendSettings} type="radio" checked={mailImapEncryption === mode} onChange={() => updateSiteSettings({ mailProvider: "smtp", mailImapEncryption: mode })} />
+                            <span>{mode === "ssl" ? "SSL" : mode === "tls" ? "TLS" : "无"}</span>
+                          </label>
+                        ))}
+                        <Info size={15} />
+                      </div>
+                    </div> : null}
+                  </div>
+                  <div className="mail-account-section">
+                    <div className="mail-section-head">
+                      <span>03</span>
+                      <div>
+                        <h3>邮件内容</h3>
+                        <p>设置询盘回复时自动生成的主题、正文和测试收件人。</p>
+                      </div>
+                      <button className="mail-section-toggle" type="button" onClick={() => toggleMailSection("content")} aria-expanded={!collapsedMailSections.content}>
+                        {collapsedMailSections.content ? <ChevronRight size={16} /> : <ChevronDown size={16} />}
+                      </button>
+                    </div>
+                    {!collapsedMailSections.content ? <div className="mail-content-grid">
+                      <label>测试收件人
+                        <input disabled={!canManageFrontendSettings || mailProvider === "mailto"} placeholder={state.siteSettings.adminEmail} type="email" value={mailTestTo} onChange={(event) => setMailTestTo(event.target.value)} />
+                      </label>
+                      <label>默认主题
+                        <input disabled={!canManageFrontendSettings} value="Re: {productType} inquiry" readOnly />
+                      </label>
+                      <label className="mail-template-field">询盘回复模板
+                        <textarea
+                          disabled={!canManageFrontendSettings}
+                          rows={10}
+                          value={state.siteSettings.mailReplyTemplate || ""}
+                          onChange={(event) => updateSiteSettings({ mailProvider: "smtp", mailReplyTemplate: event.target.value })}
+                        />
+                        <small>可用变量：{"{name}"}、{"{company}"}、{"{productType}"}、{"{quantity}"}、{"{email}"}、{"{siteTitle}"}</small>
+                      </label>
+                      <div className="mail-template-preview">
+                        <strong>预览</strong>
+                        <pre>{(state.siteSettings.mailReplyTemplate || "").replaceAll("{name}", "Alex").replaceAll("{company}", "ABC Tools").replaceAll("{productType}", "carbide end mills").replaceAll("{quantity}", "500 pcs").replaceAll("{email}", "buyer@example.com").replaceAll("{siteTitle}", state.siteSettings.title || "KeyproTools")}</pre>
+                      </div>
+                      <div className="mail-account-actions">
+                        <button disabled={!canManageFrontendSettings || mailActionRunning} type="button" onClick={() => void save()}>保存设置</button>
+                        <button disabled={!canManageFrontendSettings || mailActionRunning} type="button" onClick={verifyMailConnectionAction}>检查连接</button>
+                        <button disabled={!canManageFrontendSettings || mailActionRunning || mailProvider === "mailto"} type="button" onClick={sendTestMail}>发送测试邮件</button>
+                      </div>
+                    </div> : null}
+                  </div>
                 </div>
               </section>
             </>

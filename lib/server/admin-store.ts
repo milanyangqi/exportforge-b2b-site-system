@@ -100,9 +100,18 @@ const defaultSiteSettings: SiteSettings = {
   mailSmtpHost: "",
   mailSmtpPort: 465,
   mailSmtpSecure: true,
+  mailSmtpEncryption: "ssl",
+  mailSmtpAccountName: "",
+  mailSmtpUseDifferentAccountName: false,
   mailSmtpUser: "",
   mailSmtpPassword: "",
   mailSmtpPasswordConfigured: false,
+  mailReplyToDifferent: false,
+  mailImapEnabled: true,
+  mailImapHost: "",
+  mailImapPort: 993,
+  mailImapEncryption: "ssl",
+  mailImapCollectExternalReplies: false,
   mailApiProvider: "resend",
   mailApiBaseUrl: "https://api.resend.com/emails",
   mailApiKey: "",
@@ -333,6 +342,11 @@ function normalizeSiteSettings(settings?: Partial<SiteSettings>): SiteSettings {
   const validLocale = isLocale(next.siteLanguage) ? next.siteLanguage : defaultSiteSettings.siteLanguage;
   const validMailProvider = next.mailProvider === "smtp" || next.mailProvider === "http" ? next.mailProvider : "mailto";
   const smtpPort = Number(next.mailSmtpPort ?? defaultSiteSettings.mailSmtpPort);
+  const imapPort = Number(next.mailImapPort ?? defaultSiteSettings.mailImapPort);
+  const validSmtpEncryption = next.mailSmtpEncryption === "tls" || next.mailSmtpEncryption === "none" || next.mailSmtpSecure === false
+    ? (next.mailSmtpEncryption === "tls" ? "tls" : next.mailSmtpEncryption === "none" || next.mailSmtpSecure === false ? "none" : "ssl")
+    : "ssl";
+  const validImapEncryption = next.mailImapEncryption === "tls" || next.mailImapEncryption === "none" ? next.mailImapEncryption : "ssl";
 
   return {
     ...next,
@@ -340,8 +354,11 @@ function normalizeSiteSettings(settings?: Partial<SiteSettings>): SiteSettings {
     mailProvider: validMailProvider,
     mailReplyToEmail: next.mailReplyToEmail || next.mailFromEmail || next.adminEmail,
     mailSmtpPort: Number.isFinite(smtpPort) && smtpPort > 0 ? Math.trunc(smtpPort) : defaultSiteSettings.mailSmtpPort,
-    mailSmtpSecure: typeof next.mailSmtpSecure === "boolean" ? next.mailSmtpSecure : defaultSiteSettings.mailSmtpSecure,
+    mailSmtpEncryption: validSmtpEncryption,
+    mailSmtpSecure: validSmtpEncryption === "ssl",
     mailSmtpPasswordConfigured: Boolean(next.mailSmtpPassword),
+    mailImapPort: Number.isFinite(imapPort) && imapPort > 0 ? Math.trunc(imapPort) : defaultSiteSettings.mailImapPort,
+    mailImapEncryption: validImapEncryption,
     mailApiKeyConfigured: Boolean(next.mailApiKey),
     postsPerPage: Number.isFinite(next.postsPerPage) && next.postsPerPage > 0 ? Math.trunc(next.postsPerPage) : defaultSiteSettings.postsPerPage,
     thumbnailWidth: Number.isFinite(next.thumbnailWidth) ? Math.max(0, Math.trunc(next.thumbnailWidth)) : defaultSiteSettings.thumbnailWidth,

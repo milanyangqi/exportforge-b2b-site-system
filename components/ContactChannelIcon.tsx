@@ -164,6 +164,7 @@ export function ContactChannelIcon({
 }) {
   if (channel.iconUrl) {
     return (
+      // eslint-disable-next-line @next/next/no-img-element
       <img
         alt=""
         aria-hidden="true"

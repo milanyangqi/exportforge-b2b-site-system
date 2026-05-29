@@ -273,9 +273,18 @@ export type SiteSettings = {
   mailSmtpHost?: string;
   mailSmtpPort?: number;
   mailSmtpSecure?: boolean;
+  mailSmtpEncryption?: "ssl" | "tls" | "none";
+  mailSmtpAccountName?: string;
+  mailSmtpUseDifferentAccountName?: boolean;
   mailSmtpUser?: string;
   mailSmtpPassword?: string;
   mailSmtpPasswordConfigured?: boolean;
+  mailReplyToDifferent?: boolean;
+  mailImapEnabled?: boolean;
+  mailImapHost?: string;
+  mailImapPort?: number;
+  mailImapEncryption?: "ssl" | "tls" | "none";
+  mailImapCollectExternalReplies?: boolean;
   mailApiProvider?: string;
   mailApiBaseUrl?: string;
   mailApiKey?: string;

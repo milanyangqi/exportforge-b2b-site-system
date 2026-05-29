@@ -915,16 +915,17 @@ textarea:disabled {
 }
 
 .taxonomy-table {
-  overflow-x: auto;
+  overflow-x: hidden;
 }
 
 .wp-taxonomy-row {
   position: relative;
   display: grid;
-  grid-template-columns: 42px minmax(150px, 1.1fr) minmax(220px, 1.4fr) minmax(130px, 0.8fr) minmax(120px, 0.8fr) 70px;
-  gap: 12px;
+  grid-template-columns: 34px minmax(120px, 1fr) minmax(180px, 1.5fr) minmax(100px, 0.7fr) minmax(70px, 0.55fr) 44px;
+  gap: 10px;
   align-items: center;
-  min-width: 780px;
+  width: 100%;
+  min-width: 0;
   min-height: 58px;
   border-top: 1px solid color-mix(in srgb, var(--line), white 40%);
   padding: 10px 12px;
@@ -1180,7 +1181,12 @@ textarea:disabled {
 }
 
 .taxonomy-description-expanded {
-  grid-column: 3 / -1;
+  grid-column: 1 / -1;
+  box-sizing: border-box;
+  justify-self: stretch;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
   border: 1px solid color-mix(in srgb, var(--line), white 20%);
   border-radius: 6px;
   padding: 10px 12px;
@@ -1188,7 +1194,16 @@ textarea:disabled {
   background: color-mix(in srgb, var(--primary), white 97%);
   font-size: 13px;
   line-height: 1.7;
+  text-align: left;
+  white-space: normal;
   overflow-wrap: anywhere;
+  word-break: break-word;
+  cursor: text;
+}
+
+.taxonomy-description-expanded:hover {
+  color: var(--ink);
+  border-color: color-mix(in srgb, var(--primary), white 62%);
 }
 
 .wp-taxonomy-row small,
