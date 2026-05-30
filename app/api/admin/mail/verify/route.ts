@@ -5,7 +5,7 @@ import { verifyMailConnection } from "@/lib/server/mail";
 import type { RoleKey } from "@/types/site";
 
 function canUseMail(role: RoleKey | undefined, allowedTabs?: string[]) {
-  return role === "super-admin" || role === "admin" || role === "sales" || Boolean(allowedTabs?.includes("mail"));
+  return role === "super-admin" || role === "admin" || Boolean(allowedTabs?.includes("mail"));
 }
 
 export async function POST() {

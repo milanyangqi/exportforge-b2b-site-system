@@ -266,7 +266,7 @@ const defaultAllowedTabsByRole: Record<RoleKey, Tab[]> = {
   "super-admin": adminPageAccessOptions.map((item) => item.key),
   admin: ["overview", "products", "pages", "articles", "files", "leads", "mail", "contacts", "navigation", "collect", "templates", "settings", "languages", "themes", "ai"],
   editor: ["overview", "products", "pages", "articles", "files", "collect", "ai"],
-  sales: ["overview", "products", "leads", "mail", "contacts"],
+  sales: ["overview", "products", "leads", "contacts"],
   viewer: ["overview", "products", "articles", "files"]
 };
 
@@ -1462,6 +1462,12 @@ function getAllowedSettingsSectionsForUser(user?: AdminUser, rolePermissions?: A
   return roleConfig.settingsSections.length > 0 ? roleConfig.settingsSections : [];
 }
 
+function canAccessMailFeature(user?: AdminUser, rolePermissions?: AdminState["rolePermissions"]) {
+  if (!user) return false;
+  if (user.role === "super-admin" || user.role === "admin") return true;
+  return getAllowedTabsForUser(user, rolePermissions).includes("mail");
+}
+
 export function AdminApp({ email, initialTab, locale }: { email: string; initialTab?: string; locale: LocaleCode }) {
   const [tab, setTab] = useState<Tab>(normalizeInitialTab(initialTab));
   const [state, setState] = useState<AdminState | null>(null);
@@ -1595,6 +1601,21 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
       setSettingsSection(allowedSections[0] as SettingsSection);
     }
   }, [currentUserId, email, state, tab, settingsSection]);
+
+  useEffect(() => {
+    if (!state || tab === "account") return;
+    const effectCurrentUser = state.users.find((user) => user.id === currentUserId)
+      ?? state.users.find((user) => user.email.toLowerCase() === email.toLowerCase())
+      ?? state.users[0];
+    const allowedTabs = getAllowedTabsForUser(effectCurrentUser, state.rolePermissions);
+    if (allowedTabs.includes(tab)) return;
+
+    if (tab === "mail") {
+      setStatus("该项目为定制功能，请联系开发者开通。");
+    }
+    const fallbackTab = (allowedTabs[0] ?? "overview") as Tab;
+    switchAdminTab(fallbackTab);
+  }, [currentUserId, email, state, tab]);
 
   useEffect(() => {
     if (!aiTestStatus || aiTestStatus.includes("正在测试")) return;
@@ -2082,6 +2103,11 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
   }
 
   function openLeadMailDraft(lead: AdminState["leads"][number]) {
+    if (!canAccessMailFeature(getCurrentUser(), state?.rolePermissions)) {
+      setStatus("该项目为定制功能，请联系开发者开通。");
+      return;
+    }
+
     const draft = buildLeadReplyDraft(lead);
     setMailDraftLeadId(lead.id);
     setMailDraftEdit({
@@ -4859,6 +4885,7 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
   const visibleSidebarTabs = tabs.filter((item) => allowedTabsForCurrentUser.has(item.key));
   const canManageFrontendSettings = canManageFrontendState();
   const canImportArticles = getRolePermissions(currentUser?.role ?? "viewer", state.rolePermissions).articleImportEnabled;
+  const canUseMailFeature = canAccessMailFeature(currentUser, state.rolePermissions);
   const selectedMailLead = state.leads.find((lead) => lead.id === mailDraftLeadId) ?? null;
   const selectedMailDraft = selectedMailLead
     ? mailDraftEdit?.leadId === selectedMailLead.id
@@ -7265,7 +7292,7 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
                         {leadStatuses.map((statusOption) => <option key={statusOption} value={statusOption}>{leadStatusLabels[statusOption]}</option>)}
                       </select>
                       <button type="button" onClick={() => copyTextToClipboard(formatLeadForCopy(lead), "整条询盘已复制")}><Copy size={14} />复制</button>
-                      {lead.email ? <button type="button" onClick={() => openLeadMailDraft(lead)}><Mail size={14} />发邮件</button> : null}
+                      {lead.email ? <button type="button" title={canUseMailFeature ? "发邮件" : "该项目为定制功能，请联系开发者开通。"} onClick={() => openLeadMailDraft(lead)}><Mail size={14} />发邮件</button> : null}
                     </div>
                     {lead.message ? <p className="lead-message">{lead.message}</p> : null}
                   </article>

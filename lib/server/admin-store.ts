@@ -47,7 +47,7 @@ const defaultRolePermissions: Record<RoleKey, AdminRolePermissions> = {
     articleImportEnabled: false
   },
   sales: {
-    allowedTabs: ["overview", "products", "leads", "mail", "contacts"],
+    allowedTabs: ["overview", "products", "leads", "contacts"],
     settingsSections: [],
     articleImportEnabled: false
   },
@@ -454,15 +454,19 @@ function normalizeRolePermissions(rolePermissions?: AdminState["rolePermissions"
   return (Object.keys(defaultRolePermissions) as RoleKey[]).reduce<Partial<Record<RoleKey, AdminRolePermissions>>>((permissions, role) => {
     const fallback = defaultRolePermissions[role];
     const current = rolePermissions?.[role];
+    const legacySalesDefaultTabs = ["overview", "products", "leads", "mail", "contacts"];
     const allowedTabs = Array.isArray(current?.allowedTabs)
       ? current.allowedTabs.filter((item) => adminTabKeys.has(item))
       : fallback.allowedTabs;
+    const normalizedAllowedTabs = role === "sales" && JSON.stringify(allowedTabs) === JSON.stringify(legacySalesDefaultTabs)
+      ? fallback.allowedTabs
+      : allowedTabs;
     const settingsSections = Array.isArray(current?.settingsSections)
       ? current.settingsSections.filter((item) => settingsSectionKeys.has(item))
       : fallback.settingsSections ?? [];
 
     permissions[role] = {
-      allowedTabs: allowedTabs.length > 0 ? allowedTabs : ["overview"],
+      allowedTabs: normalizedAllowedTabs.length > 0 ? normalizedAllowedTabs : ["overview"],
       settingsSections,
       articleImportEnabled: typeof current?.articleImportEnabled === "boolean"
         ? current.articleImportEnabled
