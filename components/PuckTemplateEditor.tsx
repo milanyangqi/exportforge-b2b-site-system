@@ -680,9 +680,9 @@ function dataWithFooterDraftProps(data: VisualPageLayoutData | undefined, state:
       ...cloned.root,
       props: {
         ...rootProps,
-        footerTagline: localizedTemplateText(state.templateSettings.footerTagline, locale, "Carbide end mills, drill bits, OEM tooling, and export-ready packing for global buyers."),
+        footerTagline: localizedTemplateText(state.templateSettings.footerTagline, locale, "Custom tin box packaging, printing, inspection, and export-ready packing for global buyers."),
         footerCopyright: localizedTemplateText(state.templateSettings.footerCopyright, locale, "Copyright © {year} {brand}. All rights reserved."),
-        footerCredit: localizedTemplateText(state.templateSettings.footerCredit, locale, "Built for precision tooling and B2B export orders.")
+        footerCredit: localizedTemplateText(state.templateSettings.footerCredit, locale, "Built for custom tin packaging and B2B export orders.")
       } as VisualPageLayoutData["root"]["props"]
     }
   };
@@ -707,14 +707,14 @@ function customSectionDefaultProps(moduleType: CustomSectionModuleType = "media"
     eyebrow: "Custom section",
     title: moduleLabel,
     body: "在右侧属性面板编辑标题、正文、图片、视频、按钮和布局。",
-    mediaLibraryUrl: "/assets/current-template/hero-tooling-range.jpg",
-    mediaUrl: "/assets/current-template/hero-tooling-range.jpg",
+    mediaLibraryUrl: "/assets/current-template/hero-tin-packaging.jpg",
+    mediaUrl: "/assets/current-template/hero-tin-packaging.jpg",
     imageMode: moduleType === "text" || moduleType === "cta" ? "none" : "single",
     imageItems: [
       {
-        source: "/assets/current-template/hero-tooling-range.jpg",
+        source: "/assets/current-template/hero-tin-packaging.jpg",
         url: "",
-        alt: "KeyproTools tooling image",
+        alt: "Xiyida Packaging tin box image",
         caption: "",
         linkHref: ""
       }
@@ -736,7 +736,7 @@ function customSectionDefaultProps(moduleType: CustomSectionModuleType = "media"
     containerItems: [
       { elementType: defaultElementType, title: "产品入口", body: "用于放置产品、服务或卖点说明。", href: "/products", buttonLabel: "查看产品", imageUrl: "" },
       { elementType: defaultElementType, title: "技术资料", body: "用于放置文章、下载资料或参数说明。", href: "/articles", buttonLabel: "阅读资料", imageUrl: "" },
-      { elementType: defaultElementType, title: "询盘转化", body: "用于放置报价、联系或行动按钮。", href: "#rfq", buttonLabel: "获取报价", imageUrl: "" }
+      { elementType: defaultElementType, title: "询盘转化", body: "用于放置询盘、联系或行动按钮。", href: "#rfq", buttonLabel: "发送询盘", imageUrl: "" }
     ],
     showSummary: true,
     layout: moduleType === "text" || moduleType === "cta" || moduleType === "container" ? "stacked" : "media-left",
@@ -2603,7 +2603,7 @@ function createConfig(
         fields: {
           ctaLabel: field("text", "按钮文字")
         },
-        defaultProps: { ctaLabel: "获取报价" },
+        defaultProps: { ctaLabel: "发送询盘" },
         render: render("HomeNavigation")
       },
       HeroSection: {
@@ -2654,8 +2654,8 @@ function createConfig(
           metric3Label: field("text", "指标 3 说明")
         },
         defaultProps: {
-          eyebrow: "CNC cutting tools",
-          title: "Carbide end mills and drill bits ready for distributor programs.",
+          eyebrow: "Custom tin packaging",
+          title: "Custom tin box packaging for food, gifts, beauty, and lifestyle brands.",
           body: "Edit this hero directly in Puck.",
           backgroundMode: "single",
           mediaLibraryUrl: "",
@@ -2919,7 +2919,7 @@ function createConfig(
             { label: "宽松", value: "large" }
           ])
         },
-        defaultProps: { eyebrow: "RFQ", title: "Ready to quote?", body: "", buttonLabel: "Contact us", href: "#rfq", buttonStyle: "primary", secondaryLabel: "", secondaryHref: "/contact", secondaryButtonStyle: "secondary", mediaLibraryUrl: "", imageUrl: "", align: "split", tone: "dark", spacing: "normal" },
+        defaultProps: { eyebrow: "RFQ", title: "Ready to send an RFQ?", body: "", buttonLabel: "Contact us", href: "#rfq", buttonStyle: "primary", secondaryLabel: "", secondaryHref: "/contact", secondaryButtonStyle: "secondary", mediaLibraryUrl: "", imageUrl: "", align: "split", tone: "dark", spacing: "normal" },
         render: render("CtaSection")
       },
       ProductList: {
@@ -2992,7 +2992,7 @@ function createConfig(
           title: "Factory capability",
           body: "",
           cards: [],
-          card1Title: "OEM tooling",
+          card1Title: "Custom tin boxes",
           card1Body: "",
           card2Title: "Coating",
           card2Body: "",
@@ -3113,7 +3113,7 @@ function createConfig(
             { label: "深色", value: "dark" }
           ])
         },
-        defaultProps: { eyebrow: "RFQ", title: "Tell us what to quote.", body: "", guidanceTitle: "", guidanceItems: [], tone: "light" },
+        defaultProps: { eyebrow: "RFQ", title: "Tell us what to review.", body: "", guidanceTitle: "", guidanceItems: [], tone: "light" },
         render: render("RfqSection")
       },
       ContactChannels: {
@@ -3146,13 +3146,13 @@ function createConfig(
       ContainerImageElement: {
         label: "容器图片",
         fields: containerImageFields(imageMediaItems),
-        defaultProps: { imageUrl: "/assets/current-template/hero-tooling-range.jpg", externalImageUrl: "", imageItems: [], displayMode: "single", transitionEffect: "fade", intervalSeconds: 5, overlay: "none", hoverEffect: "none", captionPlacement: "below", alt: "Container image", caption: "", href: "", openInNewTab: false, imageRatio: "wide", imageFit: "cover", align: "left", verticalAlign: "start", padding: "normal", minHeight: "auto", background: "transparent", customBackground: "", textColor: "", accentColor: "", borderStyle: "line", radius: "medium", shadow: "none", isHidden: false, adminLabel: "" },
+        defaultProps: { imageUrl: "/assets/current-template/hero-tin-packaging.jpg", externalImageUrl: "", imageItems: [], displayMode: "single", transitionEffect: "fade", intervalSeconds: 5, overlay: "none", hoverEffect: "none", captionPlacement: "below", alt: "Container image", caption: "", href: "", openInNewTab: false, imageRatio: "wide", imageFit: "cover", align: "left", verticalAlign: "start", padding: "normal", minHeight: "auto", background: "transparent", customBackground: "", textColor: "", accentColor: "", borderStyle: "line", radius: "medium", shadow: "none", isHidden: false, adminLabel: "" },
         render: render("ContainerImageElement")
       },
       ContainerImageTextElement: {
         label: "容器图文",
         fields: containerImageTextFields(imageMediaItems),
-        defaultProps: { imageUrl: "/assets/current-template/hero-tooling-range.jpg", externalImageUrl: "", imageItems: [], displayMode: "single", transitionEffect: "fade", intervalSeconds: 5, overlay: "none", hoverEffect: "none", captionPlacement: "below", imagePlacement: "top", imageRatio: "wide", imageFit: "cover", eyebrow: "", title: "图文内容", body: "选择这个元素后，可在右侧修改图片、标题、正文和链接。", textSize: "normal", href: "", openInNewTab: false, buttonLabel: "", buttonStyle: "text", align: "left", verticalAlign: "start", padding: "normal", minHeight: "auto", background: "transparent", customBackground: "", textColor: "", accentColor: "", borderStyle: "line", radius: "medium", shadow: "none", isHidden: false, adminLabel: "" },
+        defaultProps: { imageUrl: "/assets/current-template/hero-tin-packaging.jpg", externalImageUrl: "", imageItems: [], displayMode: "single", transitionEffect: "fade", intervalSeconds: 5, overlay: "none", hoverEffect: "none", captionPlacement: "below", imagePlacement: "top", imageRatio: "wide", imageFit: "cover", eyebrow: "", title: "图文内容", body: "选择这个元素后，可在右侧修改图片、标题、正文和链接。", textSize: "normal", href: "", openInNewTab: false, buttonLabel: "", buttonStyle: "text", align: "left", verticalAlign: "start", padding: "normal", minHeight: "auto", background: "transparent", customBackground: "", textColor: "", accentColor: "", borderStyle: "line", radius: "medium", shadow: "none", isHidden: false, adminLabel: "" },
         render: render("ContainerImageTextElement")
       },
       ContainerVideoElement: {

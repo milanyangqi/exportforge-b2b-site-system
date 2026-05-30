@@ -17,12 +17,12 @@ export function ActiveTemplate({ locale, state }: { locale: LocaleCode; state: A
     .filter((article) => article.status === "published" && article.featuredOnHome)
     .slice(0, templateSettings.homeArticleCount);
   const homeProductSlugs = [
-    "carbide-end-mills",
-    "drill-bits",
-    "custom-tooling",
-    "square-end-mills",
-    "solid-carbide-drills",
-    "coating-oem-packaging"
+    "food-tin-packaging",
+    "gift-tin-packaging",
+    "cosmetic-tin-packaging",
+    "tea-coffee-tins",
+    "candle-tins",
+    "custom-tin-box-manufacturing"
   ];
   const preferredHomeProducts = homeProductSlugs
     .map((slug) => state.products.find((product) => product.slug === slug))
@@ -95,7 +95,7 @@ export function ActiveTemplate({ locale, state }: { locale: LocaleCode; state: A
       order: templateSettings.sectionOrder.navigation,
       node: (
         <HomeNavigationShell
-          brandName={state.siteSettings.title || "KeyproTools"}
+          brandName={state.siteSettings.title || "Xiyida Packaging"}
           ctaLabel={t(templateSettings.primaryCtaLabel, locale) || t(ui.quote, locale)}
           enabledLocales={state.enabledLocales}
           locale={locale}
@@ -127,9 +127,9 @@ export function ActiveTemplate({ locale, state }: { locale: LocaleCode; state: A
               </div>
               {templateSettings.showHeroMetrics ? (
                 <div className="metrics">
-                  <div><strong>{templateText("heroMetric1Value", "0.2-25mm")}</strong><span>{templateText("heroMetric1Label", "End mill diameter range")}</span></div>
-                  <div><strong>{templateText("heroMetric2Value", "HSS / M35 / Carbide")}</strong><span>{templateText("heroMetric2Label", "Drill bit supply")}</span></div>
-                  <div><strong>{templateText("heroMetric3Value", "OEM")}</strong><span>{templateText("heroMetric3Label", "Laser marking and packing")}</span></div>
+                  <div><strong>{templateText("heroMetric1Value", "Food-safe")}</strong><span>{templateText("heroMetric1Label", "Tinplate packaging options")}</span></div>
+                  <div><strong>{templateText("heroMetric2Value", "Custom print")}</strong><span>{templateText("heroMetric2Label", "Shape, color, and finish support")}</span></div>
+                  <div><strong>{templateText("heroMetric3Value", "Export ready")}</strong><span>{templateText("heroMetric3Label", "Carton packing and shipment documents")}</span></div>
                 </div>
               ) : null}
             </div>
@@ -144,9 +144,9 @@ export function ActiveTemplate({ locale, state }: { locale: LocaleCode; state: A
       node: (
         <section className="section">
           <div className="section-head">
-            <span className="eyebrow">{templateText("productsEyebrow", "Cutting tool catalog")}</span>
-            <h2>{templateText("productsTitle", "End mills, drill bits, and OEM tooling built for repeat purchasing.")}</h2>
-            <p>{templateText("productsBody", "Browse core categories for CNC shops, hardware distributors, maintenance suppliers, and private-label tool programs.")}</p>
+            <span className="eyebrow">{templateText("productsEyebrow", "Tin packaging applications")}</span>
+            <h2>{templateText("productsTitle", "Custom metal tins for food, gifts, cosmetics, tea, coffee, and candles.")}</h2>
+            <p>{templateText("productsBody", "Browse application-focused packaging categories for importers, brand owners, distributors, and promotional packaging programs.")}</p>
           </div>
           <ProductGrid flat locale={locale} products={homeProducts} />
         </section>
@@ -158,14 +158,14 @@ export function ActiveTemplate({ locale, state }: { locale: LocaleCode; state: A
       node: (
         <section className="section dark-band">
           <div className="section-head">
-            <span className="eyebrow">{templateText("factoryEyebrow", "Factory support")}</span>
-            <h2>{templateText("factoryTitle", "Geometry, coating, inspection, and packing are aligned before every export order.")}</h2>
+            <span className="eyebrow">{templateText("factoryEyebrow", "Factory capability")}</span>
+            <h2>{templateText("factoryTitle", "Tinplate forming, printing, inspection, and export packing are aligned before shipment.")}</h2>
           </div>
           <div className="theme-grid">
             {[
-              [templateText("factoryCard1Title", "Tool geometry"), templateText("factoryCard1Body", "Square, ball nose, corner radius, long-neck, micro, step, and coolant-through options.")],
-              [templateText("factoryCard2Title", "Coating choice"), templateText("factoryCard2Body", "AlTiN, TiSiN, DLC, bright finish, and buyer-specific series positioning.")],
-              [templateText("factoryCard3Title", "Export packing"), templateText("factoryCard3Body", "Plastic tubes, foam trays, barcode labels, carton marks, and distributor-ready assortments.")]
+              [templateText("factoryCard1Title", "Mold and forming"), templateText("factoryCard1Body", "Round, rectangular, square, hinged, window, embossed, and shaped tin box structures.")],
+              [templateText("factoryCard2Title", "Printing and finish"), templateText("factoryCard2Body", "Offset printing, matte or glossy varnish, embossing, debossing, and brand color matching.")],
+              [templateText("factoryCard3Title", "Export packing"), templateText("factoryCard3Body", "Protective sleeves, inner cartons, master cartons, pallet plans, and buyer-ready documentation.")]
             ].map(([title, body], index) => (
               <article key={title} className={index === 0 ? "theme-card active" : "theme-card"}>
                 <span style={{ background: index === 0 ? activeTheme.colors.accent : activeTheme.colors.primary }} />
@@ -184,9 +184,9 @@ export function ActiveTemplate({ locale, state }: { locale: LocaleCode; state: A
         <section className="section split">
           <div>
             <span className="eyebrow">{templateText("marketsEyebrow", "Export markets")}</span>
-            <h2>{templateText("marketsTitle", "Buyer-ready communication for distributors across major tooling markets.")}</h2>
+            <h2>{templateText("marketsTitle", "Buyer-ready communication for brands sourcing custom tin packaging.")}</h2>
             <p>
-              {templateText("marketsBody", "KeyproTools supports multilingual product pages, quick RFQ details, and export documentation for buyers comparing end mills, drill bits, and OEM assortments.")}
+              {templateText("marketsBody", "Xiyida Packaging supports multilingual product pages, quick RFQ details, and export documentation for buyers comparing food tins, gift tins, cosmetic tins, and custom metal boxes.")}
             </p>
             <div className="language-strip">
               {visibleLocales.map((item) => (
@@ -197,9 +197,9 @@ export function ActiveTemplate({ locale, state }: { locale: LocaleCode; state: A
           <div className="workflow-panel">
             <h3>{templateText("marketsChecklistTitle", "RFQ checklist")}</h3>
             <ol>
-              <li>{templateText("marketsChecklist1", "Tool type, diameter, flute length, overall length, and shank.")}</li>
-              <li>{templateText("marketsChecklist2", "Workpiece material, hardness, coating, and cutting condition.")}</li>
-              <li>{templateText("marketsChecklist3", "Quantity, packaging, laser marking, destination, and delivery target.")}</li>
+              <li>{templateText("marketsChecklist1", "Tin shape, size, lid style, insert needs, and intended product use.")}</li>
+              <li>{templateText("marketsChecklist2", "Artwork status, printing colors, finish, embossing, and sample expectations.")}</li>
+              <li>{templateText("marketsChecklist3", "Quantity target, packing method, destination, and delivery schedule.")}</li>
             </ol>
             <p>{templateText("marketsNote", siteSettings.aiDraftPolicy)}</p>
           </div>
@@ -212,8 +212,8 @@ export function ActiveTemplate({ locale, state }: { locale: LocaleCode; state: A
       node: (
         <section className="section">
           <div className="section-head">
-            <span className="eyebrow">{templateText("articlesEyebrow", "Technical articles")}</span>
-            <h2>{templateText("articlesTitle", "Selection guides for buyers comparing tool geometry, coating, and packaging.")}</h2>
+            <span className="eyebrow">{templateText("articlesEyebrow", "Packaging knowledge")}</span>
+            <h2>{templateText("articlesTitle", "Buyer guides for tin structures, printing finishes, samples, and export packing.")}</h2>
           </div>
           <div className="article-grid">
             {homeArticles.map((article) => (
@@ -240,18 +240,18 @@ export function ActiveTemplate({ locale, state }: { locale: LocaleCode; state: A
       node: (
         <section className="section rfq-section" id="rfq">
           <div className="rfq-copy">
-            <span className="eyebrow">{templateText("rfqEyebrow", "Request a quote")}</span>
-            <h2>{templateText("rfqTitle", "Share your tool list and export requirements.")}</h2>
-            <p>{templateText("rfqBody", "Send product type, size range, quantity, coating, destination, and packing needs. The sales team will turn it into a clear quotation.")}</p>
+            <span className="eyebrow">{templateText("rfqEyebrow", "Send RFQ")}</span>
+            <h2>{templateText("rfqTitle", "Share your tin box project and export requirements.")}</h2>
+            <p>{templateText("rfqBody", "Send tin style, size, artwork status, quantity target, destination, and packing needs. The sales team will review the details and respond with a clear project proposal.")}</p>
             <div className="rfq-guidance">
               <strong>{templateText("rfqGuidanceTitle", "For a faster reply, include:")}</strong>
               <ul>
-                <li>{templateText("rfqGuidance1", "Tool diameter, flute length, shank size, and tolerance.")}</li>
-                <li>{templateText("rfqGuidance2", "Workpiece material, coating preference, and application details.")}</li>
-                <li>{templateText("rfqGuidance3", "Packaging, private label, target quantity, and delivery market.")}</li>
+                <li>{templateText("rfqGuidance1", "Tin shape, dimensions, lid structure, and insert requirements.")}</li>
+                <li>{templateText("rfqGuidance2", "Artwork files, printing method, finish, embossing, and color expectations.")}</li>
+                <li>{templateText("rfqGuidance3", "Quantity target, inner packing, master carton, destination, and delivery timeline.")}</li>
               </ul>
             </div>
-            <p className="rfq-response-note">{templateText("rfqNote", "KeyproTools usually reviews RFQ details by product family so the quotation can match stock, OEM marking, and export packing requirements.")}</p>
+            <p className="rfq-response-note">{templateText("rfqNote", "Xiyida Packaging reviews each inquiry by application, structure, artwork, and packing needs so the response matches the intended retail or promotional use.")}</p>
           </div>
           <RfqForm locale={locale} />
         </section>

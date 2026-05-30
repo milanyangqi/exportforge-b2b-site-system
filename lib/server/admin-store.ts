@@ -27,7 +27,7 @@ type CloudflareContext = {
 
 const stateKey = "admin-state";
 const uploadKeyPrefix = "upload:";
-const currentTemplateContentVersion = "current-template-keyprotools-v1";
+const currentTemplateContentVersion = "current-template-xiyida-v1";
 const adminTabKeys = new Set(["overview", "products", "pages", "articles", "files", "leads", "mail", "contacts", "navigation", "users", "collect", "templates", "settings", "languages", "themes", "ai"]);
 const settingsSectionKeys = new Set(["general", "writing", "reading", "seo", "media", "permalinks", "privacy", "ai", "translation", "backup"]);
 const defaultRolePermissions: Record<RoleKey, AdminRolePermissions> = {
@@ -63,23 +63,23 @@ const homeTemplateKeys = new Set<HomeTemplateKey>(["industrial-showcase", "catal
 const homeSectionKeys: HomeSectionKey[] = ["navigation", "hero", "products", "factory", "markets", "articles", "rfq"];
 const defaultHeroSlides: SiteHeroSlide[] = [
   {
-    id: "hero-tooling-range",
-    imageUrl: "/assets/current-template/hero-tooling-range.jpg",
-    alt: { en: "Carbide end mills and drill bits hero poster", zh: "硬质合金铣刀与钻头首页海报" },
+    id: "hero-tin-packaging",
+    imageUrl: "/assets/current-template/hero-tin-packaging.jpg",
+    alt: { en: "Custom tin box packaging hero poster", zh: "定制铁盒包装首页海报" },
     enabled: true,
     order: 10
   },
   {
-    id: "hero-cnc-factory",
-    imageUrl: "/assets/current-template/hero-cnc-factory.jpg",
-    alt: { en: "CNC factory tooling production hero poster", zh: "CNC 工厂刀具生产首页海报" },
+    id: "hero-factory-qc",
+    imageUrl: "/assets/current-template/factory-qc.jpg",
+    alt: { en: "Tin box production and quality inspection hero poster", zh: "铁盒生产与质量检查首页海报" },
     enabled: true,
     order: 20
   },
   {
-    id: "hero-export-packing",
-    imageUrl: "/assets/current-template/hero-export-packing.jpg",
-    alt: { en: "Export packing and OEM tooling hero poster", zh: "出口包装与 OEM 刀具首页海报" },
+    id: "hero-tin-category-range",
+    imageUrl: "/assets/current-template/tin-category-range.jpg",
+    alt: { en: "Food gift cosmetic tea coffee and candle tin packaging hero poster", zh: "食品礼品化妆品茶叶咖啡与蜡烛铁盒首页海报" },
     enabled: true,
     order: 30
   }
@@ -87,7 +87,7 @@ const defaultHeroSlides: SiteHeroSlide[] = [
 
 const defaultSiteSettings: SiteSettings = {
   title: siteSettings.brand,
-  tagline: "Carbide end mills, drill bits, OEM tooling, and export-ready packing.",
+  tagline: "Custom tin box packaging, printing, inspection, and export-ready packing.",
   contentVersion: currentTemplateContentVersion,
   siteIconUrl: "",
   fontFamily: "\"Manrope\", \"PingFang SC\", \"Microsoft YaHei\", sans-serif",
@@ -116,7 +116,7 @@ const defaultSiteSettings: SiteSettings = {
   mailApiBaseUrl: "https://api.resend.com/emails",
   mailApiKey: "",
   mailApiKeyConfigured: false,
-  mailReplyTemplate: "Hello {name},\n\nThank you for your RFQ about {productType}. We have received your inquiry and will follow up with tooling details, quotation, and lead time soon.\n\nBest regards,\n{siteTitle}",
+  mailReplyTemplate: "Hello {name},\n\nThank you for your RFQ about {productType}. We have received your inquiry and will follow up with structure, artwork, packing, and lead time details soon.\n\nBest regards,\n{siteTitle}",
   allowRegistration: false,
   defaultUserRole: "viewer",
   siteLanguage: "zh",
@@ -140,57 +140,57 @@ const defaultSiteSettings: SiteSettings = {
   fileUrlBase: "files",
   privacyPageUrl: "/privacy",
   cookieNoticeEnabled: false,
-  privacySummary: "We use submitted RFQ details only for tooling quotation, sales follow-up, and service improvement."
+  privacySummary: "We use submitted RFQ details only for packaging project review, sales follow-up, and service improvement."
 };
 
 const defaultTemplateTextBlocks: Record<string, Translation> = {
-  productsEyebrow: { en: "Product catalog", zh: "PRODUCT CATALOG" },
-  productsTitle: { en: "End mills, drill bits, and OEM tooling built for repeat purchasing.", zh: "硬质合金刀具目录" },
+  productsEyebrow: { en: "Tin packaging applications", zh: "铁盒包装应用" },
+  productsTitle: { en: "Custom metal tins for food, gifts, cosmetics, tea, coffee, and candles.", zh: "面向食品、礼品、化妆品、茶叶咖啡和蜡烛的定制铁盒。" },
   productsBody: {
-    en: "Browse core categories for CNC shops, hardware distributors, maintenance suppliers, and private-label tool programs.",
-    zh: "覆盖经销商备货、工厂加工与定制刀具需求。"
+    en: "Browse application-focused packaging categories for importers, brand owners, distributors, and promotional packaging programs.",
+    zh: "按应用场景浏览铁盒包装类别，适合进口商、品牌方、经销商和促销包装项目。"
   },
   factoryEyebrow: { en: "Factory capability", zh: "工厂能力" },
-  factoryTitle: { en: "Geometry, coating, inspection, and packing are aligned before every export order.", zh: "从几何、涂层到包装的供应能力" },
-  factoryCard1Title: { en: "Tool geometry", zh: "OEM 图纸定制" },
-  factoryCard1Body: { en: "Square, ball nose, corner radius, long-neck, micro, step, and coolant-through options.", zh: "适合经销商长期备货、样品确认与批量订单。" },
-  factoryCard2Title: { en: "Coating choice", zh: "涂层与刃口处理" },
-  factoryCard2Body: { en: "AlTiN, TiSiN, DLC, bright finish, and buyer-specific series positioning.", zh: "适合经销商长期备货、样品确认与批量订单。" },
+  factoryTitle: { en: "Tinplate forming, printing, inspection, and export packing are aligned before shipment.", zh: "从马口铁成型、印刷、质检到出口包装的完整供应能力。" },
+  factoryCard1Title: { en: "Mold and forming", zh: "模具与成型" },
+  factoryCard1Body: { en: "Round, rectangular, square, hinged, window, embossed, and shaped tin box structures.", zh: "支持圆形、方形、长方形、铰链、开窗、压凸和异形铁盒结构。" },
+  factoryCard2Title: { en: "Printing and finish", zh: "印刷与表面处理" },
+  factoryCard2Body: { en: "Offset printing, matte or glossy varnish, embossing, debossing, and brand color matching.", zh: "支持胶印、哑光、亮光、压凸、压凹和品牌色匹配。" },
   factoryCard3Title: { en: "Export packing", zh: "私标包装交付" },
-  factoryCard3Body: { en: "Plastic tubes, foam trays, barcode labels, carton marks, and distributor-ready assortments.", zh: "适合经销商长期备货、样品确认与批量订单。" },
+  factoryCard3Body: { en: "Protective sleeves, inner cartons, master cartons, pallet plans, and buyer-ready documentation.", zh: "提供保护袋、内盒、外箱、托盘方案和买家所需出口文件。" },
   marketsEyebrow: { en: "Global supply", zh: "出口市场" },
-  marketsTitle: { en: "Buyer-ready communication for distributors across major tooling markets.", zh: "多语言市场与 RFQ 清单" },
+  marketsTitle: { en: "Buyer-ready communication for brands sourcing custom tin packaging.", zh: "面向定制铁盒买家的多语言沟通与 RFQ 清单。" },
   marketsBody: {
-    en: "KeyproTools supports multilingual product pages, quick RFQ details, and export documentation for buyers comparing end mills, drill bits, and OEM assortments.",
-    zh: "支持多语言产品页、快速 RFQ 信息和出口文件，适合铣刀、钻头与 OEM 组合采购。"
+    en: "Xiyida Packaging supports multilingual product pages, quick RFQ details, and export documentation for buyers comparing food tins, gift tins, cosmetic tins, and custom metal boxes.",
+    zh: "Xiyida Packaging 支持多语言产品页、快速 RFQ 信息和出口文件，方便买家比较食品铁盒、礼品铁盒、化妆品铁盒和定制金属盒。"
   },
   marketsChecklistTitle: { en: "RFQ checklist", zh: "RFQ 清单" },
-  marketsChecklist1: { en: "Tool type, diameter, flute length, overall length, and shank.", zh: "刀具类型、直径、刃长、总长和柄径。" },
-  marketsChecklist2: { en: "Workpiece material, hardness, coating, and cutting condition.", zh: "工件材料、硬度、涂层和切削条件。" },
-  marketsChecklist3: { en: "Quantity, packaging, laser marking, destination, and delivery target.", zh: "数量、包装、激光打标、目的地和交付目标。" },
+  marketsChecklist1: { en: "Tin shape, size, lid style, insert needs, and intended product use.", zh: "铁盒形状、尺寸、盖型、内托需求和用途。" },
+  marketsChecklist2: { en: "Artwork status, printing colors, finish, embossing, and sample expectations.", zh: "设计稿状态、印刷色数、表面处理、压凸压凹和样品预期。" },
+  marketsChecklist3: { en: "Quantity target, packing method, destination, and delivery schedule.", zh: "数量目标、包装方式、目的地和交付计划。" },
   marketsNote: { en: siteSettings.aiDraftPolicy, zh: siteSettings.aiDraftPolicy },
-  articlesEyebrow: { en: "Technical articles", zh: "技术文章" },
-  articlesTitle: { en: "Selection guides for buyers comparing tool geometry, coating, and packaging.", zh: "技术文章" },
-  rfqEyebrow: { en: "Request a quote", zh: "询盘表单" },
-  rfqTitle: { en: "Share your tool list and export requirements.", zh: "把刀具清单发给 KeyproTools" },
+  articlesEyebrow: { en: "Packaging knowledge", zh: "包装知识" },
+  articlesTitle: { en: "Buyer guides for tin structures, printing finishes, samples, and export packing.", zh: "关于铁盒结构、印刷工艺、样品和出口包装的买家指南。" },
+  rfqEyebrow: { en: "Send RFQ", zh: "询盘表单" },
+  rfqTitle: { en: "Share your tin box project and export requirements.", zh: "把铁盒包装项目需求发给 Xiyida Packaging。" },
   rfqBody: {
-    en: "Send product type, size range, quantity, coating, destination, and packing needs. The sales team will turn it into a clear quotation.",
-    zh: "规格、数量、涂层、包装和交期信息会在前台询盘表单中收集。"
+    en: "Send tin style, size, artwork status, quantity target, destination, and packing needs. The sales team will review the details and respond with a clear project proposal.",
+    zh: "请提供铁盒款式、尺寸、设计稿状态、数量目标、目的地和包装需求，销售团队会根据项目细节回复。"
   },
   rfqGuidanceTitle: { en: "For a faster reply, include:", zh: "为了更快回复，请包含：" },
-  rfqGuidance1: { en: "Tool diameter, flute length, shank size, and tolerance.", zh: "刀具直径、刃长、柄径和公差。" },
-  rfqGuidance2: { en: "Workpiece material, coating preference, and application details.", zh: "工件材料、涂层偏好和应用细节。" },
-  rfqGuidance3: { en: "Packaging, private label, target quantity, and delivery market.", zh: "包装、私标、目标数量和交付市场。" },
+  rfqGuidance1: { en: "Tin shape, dimensions, lid structure, and insert requirements.", zh: "铁盒形状、尺寸、盖型结构和内托需求。" },
+  rfqGuidance2: { en: "Artwork files, printing method, finish, embossing, and color expectations.", zh: "设计稿、印刷方式、表面效果、压凸压凹和颜色要求。" },
+  rfqGuidance3: { en: "Quantity target, inner packing, master carton, destination, and delivery timeline.", zh: "数量目标、内包装、外箱、目的地和交付时间。" },
   rfqNote: {
-    en: "KeyproTools usually reviews RFQ details by product family so the quotation can match stock, OEM marking, and export packing requirements.",
-    zh: "KeyproTools 会按产品系列审核 RFQ 信息，让报价匹配库存、OEM 打标和出口包装要求。"
+    en: "Xiyida Packaging reviews each inquiry by application, structure, artwork, and packing needs so the response matches the intended retail or promotional use.",
+    zh: "Xiyida Packaging 会按应用、结构、设计稿和包装需求审核每个询盘，让回复更匹配零售或促销用途。"
   },
-  heroMetric1Value: { en: "0.2-25mm", zh: "6 条产品线" },
-  heroMetric1Label: { en: "End mill diameter range", zh: "产品目录" },
-  heroMetric2Value: { en: "HSS / M35 / Carbide", zh: "OEM 定制" },
-  heroMetric2Label: { en: "Drill bit supply", zh: "图纸与私标" },
-  heroMetric3Value: { en: "OEM", zh: "出口包装" },
-  heroMetric3Label: { en: "Laser marking and packing", zh: "经销商备货" }
+  heroMetric1Value: { en: "6 application lines", zh: "6 类应用" },
+  heroMetric1Label: { en: "Food, gifts, cosmetics, tea, coffee, and candles", zh: "覆盖食品、礼品、化妆品、茶叶咖啡和蜡烛" },
+  heroMetric2Value: { en: "Custom print", zh: "定制印刷" },
+  heroMetric2Label: { en: "Shape, color, finish, embossing, and inserts", zh: "盒型、颜色、表面效果、压凸和内托" },
+  heroMetric3Value: { en: "Export ready", zh: "出口交付" },
+  heroMetric3Label: { en: "Inspection, cartons, documents, and shipment support", zh: "质检、外箱、文件和出货支持" }
 };
 
 function normalizeCurrentTemplateAssetUrl(value?: string) {
@@ -206,31 +206,31 @@ function normalizeCurrentTemplateAssetTranslation(value?: Partial<Translation>) 
 
 const defaultTemplateSettings: SiteTemplateSettings = {
   homeTemplate: "industrial-showcase",
-  heroKicker: { en: "CNC cutting tools for global buyers", zh: "面向全球买家的 CNC 刀具供应" },
-  heroTitle: { en: "Carbide end mills and drill bits ready for distributor programs.", zh: "面向经销商长期备货的硬质合金铣刀与钻头。" },
+  heroKicker: { en: "Custom tin box packaging for global buyers", zh: "面向全球买家的定制铁盒包装" },
+  heroTitle: { en: "Custom tin box packaging for food, gifts, beauty, and lifestyle brands.", zh: "面向食品、礼品、美妆和生活方式品牌的定制铁盒包装。" },
   heroBody: {
-    en: "KeyproTools supplies end mills, drill bits, custom tooling, coating options, private-label packing, and export-ready QC support for hardware and machining buyers.",
-    zh: "KeyproTools 提供铣刀、钻头、定制刀具、涂层方案、私标包装和出口质检支持，服务五金工具与机加工采购商。"
+    en: "Xiyida Packaging manufactures custom tin boxes with structure review, printing, finishing, inspection, and export packing support for international sourcing teams.",
+    zh: "Xiyida Packaging 为国际采购团队提供定制铁盒制造，覆盖结构评审、印刷、表面处理、质检和出口包装支持。"
   },
-  primaryCtaLabel: { en: "Request Quote", zh: "获取报价" },
-  secondaryCtaLabel: { en: "Products", zh: "产品目录" },
+  primaryCtaLabel: { en: "Send RFQ", zh: "发送询盘" },
+  secondaryCtaLabel: { en: "View Applications", zh: "查看应用分类" },
   heroCarouselEnabled: true,
   heroCarouselAutoplay: true,
   heroCarouselIntervalSeconds: 7,
   heroSlides: defaultHeroSlides,
-  showHeroVisual: true,
+  showHeroVisual: false,
   showHeroMetrics: true,
   footerTagline: {
-    en: "Carbide end mills, drill bits, OEM tooling, and export-ready packing for global buyers.",
-    zh: "硬质合金铣刀、钻头、OEM 刀具和面向全球买家的出口包装。"
+    en: "Custom tin box packaging, printing, inspection, and export-ready packing for global buyers.",
+    zh: "面向全球买家的定制铁盒包装、印刷、质检和出口交付。"
   },
   footerCopyright: {
     en: "Copyright © {year} {brand}. All rights reserved.",
     zh: "Copyright © {year} {brand}. All rights reserved."
   },
   footerCredit: {
-    en: "Built for precision tooling and B2B export orders.",
-    zh: "为精密刀具和 B2B 出口订单打造。"
+    en: "Built for custom tin packaging and B2B export orders.",
+    zh: "为定制铁盒包装和 B2B 出口订单打造。"
   },
   homeProductCount: 6,
   homeArticleCount: 6,
@@ -273,7 +273,7 @@ export function createDefaultAdminState(): AdminState {
     leads: [],
     contactChannels,
     uploadedFiles,
-    activeTheme: "industrial",
+    activeTheme: "equipment",
     enabledLocales: defaultEnabledLocales,
     navigation: defaultNavigation,
     siteSettings: defaultSiteSettings,
@@ -316,9 +316,9 @@ export function createDefaultAdminState(): AdminState {
       voiceBaseUrl: process.env.AI_VOICE_BASE_URL ?? "https://api.openai.com/v1",
       voiceApiKey: process.env.AI_VOICE_API_KEY ?? "",
       defaultLocale: "en",
-      brandVoice: "Clear, technical, buyer-focused cutting tool copy for KeyproTools.",
+      brandVoice: "Clear, practical, buyer-focused packaging copy for Xiyida Packaging.",
       targetMarkets: ["Europe", "North America", "Southeast Asia", "MENA"],
-      requiredKeywords: ["carbide end mills", "drill bits", "OEM tooling", "quality inspection"],
+      requiredKeywords: ["custom tin packaging", "tin box manufacturer", "metal tin boxes", "quality inspection"],
       blockedWords: [],
       enabled: Boolean(process.env.AI_API_KEY)
     },
@@ -651,24 +651,28 @@ function mergeContactChannels(existingChannels = contactChannels) {
 }
 
 function normalizeActiveTemplateContactChannels(existingChannels = contactChannels) {
+  const legacyKeyproEmail = `sales@${"keypro"}${"tools"}.com`;
+  const legacyKeyproBrand = `Keypro${"Tools"}`;
+  const legacyKeyproHandle = "keypro" + "tools";
+
   return mergeContactChannels(existingChannels).map((channel) => {
-    if (channel.id === "email" && (channel.value === "sales@example.com" || channel.href === "mailto:sales@example.com")) {
-      return { ...channel, value: "sales@keyprotools.com", href: "mailto:sales@keyprotools.com" };
+    if (channel.id === "email" && (channel.value === "sales@example.com" || channel.value === legacyKeyproEmail || channel.href === "mailto:sales@example.com" || channel.href === `mailto:${legacyKeyproEmail}`)) {
+      return { ...channel, value: "sales@xiyidapackaging.com", href: "mailto:sales@xiyidapackaging.com" };
     }
 
-    if (channel.id === "wechat" && channel.value === "ExportFactory") {
-      return { ...channel, value: "KeyproTools" };
+    if (channel.id === "wechat" && (channel.value === "ExportFactory" || channel.value === legacyKeyproBrand)) {
+      return { ...channel, value: "XiyidaPackaging" };
     }
 
     if (channel.value === "ExportForge") {
-      return { ...channel, value: "KeyproTools", href: channel.href.replace(/exportforge/gi, "keyprotools") };
+      return { ...channel, value: "XiyidaPackaging", href: channel.href.replace(/exportforge/gi, "xiyidapackaging") };
     }
 
-    if (channel.value.toLowerCase().includes("exportforge") || channel.href.toLowerCase().includes("exportforge")) {
+    if (channel.value.toLowerCase().includes("exportforge") || channel.href.toLowerCase().includes("exportforge") || channel.value.toLowerCase().includes(legacyKeyproHandle) || channel.href.toLowerCase().includes(legacyKeyproHandle)) {
       return {
         ...channel,
-        value: channel.value.replace(/exportforge/gi, "keyprotools"),
-        href: channel.href.replace(/exportforge/gi, "keyprotools")
+        value: channel.value.replace(/exportforge/gi, "XiyidaPackaging").replace(new RegExp(legacyKeyproHandle, "gi"), "XiyidaPackaging"),
+        href: channel.href.replace(/exportforge/gi, "xiyidapackaging").replace(new RegExp(legacyKeyproHandle, "gi"), "xiyidapackaging")
       };
     }
 
@@ -726,7 +730,7 @@ function shouldRefreshActiveTemplateContent(parsed: AdminState) {
 
 function mergeActiveTemplateMedia(existingFiles = uploadedFiles) {
   const seedIds = new Set(uploadedFiles.map((file) => file.id));
-  const retainedFiles = existingFiles.filter((file) => !seedIds.has(file.id));
+  const retainedFiles = existingFiles.filter((file) => !seedIds.has(file.id) && !file.url?.startsWith(currentTemplateAssetPath));
 
   return [...uploadedFiles, ...retainedFiles];
 }
@@ -856,11 +860,11 @@ function normalizeAdminState(parsed: AdminState): AdminState {
     })),
     users: normalizeAdminUsers(parsed.users),
     rolePermissions: normalizeRolePermissions(parsed.rolePermissions),
-    activeTheme: parsed.activeTheme ?? "industrial",
+    activeTheme: refreshActiveTemplateContent ? "equipment" : parsed.activeTheme ?? "equipment",
     enabledLocales: normalizeEnabledLocales(parsed.enabledLocales),
     navigation: normalizeNavigation(navigationSource),
     siteSettings: normalizeSiteSettings(siteSettingsSource),
-    templateSettings: normalizeTemplateSettings(parsed.templateSettings),
+    templateSettings: normalizeTemplateSettings(refreshActiveTemplateContent ? defaultTemplateSettings : parsed.templateSettings),
     pageLayouts: [],
     aiSettings: normalizeAiSettings(parsed.aiSettings),
     aiCreditSettings: normalizeAiCreditSettings(parsed.aiCreditSettings),
@@ -870,7 +874,7 @@ function normalizeAdminState(parsed: AdminState): AdminState {
 
   return {
     ...normalizedState,
-    pageLayouts: normalizePageLayouts(parsed.pageLayouts, normalizedState)
+    pageLayouts: normalizePageLayouts(refreshActiveTemplateContent ? [] : parsed.pageLayouts, normalizedState)
   };
 }
 

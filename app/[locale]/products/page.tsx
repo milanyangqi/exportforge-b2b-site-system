@@ -6,8 +6,8 @@ import type { LocaleCode } from "@/types/site";
 
 export const dynamic = "force-dynamic";
 
-const productsTitle = "Carbide end mills, drill bits, and OEM tooling for metalworking buyers.";
-const productsDescription = "Browse KeyproTools cutting tool categories, compare application fit, and send RFQ details for distributor pricing, coating, marking, and export packing.";
+const productsTitle = "Custom tin box packaging for food, gifts, cosmetics, tea, coffee, and candles.";
+const productsDescription = "Browse Xiyida Packaging tin box categories, compare application fit, and send RFQ details for structure, artwork, finish, inspection, and export packing.";
 
 export async function generateMetadata({ params }: { params: Promise<{ locale: LocaleCode }> }) {
   const { locale } = await params;
@@ -50,9 +50,9 @@ export default async function ProductsPage({ params }: { params: Promise<{ local
       {structuredData}
       <section className="section">
         <div className="section-head">
-          <span className="eyebrow">KeyproTools products</span>
-          <h1>Carbide end mills, drill bits, and OEM tooling for metalworking buyers.</h1>
-          <p>Browse the main tooling families, compare application fit, and send RFQ details for distributor pricing, coating, marking, and export packing.</p>
+          <span className="eyebrow">Xiyida Packaging products</span>
+          <h1>Custom tin box packaging for food, gifts, cosmetics, tea, coffee, and candles.</h1>
+          <p>Browse the main packaging applications, compare structure and finish options, and send RFQ details for artwork, inspection, and export packing.</p>
         </div>
         <ProductGrid locale={locale} products={state.products} />
       </section>

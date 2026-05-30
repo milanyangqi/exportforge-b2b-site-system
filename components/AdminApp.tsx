@@ -582,7 +582,7 @@ const leadStatuses: LeadStatus[] = ["new", "contacted", "quoted", "closed", "spa
 const leadStatusLabels: Record<LeadStatus, string> = {
   new: "新询盘",
   contacted: "已联系",
-  quoted: "已报价",
+  quoted: "已回复",
   closed: "已成交",
   spam: "垃圾询盘"
 };
@@ -605,17 +605,17 @@ const contactTypeOptions: ContactChannelType[] = [
 const contactTypePresets: Record<ContactChannelType, { en: string; zh: string; value: string; href: string; color: string }> = {
   phone: { en: "Phone", zh: "电话", value: "+86 188 0000 0000", href: "tel:+8618800000000", color: "#10b981" },
   whatsapp: { en: "WhatsApp", zh: "WhatsApp", value: "+86 188 0000 0000", href: "https://wa.me/8618800000000", color: "#25d366" },
-  email: { en: "Email", zh: "邮箱", value: "sales@keyprotools.com", href: "mailto:sales@keyprotools.com", color: "#ff4f66" },
-  wechat: { en: "WeChat", zh: "微信", value: "KeyproTools", href: "#wechat", color: "#23c80d" },
+  email: { en: "Email", zh: "邮箱", value: "sales@xiyidapackaging.com", href: "mailto:sales@xiyidapackaging.com", color: "#ff4f66" },
+  wechat: { en: "WeChat", zh: "微信", value: "Xiyida Packaging", href: "#wechat", color: "#23c80d" },
   zalo: { en: "Zalo", zh: "Zalo", value: "+84 900 000 000", href: "https://zalo.me/84900000000", color: "#0068ff" },
-  line: { en: "Line", zh: "Line", value: "@keyprotools", href: "https://line.me/R/ti/p/@keyprotools", color: "#06c755" },
-  facebook: { en: "Facebook", zh: "Facebook", value: "KeyproTools", href: "https://facebook.com/keyprotools", color: "#1877f2" },
-  instagram: { en: "Instagram", zh: "Instagram", value: "@keyprotools", href: "https://instagram.com/keyprotools", color: "#e4405f" },
-  tiktok: { en: "TikTok", zh: "TikTok", value: "@keyprotools", href: "https://www.tiktok.com/@keyprotools", color: "#111827" },
-  messenger: { en: "Messenger", zh: "Messenger", value: "KeyproTools", href: "https://m.me/keyprotools", color: "#0084ff" },
-  linkedin: { en: "LinkedIn", zh: "LinkedIn", value: "KeyproTools", href: "https://www.linkedin.com/company/keyprotools", color: "#0a66c2" },
-  skype: { en: "Skype", zh: "Skype", value: "live:keyprotools", href: "skype:live:keyprotools?chat", color: "#00aff0" },
-  rfq: { en: "RFQ", zh: "询盘", value: "Request quote", href: "#rfq", color: "#243b78" },
+  line: { en: "Line", zh: "Line", value: "@xiyidapackaging", href: "https://line.me/R/ti/p/@xiyidapackaging", color: "#06c755" },
+  facebook: { en: "Facebook", zh: "Facebook", value: "Xiyida Packaging", href: "https://facebook.com/xiyidapackaging", color: "#1877f2" },
+  instagram: { en: "Instagram", zh: "Instagram", value: "@xiyidapackaging", href: "https://instagram.com/xiyidapackaging", color: "#e4405f" },
+  tiktok: { en: "TikTok", zh: "TikTok", value: "@xiyidapackaging", href: "https://www.tiktok.com/@xiyidapackaging", color: "#111827" },
+  messenger: { en: "Messenger", zh: "Messenger", value: "Xiyida Packaging", href: "https://m.me/xiyidapackaging", color: "#0084ff" },
+  linkedin: { en: "LinkedIn", zh: "LinkedIn", value: "Xiyida Packaging", href: "https://www.linkedin.com/company/xiyidapackaging", color: "#0a66c2" },
+  skype: { en: "Skype", zh: "Skype", value: "live:xiyidapackaging", href: "skype:live:xiyidapackaging?chat", color: "#00aff0" },
+  rfq: { en: "RFQ", zh: "询盘", value: "Send RFQ", href: "#rfq", color: "#243b78" },
   custom: { en: "Custom", zh: "自定义", value: "", href: "", color: "#0b5f7d" }
 };
 const frontendManagerRoles = new Set<RoleKey>(["super-admin", "admin"]);
@@ -733,10 +733,10 @@ const homeSectionOptions: { key: HomeSectionKey; label: string; description: str
   { key: "navigation", label: "导航栏", description: "前台顶部品牌、菜单和语言入口。" },
   { key: "hero", label: "首页首屏", description: "首页首屏海报、标题、按钮和指标。" },
   { key: "products", label: "产品目录", description: "首页产品分类卡片模块。" },
-  { key: "factory", label: "工厂能力", description: "几何、涂层、包装等能力说明。" },
+  { key: "factory", label: "工厂能力", description: "成型、印刷、质检、包装等能力说明。" },
   { key: "markets", label: "出口市场", description: "多语言与 RFQ 清单说明模块。" },
   { key: "articles", label: "技术文章", description: "首页文章卡片模块。" },
-  { key: "rfq", label: "询盘表单", description: "首页底部报价表单模块。" }
+  { key: "rfq", label: "询盘表单", description: "首页底部询盘表单模块。" }
 ];
 const imageLayoutOptions: { key: SiteTemplateImageLayout; label: string }[] = [
   { key: "single", label: "单张大图" },
@@ -746,12 +746,12 @@ const imageLayoutOptions: { key: SiteTemplateImageLayout; label: string }[] = [
   { key: "carousel", label: "图片轮播" }
 ];
 const homeProductSlugs = [
-  "carbide-end-mills",
-  "drill-bits",
-  "custom-tooling",
-  "square-end-mills",
-  "solid-carbide-drills",
-  "coating-oem-packaging"
+  "food-tin-packaging",
+  "gift-tin-packaging",
+  "cosmetic-tin-packaging",
+  "tea-coffee-tins",
+  "candle-tins",
+  "custom-tin-box-manufacturing"
 ];
 const aiTargetOptions: { key: AiContentTarget; label: string; description: string }[] = [
   { key: "article", label: "文章", description: "生成技术文章、采购指南和 SEO 内容。" },
@@ -2083,10 +2083,10 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
     const body = template
       .replaceAll("{name}", lead.fullName || "there")
       .replaceAll("{company}", lead.company || "")
-      .replaceAll("{productType}", lead.productType || "your tooling request")
+      .replaceAll("{productType}", lead.productType || "your packaging request")
       .replaceAll("{quantity}", lead.quantity || "")
       .replaceAll("{email}", lead.email || "")
-      .replaceAll("{siteTitle}", state?.siteSettings.title || "KeyproTools");
+      .replaceAll("{siteTitle}", state?.siteSettings.title || "Xiyida Packaging");
 
     return { leadId: lead.id, to: lead.email, subject, body };
   }
@@ -2611,7 +2611,7 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
       video: "粘贴 YouTube、Vimeo、Bilibili 或 MP4 视频链接。",
       cta: "引导访客提交询盘或查看产品目录。"
     };
-    const fallbackMediaUrl = type === "image" ? (heroImageFiles[0]?.url ?? "/assets/current-template/hero-tooling-range.jpg") : "";
+    const fallbackMediaUrl = type === "image" ? (heroImageFiles[0]?.url ?? "/assets/current-template/hero-tin-packaging.jpg") : "";
     const fallbackImageItem: SiteTemplateImageItem | undefined = type === "image" ? {
       id: `custom-image-${Date.now()}`,
       url: fallbackMediaUrl,
@@ -4283,7 +4283,7 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
   if (!state) {
     return (
       <main className="real-admin">
-        <div className="admin-topbar"><strong>KeyproTools Admin</strong><span>{status}</span></div>
+        <div className="admin-topbar"><strong>Xiyida Packaging Admin</strong><span>{status}</span></div>
       </main>
     );
   }
@@ -4972,7 +4972,7 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
   const visualArticles = state.articles
     .filter((article) => article.status === "published" && article.featuredOnHome)
     .slice(0, templateSettings.homeArticleCount);
-  const visualHeroImage = activeVisualSlide?.imageUrl || "/assets/current-template/hero-tooling-range.jpg";
+  const visualHeroImage = activeVisualSlide?.imageUrl || "/assets/current-template/hero-tin-packaging.jpg";
   const visualHeroImageStyle = { "--visual-hero-image": `url(${visualHeroImage})` } as CSSProperties;
   const visualText = (blockKey: string, fallback: string) => templateSettings.textBlocks[blockKey]?.zh || templateSettings.textBlocks[blockKey]?.en || fallback;
   const visualFactoryCards = [1, 2, 3].map((index) => ({
@@ -5052,7 +5052,7 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
   }
 
   function renderVisualImageTarget(options: VisualEditableImageOptions) {
-    const imageValue = options.value || "/assets/current-template/hero-tooling-range.jpg";
+    const imageValue = options.value || "/assets/current-template/hero-tin-packaging.jpg";
 
     return (
       <div
@@ -5422,7 +5422,7 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
 	                <span className="visual-front-brand-mark"><ShieldCheck size={20} /></span>
 	                {renderVisualTextTarget({
 	                  editorKey: "site-title-navigation",
-	                  value: state.siteSettings.title || "KeyproTools",
+	                  value: state.siteSettings.title || "Xiyida Packaging",
 	                  element: "strong",
 	                  onCommit: (value) => updateSiteSettings({ title: value })
 	                })}
@@ -5758,7 +5758,7 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
               })}
               {renderVisualTextTarget({
                 editorKey: "text-rfqTitle",
-                value: visualText("rfqTitle", "把刀具清单发给 KeyproTools"),
+                value: visualText("rfqTitle", "把刀具清单发给 Xiyida Packaging"),
                 element: "h3",
                 multiline: true,
                 onCommit: (value) => updateTemplateTextBlock("rfqTitle", "zh", value)
@@ -6301,7 +6301,7 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
                   </label>
                   <label>别名
                     <input value={productForm.slug} onChange={(event) => setProductForm({ ...productForm, slug: slugify(event.target.value) })} />
-                    <small>用于 URL，例如 carbide-end-mills。</small>
+                    <small>用于 URL，例如 food-tin-packaging。</small>
                   </label>
                   <label>父级分类
                     <select value={productForm.parentId} onChange={(event) => setProductForm({ ...productForm, parentId: event.target.value })}>
@@ -7530,7 +7530,7 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
                       </label>
                       <div className="mail-template-preview">
                         <strong>预览</strong>
-                        <pre>{(state.siteSettings.mailReplyTemplate || "").replaceAll("{name}", "Alex").replaceAll("{company}", "ABC Tools").replaceAll("{productType}", "carbide end mills").replaceAll("{quantity}", "500 pcs").replaceAll("{email}", "buyer@example.com").replaceAll("{siteTitle}", state.siteSettings.title || "KeyproTools")}</pre>
+                        <pre>{(state.siteSettings.mailReplyTemplate || "").replaceAll("{name}", "Alex").replaceAll("{company}", "ABC Packaging").replaceAll("{productType}", "custom food tins").replaceAll("{quantity}", "5,000 pcs").replaceAll("{email}", "buyer@example.com").replaceAll("{siteTitle}", state.siteSettings.title || "Xiyida Packaging")}</pre>
                       </div>
                       <div className="mail-account-actions">
                         <button disabled={!canManageFrontendSettings || mailActionRunning || mailProvider === "mailto"} type="button" onClick={sendTestMail}>发送测试邮件</button>
@@ -8537,7 +8537,7 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
                 <section className="account-security-card">
                   <h2>账号与密码</h2>
                   <div className="account-info-list">
-                    <div><span>后台名称</span><strong>KeyproTools Admin</strong></div>
+                    <div><span>后台名称</span><strong>Xiyida Packaging Admin</strong></div>
                     <div><span>登录邮箱</span><strong>{currentEmail}</strong></div>
                     <div><span>当前角色</span><strong>{roleLabels[currentUser?.role ?? "admin"]}</strong></div>
                     <div><span>账号状态</span><strong>{currentUser?.active ? "启用" : "停用"}</strong></div>
@@ -8712,7 +8712,7 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
                         <div className="ai-guided-form">
                           <label>内容主题
                             <input
-                              placeholder={aiContentForm.target === "article" ? "例如：carbide end mills for stainless steel" : "例如：custom tooling service"}
+                              placeholder={aiContentForm.target === "article" ? "例如：food tin packaging for cookies" : "例如：custom tin box manufacturing"}
                               value={aiContentForm.topic}
                               onChange={(event) => {
                                 setAiContentForm({ ...aiContentForm, topic: event.target.value });

@@ -23,13 +23,12 @@ export type PagePreset = {
 };
 
 export const currentTemplateAssetPaths = new Set([
-  "/assets/current-template/hero-tooling-range.jpg",
-  "/assets/current-template/hero-cnc-factory.jpg",
-  "/assets/current-template/hero-export-packing.jpg",
-  "/assets/current-template/carbide-end-mills.png",
-  "/assets/current-template/drill-bits.png",
-  "/assets/current-template/coating-inspection.png",
-  "/assets/current-template/export-packaging.png"
+  "/assets/current-template/hero-tin-packaging.jpg",
+  "/assets/current-template/factory-qc.jpg",
+  "/assets/current-template/tin-category-range.jpg",
+  "/assets/current-template/food-tin-packaging.jpg",
+  "/assets/current-template/gift-tin-packaging.jpg",
+  "/assets/current-template/cosmetic-candle-tins.jpg"
 ]);
 
 export const blockPresetCategories: Array<{ key: BlockPresetCategory; label: string; description: string }> = [
@@ -69,13 +68,12 @@ export const blockPresetCategoryLabels = Object.fromEntries(
 ) as Record<BlockPresetCategory, string>;
 
 const loopingImageAssets = [
-  "/assets/current-template/hero-tooling-range.jpg",
-  "/assets/current-template/hero-cnc-factory.jpg",
-  "/assets/current-template/hero-export-packing.jpg",
-  "/assets/current-template/carbide-end-mills.png",
-  "/assets/current-template/drill-bits.png",
-  "/assets/current-template/coating-inspection.png",
-  "/assets/current-template/export-packaging.png"
+  "/assets/current-template/hero-tin-packaging.jpg",
+  "/assets/current-template/factory-qc.jpg",
+  "/assets/current-template/tin-category-range.jpg",
+  "/assets/current-template/food-tin-packaging.jpg",
+  "/assets/current-template/gift-tin-packaging.jpg",
+  "/assets/current-template/cosmetic-candle-tins.jpg"
 ];
 
 // Converted from dimi.me Lab's "Looping images" interaction into a dedicated local preset block.
@@ -85,7 +83,7 @@ export const blockPresets: BlockPreset[] = [
     category: "image-carousel",
     label: "Looping images",
     description: "多张图片沿圆形轨道无缝循环，适合产品系列、工厂场景或案例图片展示。",
-    thumbnail: "/assets/current-template/hero-tooling-range.jpg",
+    thumbnail: "/assets/current-template/hero-tin-packaging.jpg",
     requiredAssets: loopingImageAssets,
     puckData: [
       {

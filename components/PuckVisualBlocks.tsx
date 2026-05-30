@@ -243,7 +243,7 @@ function HomeNavigation({ props, state, locale }: { props: Record<string, unknow
 
   return (
     <HomeNavigationShell
-      brandName={state.siteSettings.title || "KeyproTools"}
+      brandName={state.siteSettings.title || "Xiyida Packaging"}
       ctaLabel={ctaLabel}
       enabledLocales={state.enabledLocales}
       locale={locale}
@@ -253,7 +253,7 @@ function HomeNavigation({ props, state, locale }: { props: Record<string, unknow
 }
 
 function HeroSection({ props, locale }: { props: Record<string, unknown>; locale: LocaleCode }) {
-  const title = propString(props, "title", "KeyproTools");
+  const title = propString(props, "title", "Xiyida Packaging");
   const backgroundMode = propString(props, "backgroundMode", "single");
   const images = collectImages(props, [propString(props, "mediaLibraryUrl"), propString(props, "imageUrl")]);
   const imageUrl = backgroundMode !== "none" ? images[0]?.url ?? "" : "";
@@ -442,7 +442,7 @@ function RfqSection({ props, locale }: { props: Record<string, unknown>; locale:
     <section className={`section rfq-section tone-${propString(props, "tone", "light")}`} id="rfq">
       <div>
         {propString(props, "eyebrow") ? <span className="eyebrow">{propString(props, "eyebrow")}</span> : null}
-        <h2>{propString(props, "title", "Tell us what to quote.")}</h2>
+        <h2>{propString(props, "title", "Tell us what to review.")}</h2>
         {propString(props, "body") ? <p>{propString(props, "body")}</p> : null}
         {guidanceItems.length > 0 ? (
           <div className="puck-public-guidance">
@@ -876,7 +876,7 @@ function CtaSection({ props, locale }: { props: Record<string, unknown>; locale:
     >
       <div>
         {propString(props, "eyebrow") ? <span className="eyebrow">{propString(props, "eyebrow")}</span> : null}
-        <h2>{propString(props, "title", "Ready to quote?")}</h2>
+        <h2>{propString(props, "title", "Ready to send an RFQ?")}</h2>
         {propString(props, "body") ? <p>{propString(props, "body")}</p> : null}
       </div>
       <div className="puck-public-cta-actions">

@@ -5,8 +5,8 @@ import "@/styles/public-site.css";
 import "@/styles/active-template.css";
 
 export const metadata: Metadata = {
-  title: "KeyproTools | Carbide End Mills, Drill Bits, and OEM Cutting Tools",
-  description: "KeyproTools supplies carbide end mills, drill bits, coatings, OEM laser marking, private-label packaging, and export-ready cutting tool programs.",
+  title: "Xiyida Packaging | Custom Tin Box Packaging Manufacturer",
+  description: "Xiyida Packaging manufactures custom tin boxes for food, gifts, cosmetics, tea, coffee, candles, and export-ready packaging programs.",
   robots: {
     index: process.env.NEXT_PUBLIC_SITE_INDEXABLE === "true",
     follow: process.env.NEXT_PUBLIC_SITE_INDEXABLE === "true"

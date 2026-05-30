@@ -7,8 +7,8 @@ import type { LocaleCode } from "@/types/site";
 
 export const dynamic = "force-dynamic";
 
-const articlesTitle = "Buying guides and application notes for end mills, drill bits, and OEM tool orders.";
-const articlesDescription = "Read KeyproTools buying guides for cutting tool geometry, coating choices, drill bit assortments, OEM packaging, and distributor RFQ preparation.";
+const articlesTitle = "Buying guides for custom tin structures, printing, sampling, and export packing.";
+const articlesDescription = "Read Xiyida Packaging buyer guides for tin box structure, printing finishes, samples, quality checks, and export packing preparation.";
 
 export async function generateMetadata({ params }: { params: Promise<{ locale: LocaleCode }> }) {
   const { locale } = await params;
@@ -54,7 +54,7 @@ export default async function ArticlesPage({ params }: { params: Promise<{ local
       <section className="section">
         <div className="section-head subpage-head">
           <span className="eyebrow">Technical library</span>
-          <h1>Buying guides and application notes for end mills, drill bits, and OEM tool orders.</h1>
+          <h1>Buying guides for custom tin structures, printing, sampling, and export packing.</h1>
         </div>
         <div className="article-grid">
           {publishedArticles.map((article) => (

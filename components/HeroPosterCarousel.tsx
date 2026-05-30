@@ -3,23 +3,23 @@ import type { SiteHeroSlide } from "@/types/site";
 
 const fallbackHeroSlides: SiteHeroSlide[] = [
   {
-    id: "hero-tooling-range",
-    imageUrl: "/assets/current-template/hero-tooling-range.jpg",
-    alt: { en: "Carbide end mills and drill bits hero poster" },
+    id: "hero-tin-packaging",
+    imageUrl: "/assets/current-template/hero-tin-packaging.jpg",
+    alt: { en: "Custom tin box packaging hero poster" },
     enabled: true,
     order: 10
   },
   {
-    id: "hero-cnc-factory",
-    imageUrl: "/assets/current-template/hero-cnc-factory.jpg",
-    alt: { en: "CNC factory tooling production hero poster" },
+    id: "hero-factory-qc",
+    imageUrl: "/assets/current-template/factory-qc.jpg",
+    alt: { en: "Tin box production and quality inspection hero poster" },
     enabled: true,
     order: 20
   },
   {
-    id: "hero-export-packing",
-    imageUrl: "/assets/current-template/hero-export-packing.jpg",
-    alt: { en: "Export packing and OEM tooling hero poster" },
+    id: "hero-tin-category-range",
+    imageUrl: "/assets/current-template/tin-category-range.jpg",
+    alt: { en: "Food gift cosmetic tea coffee and candle tin packaging hero poster" },
     enabled: true,
     order: 30
   }

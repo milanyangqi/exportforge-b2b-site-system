@@ -7,8 +7,8 @@ import type { LocaleCode } from "@/types/site";
 
 export const dynamic = "force-dynamic";
 
-const contactTitle = "Contact KeyproTools for end mills, drill bits, and OEM tooling quotes.";
-const contactDescription = "Send drawings, size lists, coating requirements, packaging details, and destination so KeyproTools can prepare a practical export quote.";
+const contactTitle = "Contact Xiyida Packaging for custom tin box projects.";
+const contactDescription = "Send tin shape, size, artwork, finish, packing details, and destination so Xiyida Packaging can review your packaging project.";
 
 export async function generateMetadata({ params }: { params: Promise<{ locale: LocaleCode }> }) {
   const { locale } = await params;
@@ -63,13 +63,13 @@ export default async function ContactPage({ params }: { params: Promise<{ locale
       <section className="section split contact-section">
         <div className="contact-copy">
           <span className="eyebrow">Contact</span>
-          <h1>Send your end mill, drill bit, or OEM tooling request to KeyproTools.</h1>
-          <p>Share drawings, size lists, coating requirements, packaging details, and destination so the sales team can prepare a practical export quote.</p>
+          <h1>Send your custom tin box packaging request to Xiyida Packaging.</h1>
+          <p>Share tin shape, size, artwork status, finish, packing details, and destination so the sales team can review your export packaging project.</p>
           <PublicContactList channels={state.contactChannels} locale={locale} />
         </div>
         <div className="contact-rfq-panel" id="rfq">
           <span className="eyebrow">RFQ details</span>
-          <h2>Tell us what to quote.</h2>
+          <h2>Tell us what to review.</h2>
           <RfqForm locale={locale} />
         </div>
       </section>

@@ -38,17 +38,17 @@ function stripMarkdown(value: string) {
 }
 
 function buildImagePrompt(payload: ImagePayload) {
-  const title = payload.title?.trim() || "B2B cutting tools article";
+  const title = payload.title?.trim() || "B2B tin packaging article";
   const excerpt = payload.excerpt?.trim() || "";
   const body = stripMarkdown(payload.body ?? "").slice(0, 1800);
 
   return [
-    "Create a professional square hero image for a B2B technical article on a cutting-tools website named KeyproTools.",
-    "Style: realistic industrial product photography, clean CNC workshop lighting, carbide end mills and drill bits, export-ready, no text, no logos, no watermarks.",
+    "Create a professional square hero image for a B2B packaging article on a custom tin box website named Xiyida Packaging.",
+    "Style: realistic product and factory photography, clean tin box packaging, export-ready, no text, no logos, no watermarks.",
     `Article title: ${title}`,
     excerpt ? `Article excerpt: ${excerpt}` : "",
     body ? `Article body context: ${body}` : "",
-    "Avoid people, charts, UI screenshots, written words, distorted tools, unsafe sparks, and dark blurry backgrounds."
+    "Avoid people, charts, UI screenshots, written words, distorted packaging, unsafe factory scenes, and dark blurry backgrounds."
   ].filter(Boolean).join("\n");
 }
 

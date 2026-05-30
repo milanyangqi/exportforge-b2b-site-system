@@ -1,7 +1,325 @@
 /*
- * Current production template styles.
- *
- * Keep this file scoped to the active template only. Additional template
- * packages should live in the external template library and be copied here
- * through `npm run template:apply -- <templateKey>`.
+ * Xiyida Packaging active production template styles.
+ * Keep this file scoped to the current template only.
  */
+
+.template-home-brand-mark,
+.brand-mark {
+  display: grid;
+  width: 54px;
+  height: 42px;
+  place-items: center;
+  border-radius: 0;
+  color: #0b2545;
+  background: transparent;
+  font-family: "Arial Black", "Archivo", sans-serif;
+  font-size: 18px;
+  font-weight: 900;
+  letter-spacing: 0;
+  line-height: 1;
+}
+
+.brand-monogram {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0;
+  letter-spacing: 0;
+}
+
+.brand-monogram span:first-child {
+  color: #c20e1a;
+}
+
+.brand-monogram span:nth-child(n + 2) {
+  color: #0b5ea8;
+}
+
+.template-home-nav-inner,
+.site-header {
+  border-color: rgba(11, 37, 69, 0.12);
+  border-radius: 6px;
+  box-shadow: 0 22px 60px rgba(11, 37, 69, 0.1);
+}
+
+.template-home-brand,
+.brand {
+  flex: 0 0 clamp(238px, 22vw, 306px);
+  gap: 12px;
+}
+
+.template-home-brand .brand-text,
+.brand .brand-text {
+  display: grid;
+  min-width: 0;
+  gap: 2px;
+}
+
+.template-home-brand .brand-text > strong,
+.brand .brand-text > strong {
+  overflow: hidden;
+  color: #0b2545;
+  font-size: 16px;
+  font-weight: 900;
+  line-height: 1.1;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.template-home-brand .brand-text > small,
+.brand .brand-text > small {
+  overflow: hidden;
+  color: #6a7585;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1.1;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.template-home-nav-links,
+.nav-links {
+  gap: 2px;
+  font-size: 12px;
+}
+
+.template-home-nav-links a,
+.nav-links a {
+  padding-inline: 6px;
+}
+
+.template-home-header-actions,
+.header-actions {
+  gap: 8px;
+}
+
+.template-home-nav-cta,
+.quote-link {
+  min-width: 104px;
+  padding-inline: 14px;
+}
+
+.language-select {
+  max-width: 158px;
+}
+
+.language-select select {
+  max-width: 118px;
+}
+
+.template-home-nav-cta,
+.quote-link,
+.button.primary {
+  background: #c20e1a;
+  box-shadow: 0 16px 34px rgba(194, 14, 26, 0.22);
+}
+
+.template-home-nav-links a:hover,
+.nav-links a:hover {
+  color: #0b2545;
+  background: rgba(11, 37, 69, 0.07);
+}
+
+.hero-section {
+  color: #0b2545;
+  background: #f7f9fc;
+}
+
+.hero-poster-overlay {
+  background:
+    linear-gradient(90deg, rgba(255, 255, 255, 0.98) 0%, rgba(255, 255, 255, 0.92) 38%, rgba(255, 255, 255, 0.62) 63%, rgba(255, 255, 255, 0.14) 100%),
+    linear-gradient(180deg, rgba(247, 249, 252, 0.2), rgba(11, 37, 69, 0.06));
+}
+
+.hero-section h1 {
+  max-width: 720px;
+  color: #0b2545;
+  text-shadow: none;
+}
+
+.hero-section h1 strong,
+.hero-section .hero-copy h1 em {
+  color: #c20e1a;
+}
+
+.hero-section .eyebrow {
+  color: #c20e1a;
+}
+
+.hero-section .hero-copy p {
+  color: #4d5f73;
+}
+
+.hero-section .button.secondary,
+.hero-section .button.is-secondary {
+  color: #0b2545;
+  border-color: rgba(11, 37, 69, 0.2);
+  background: rgba(255, 255, 255, 0.76);
+}
+
+.hero-section .metrics div {
+  border-color: rgba(11, 37, 69, 0.13);
+  background: rgba(255, 255, 255, 0.82);
+  box-shadow: 0 14px 36px rgba(11, 37, 69, 0.08);
+}
+
+.hero-section .metrics strong {
+  color: #c20e1a;
+}
+
+.hero-section .metrics span {
+  color: #526273;
+}
+
+.product-card,
+.article-card,
+.download-card,
+.workflow-panel {
+  border-radius: 6px;
+  box-shadow: 0 16px 46px rgba(11, 37, 69, 0.08);
+}
+
+.product-icon,
+.chips span,
+.tag-list span,
+.language-strip span {
+  color: #0b2545;
+  background: rgba(11, 37, 69, 0.08);
+}
+
+.dark-band {
+  background:
+    linear-gradient(135deg, rgba(11, 37, 69, 0.98), rgba(24, 54, 89, 0.95)),
+    #0b2545;
+}
+
+.theme-card.active {
+  outline-color: #c20e1a;
+}
+
+.rfq-section {
+  background: linear-gradient(135deg, #0b2545, #193659 62%, #c20e1a);
+}
+
+@media (min-width: 981px) {
+  .hero-inner {
+    grid-template-columns: minmax(0, 0.92fr) minmax(0, 1.08fr);
+    min-height: clamp(650px, 68vh, 760px);
+    padding-top: clamp(58px, 5.5vw, 78px);
+    padding-bottom: clamp(46px, 5vw, 64px);
+  }
+}
+
+@media (max-width: 1180px) {
+  .template-home-nav-links,
+  .nav-links {
+    font-size: 12px;
+  }
+
+  .template-home-nav-links a,
+  .nav-links a {
+    padding-inline: 6px;
+  }
+}
+
+@media (max-width: 1320px) {
+  .template-home-nav-cta,
+  .quote-link {
+    display: none;
+  }
+}
+
+@media (max-width: 980px) {
+  .template-home-nav-inner,
+  .site-header {
+    width: min(720px, calc(100% - 28px));
+    min-height: 68px;
+    overflow: hidden;
+  }
+
+  .template-home-brand,
+  .brand {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+
+  .template-home-brand-mark,
+  .brand-mark {
+    width: 44px;
+    height: 38px;
+    font-size: 15px;
+  }
+
+  .template-home-brand .brand-text > small,
+  .brand .brand-text > small {
+    display: none;
+  }
+
+  .template-home-nav-links,
+  .nav-links {
+    display: none;
+  }
+
+  .template-home-header-actions,
+  .header-actions {
+    flex: 0 0 auto;
+  }
+
+  .template-home-nav-cta,
+  .quote-link {
+    display: none;
+  }
+
+  .language-select {
+    max-width: 70px;
+  }
+
+  .language-select select {
+    max-width: 34px;
+    padding-inline: 0;
+  }
+
+  .template-home-nav-inner,
+  .site-header {
+    justify-content: flex-start;
+  }
+
+  .hero-inner {
+    width: min(720px, calc(100% - 28px));
+    min-width: 0;
+    padding-top: 62px;
+    padding-bottom: 42px;
+  }
+
+  .hero-copy {
+    width: min(100%, 340px);
+    max-width: 100%;
+    min-width: 0;
+  }
+
+  .hero-section h1 {
+    max-width: 100%;
+    font-size: clamp(32px, 9.2vw, 38px);
+    line-height: 1.04;
+    overflow-wrap: anywhere;
+  }
+
+  .hero-section .hero-copy p {
+    font-size: 16px;
+  }
+
+  .metrics {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 620px) {
+  .template-home-header-actions,
+  .header-actions {
+    display: none;
+  }
+
+  .template-home-brand,
+  .brand {
+    flex: 1 1 100%;
+  }
+}

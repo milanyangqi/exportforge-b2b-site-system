@@ -67,7 +67,7 @@ function coreHomeComponents(settings: SiteTemplateSettings) {
         type: "HomeNavigation",
         props: {
           id: createId("home-navigation", index),
-          ctaLabel: text(settings.primaryCtaLabel, "获取报价")
+          ctaLabel: text(settings.primaryCtaLabel, "发送询盘")
         }
       };
     }
@@ -78,21 +78,21 @@ function coreHomeComponents(settings: SiteTemplateSettings) {
         type: "HeroSection",
         props: {
           id: createId("hero-section", index),
-          eyebrow: text(settings.heroKicker, "面向全球买家的 CNC 刀具供应"),
-          title: text(settings.heroTitle, "硬质合金铣刀与钻头"),
-          body: text(settings.heroBody, "面向经销商长期备货的硬质合金刀具供应。"),
-          primaryLabel: text(settings.primaryCtaLabel, "获取报价"),
+          eyebrow: text(settings.heroKicker, "面向全球买家的定制铁盒包装"),
+          title: text(settings.heroTitle, "定制铁盒包装"),
+          body: text(settings.heroBody, "面向全球买家的铁盒包装制造与出口支持。"),
+          primaryLabel: text(settings.primaryCtaLabel, "发送询盘"),
           primaryHref: "#rfq",
           secondaryLabel: text(settings.secondaryCtaLabel, "产品目录"),
           secondaryHref: "/products",
           imageUrl: firstSlide?.imageUrl ?? "",
           showMetrics: settings.showHeroMetrics,
-          metric1Value: templateText(settings, "heroMetric1Value", "0.2-25mm"),
-          metric1Label: templateText(settings, "heroMetric1Label", "End mill diameter range"),
-          metric2Value: templateText(settings, "heroMetric2Value", "HSS / M35 / Carbide"),
-          metric2Label: templateText(settings, "heroMetric2Label", "Drill bit supply"),
-          metric3Value: templateText(settings, "heroMetric3Value", "OEM"),
-          metric3Label: templateText(settings, "heroMetric3Label", "Laser marking and packing")
+          metric1Value: templateText(settings, "heroMetric1Value", "6 application lines"),
+          metric1Label: templateText(settings, "heroMetric1Label", "Food, gifts, cosmetics, tea, coffee, and candles"),
+          metric2Value: templateText(settings, "heroMetric2Value", "Custom print"),
+          metric2Label: templateText(settings, "heroMetric2Label", "Shape, color, finish, embossing, and inserts"),
+          metric3Value: templateText(settings, "heroMetric3Value", "Export ready"),
+          metric3Label: templateText(settings, "heroMetric3Label", "Inspection, cartons, documents, and shipment support")
         }
       };
     }
@@ -103,8 +103,8 @@ function coreHomeComponents(settings: SiteTemplateSettings) {
         props: {
           id: createId("product-list", index),
           eyebrow: templateText(settings, "productsEyebrow", coreSectionLabels.products),
-          title: templateText(settings, "productsTitle", "硬质合金刀具目录"),
-          body: templateText(settings, "productsBody", "覆盖经销商备货、工厂加工与定制刀具需求。"),
+          title: templateText(settings, "productsTitle", "定制铁盒包装目录"),
+          body: templateText(settings, "productsBody", "覆盖食品、礼品、化妆品、茶叶咖啡和蜡烛等应用。"),
           limit: settings.homeProductCount,
           flat: true
         }
@@ -117,11 +117,11 @@ function coreHomeComponents(settings: SiteTemplateSettings) {
         props: {
           id: createId("feature-cards", index),
           eyebrow: templateText(settings, "factoryEyebrow", coreSectionLabels.factory),
-          title: templateText(settings, "factoryTitle", "从几何、涂层到包装的供应能力"),
-          card1Title: templateText(settings, "factoryCard1Title", "OEM 图纸定制"),
-          card1Body: templateText(settings, "factoryCard1Body", "适合经销商长期备货、样品确认与批量订单。"),
-          card2Title: templateText(settings, "factoryCard2Title", "涂层与刃口处理"),
-          card2Body: templateText(settings, "factoryCard2Body", "适合经销商长期备货、样品确认与批量订单。"),
+          title: templateText(settings, "factoryTitle", "从成型、印刷到出口包装的供应能力"),
+          card1Title: templateText(settings, "factoryCard1Title", "模具与成型"),
+          card1Body: templateText(settings, "factoryCard1Body", "支持多种铁盒结构和定制形状。"),
+          card2Title: templateText(settings, "factoryCard2Title", "印刷与表面处理"),
+          card2Body: templateText(settings, "factoryCard2Body", "支持品牌色、哑光、亮光、压凸和压凹。"),
           card3Title: templateText(settings, "factoryCard3Title", "私标包装交付"),
           card3Body: templateText(settings, "factoryCard3Body", "适合经销商长期备货、样品确认与批量订单。"),
           tone: "dark"
@@ -138,9 +138,9 @@ function coreHomeComponents(settings: SiteTemplateSettings) {
           title: templateText(settings, "marketsTitle", "多语言市场与 RFQ 清单"),
           body: templateText(settings, "marketsBody", "支持多语言产品页、快速 RFQ 信息和出口文件。"),
           checklistTitle: templateText(settings, "marketsChecklistTitle", "RFQ 清单"),
-          item1: templateText(settings, "marketsChecklist1", "刀具类型、直径、刃长、总长和柄径。"),
-          item2: templateText(settings, "marketsChecklist2", "工件材料、硬度、涂层和切削条件。"),
-          item3: templateText(settings, "marketsChecklist3", "数量、包装、激光打标、目的地和交付目标。")
+          item1: templateText(settings, "marketsChecklist1", "铁盒形状、尺寸、盖型、内托需求和用途。"),
+          item2: templateText(settings, "marketsChecklist2", "设计稿状态、印刷色数、表面处理和样品预期。"),
+          item3: templateText(settings, "marketsChecklist3", "数量目标、包装方式、目的地和交付计划。")
         }
       };
     }
@@ -162,8 +162,8 @@ function coreHomeComponents(settings: SiteTemplateSettings) {
       props: {
         id: createId("rfq-section", index),
         eyebrow: templateText(settings, "rfqEyebrow", coreSectionLabels.rfq),
-        title: templateText(settings, "rfqTitle", "把刀具清单发给 KeyproTools"),
-        body: templateText(settings, "rfqBody", "规格、数量、涂层、包装和交期信息会在前台询盘表单中收集。")
+        title: templateText(settings, "rfqTitle", "把铁盒包装项目需求发给 Xiyida Packaging"),
+        body: templateText(settings, "rfqBody", "铁盒款式、尺寸、设计稿、数量目标、包装和交期信息会在前台询盘表单中收集。")
       }
     };
   }) satisfies VisualPageLayoutData["content"];
@@ -270,9 +270,9 @@ function baseLayouts(state: Pick<AdminState, "templateSettings">, now: string): 
           type: "PageHero",
           props: {
             id: "products-index-hero",
-            eyebrow: "KeyproTools products",
-            title: "Carbide end mills, drill bits, and OEM tooling for metalworking buyers.",
-            body: "Browse the main tooling families, compare application fit, and send RFQ details for distributor pricing, coating, marking, and export packing."
+            eyebrow: "Xiyida Packaging products",
+            title: "Custom tin box packaging for food, gifts, cosmetics, tea, coffee, and candles.",
+            body: "Browse the main packaging applications, compare structure and finish options, and send RFQ details for artwork, inspection, and export packing."
           }
         },
         { type: "ProductList", props: { id: "products-index-list", limit: 0, flat: false } }
@@ -288,9 +288,9 @@ function baseLayouts(state: Pick<AdminState, "templateSettings">, now: string): 
           type: "RfqSection",
           props: {
             id: "product-detail-rfq",
-            eyebrow: "Request category quote",
-            title: "Send diameter, quantity, coating, material, packaging, and destination.",
-            body: "KeyproTools will match geometry, stock range, OEM marking, and export packing for your buying program."
+            eyebrow: "Request category review",
+            title: "Send shape, size, artwork, finish, packing, and destination details.",
+            body: "Xiyida Packaging will review structure, printing, surface finish, inspection, and export packing for your buying program."
           }
         }
       ]),
@@ -305,8 +305,8 @@ function baseLayouts(state: Pick<AdminState, "templateSettings">, now: string): 
           props: {
             id: "articles-index-hero",
             eyebrow: "Technical library",
-            title: "Buying guides and application notes for end mills, drill bits, and OEM tool orders.",
-            body: "Read KeyproTools buying guides for cutting tool geometry, coating choices, drill bit assortments, OEM packaging, and distributor RFQ preparation."
+            title: "Buying guides for custom tin structures, printing, sampling, and export packing.",
+            body: "Read Xiyida Packaging buyer guides for tin box structure, printing finishes, samples, quality checks, and export packing preparation."
           }
         },
         { type: "ArticleList", props: { id: "articles-index-list", limit: 0 } }
@@ -322,9 +322,9 @@ function baseLayouts(state: Pick<AdminState, "templateSettings">, now: string): 
           type: "RfqSection",
           props: {
             id: "article-detail-rfq",
-            eyebrow: "Need a quote?",
-            title: "Turn this tooling note into a clear RFQ.",
-            body: "Share diameter, coating, workpiece material, quantity, packaging, and destination so KeyproTools can respond with a practical quotation."
+            eyebrow: "Need project support?",
+            title: "Turn this packaging note into a clear RFQ.",
+            body: "Share shape, size, artwork, finish, quantity target, packing, and destination so Xiyida Packaging can respond with practical project guidance."
           }
         }
       ]),
@@ -339,8 +339,8 @@ function baseLayouts(state: Pick<AdminState, "templateSettings">, now: string): 
           props: {
             id: "files-index-hero",
             eyebrow: "Downloads",
-            title: "KeyproTools product images and tooling resources",
-            body: "End mill, drill bit, coating, packaging, catalog, specification, and article media are collected here for buyer review."
+            title: "Xiyida Packaging product images and tin box resources",
+            body: "Tin box images, packaging references, application media, and article resources are collected here for buyer review."
           }
         },
         { type: "FileList", props: { id: "files-index-list" } }
@@ -356,12 +356,12 @@ function baseLayouts(state: Pick<AdminState, "templateSettings">, now: string): 
           props: {
             id: "contact-hero",
             eyebrow: "Contact",
-            title: "Send your end mill, drill bit, or OEM tooling request to KeyproTools.",
-            body: "Share drawings, size lists, coating requirements, packaging details, and destination so the sales team can prepare a practical export quote."
+            title: "Send your custom tin box packaging request to Xiyida Packaging.",
+            body: "Share tin shape, size, artwork status, finish, packing details, and destination so the sales team can review your export packaging project."
           }
         },
         { type: "ContactChannels", props: { id: "contact-channels", title: "Contact channels" } },
-        { type: "RfqSection", props: { id: "contact-rfq", eyebrow: "RFQ details", title: "Tell us what to quote.", body: "" } }
+        { type: "RfqSection", props: { id: "contact-rfq", eyebrow: "RFQ details", title: "Tell us what to review.", body: "" } }
       ]),
       updatedAt: now
     }

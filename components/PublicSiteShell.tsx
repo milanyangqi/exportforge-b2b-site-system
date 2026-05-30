@@ -2,7 +2,6 @@
 
 import type { CSSProperties, MouseEvent, ReactNode } from "react";
 import Link from "next/link";
-import { ShieldCheck } from "lucide-react";
 import { ContactChannelIcon } from "@/components/ContactChannelIcon";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { t, ui } from "@/lib/i18n";
@@ -110,9 +109,16 @@ function BrandLink({
   return (
     <Link className={className} href={`/${locale}`} onClick={onLinkClick}>
       <span className={markClassName} aria-hidden="true">
-        <ShieldCheck size={22} />
+        <strong className="brand-monogram">
+          <span>X</span>
+          <span>Y</span>
+          <span>D</span>
+        </strong>
       </span>
-      <span>{brandName}</span>
+      <span className="brand-text">
+        <strong>{brandName}</strong>
+        <small>Wuhu Xiyida Packaging Co., Ltd.</small>
+      </span>
     </Link>
   );
 }
@@ -233,11 +239,11 @@ export function PublicFooterShell({
   const handleLinkClick: LinkClickHandler | undefined = preventNavigation
     ? (event) => event.preventDefault()
     : undefined;
-  const footerTagline = tagline ? t(tagline, locale) : "Carbide end mills, drill bits, OEM tooling, and export-ready packing for global buyers.";
+  const footerTagline = tagline ? t(tagline, locale) : "Custom tin box packaging, printing, inspection, and export-ready packing for global buyers.";
   const footerCopyright = (copyright ? t(copyright, locale) : "Copyright © {year} {brand}. All rights reserved.")
     .replaceAll("{year}", String(new Date().getFullYear()))
     .replaceAll("{brand}", brandName);
-  const footerCredit = credit ? t(credit, locale) : "Built for precision tooling and B2B export orders.";
+  const footerCredit = credit ? t(credit, locale) : "Built for custom tin packaging and B2B export orders.";
 
   return (
     <footer className="site-footer">

@@ -5,8 +5,8 @@ import type { LocaleCode } from "@/types/site";
 
 export const dynamic = "force-dynamic";
 
-const filesTitle = "KeyproTools product images and tooling resources";
-const filesDescription = "Download KeyproTools end mill, drill bit, coating, packaging, catalog, specification, and article media for buyer review.";
+const filesTitle = "Xiyida Packaging product images and tin box resources";
+const filesDescription = "Download Xiyida Packaging tin box images, packaging references, application media, and article resources for buyer review.";
 
 export async function generateMetadata({ params }: { params: Promise<{ locale: LocaleCode }> }) {
   const { locale } = await params;
@@ -54,8 +54,8 @@ export default async function FilesPage({ params }: { params: Promise<{ locale: 
       <section className="section">
         <div className="section-head">
           <span className="eyebrow">Downloads</span>
-          <h1>KeyproTools product images and tooling resources</h1>
-          <p>End mill, drill bit, coating, packaging, catalog, specification, and article media are collected here for buyer review.</p>
+          <h1>Xiyida Packaging product images and tin box resources</h1>
+          <p>Tin box images, packaging references, application media, and article resources are collected here for buyer review.</p>
         </div>
         <div className="download-grid">
           {files.map((file) => (
