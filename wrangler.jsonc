@@ -1,6 +1,6 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "exportforge-b2b-site-system",
+  "name": "xiyida-packaging-site",
   "main": ".open-next/worker.js",
   "compatibility_date": "2026-05-23",
   "compatibility_flags": ["nodejs_compat"],
@@ -11,17 +11,17 @@
   "services": [
     {
       "binding": "WORKER_SELF_REFERENCE",
-      "service": "exportforge-b2b-site-system"
+      "service": "xiyida-packaging-site"
     }
   ],
   "kv_namespaces": [
     {
       "binding": "EXPORTFORGE_KV",
-      "id": "dec332f8417141759ed4c6ffc1838bc3"
+      "id": "e9e86fb038ac47da88ecabd510875fef"
     }
   ],
   "vars": {
-    "NEXT_PUBLIC_SITE_URL": "https://exportforge-b2b-site-system.workers.dev",
+    "NEXT_PUBLIC_SITE_URL": "https://xiyida-packaging-site.437991663.workers.dev",
     "INITIAL_ADMIN_EMAIL": "admin@example.com"
   }
 }
