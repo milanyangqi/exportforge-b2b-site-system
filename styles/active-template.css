@@ -6,7 +6,8 @@
 .template-home-brand-mark,
 .brand-mark {
   display: grid;
-  width: 54px;
+  width: 68px;
+  flex: 0 0 68px;
   height: 42px;
   place-items: center;
   border-radius: 0;
@@ -43,9 +44,9 @@
 
 .template-home-brand,
 .brand {
-  flex: 0 0 clamp(238px, 22vw, 306px);
+  flex: 0 0 clamp(330px, 27vw, 430px);
   gap: 12px;
-  min-height: 54px;
+  min-height: 58px;
 }
 
 .template-home-brand .brand-text,
@@ -214,12 +215,19 @@
 @media (max-width: 1180px) {
   .template-home-nav-links,
   .nav-links {
-    font-size: 12px;
+    display: none;
   }
 
-  .template-home-nav-links a,
-  .nav-links a {
-    padding-inline: 6px;
+  .mobile-nav {
+    display: block;
+    margin-left: 0;
+  }
+
+  .template-home-nav-inner,
+  .site-header {
+    min-height: 76px;
+    justify-content: flex-start;
+    overflow: visible;
   }
 }
 
@@ -247,8 +255,8 @@
 
   .template-home-brand-mark,
   .brand-mark {
-    width: 54px;
-    flex: 0 0 54px;
+    width: 64px;
+    flex: 0 0 64px;
     height: 38px;
     font-size: 15px;
   }
@@ -342,7 +350,7 @@
   .template-home-brand .brand-text,
   .brand .brand-text {
     width: auto;
-    max-width: calc(100% - 62px);
+    max-width: calc(100% - 72px);
   }
 
   .template-home-brand .brand-text > strong,
