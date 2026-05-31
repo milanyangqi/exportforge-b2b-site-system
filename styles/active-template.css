@@ -45,6 +45,7 @@
 .brand {
   flex: 0 0 clamp(238px, 22vw, 306px);
   gap: 12px;
+  min-height: 54px;
 }
 
 .template-home-brand .brand-text,
@@ -67,6 +68,7 @@
 
 .template-home-brand .brand-text > small,
 .brand .brand-text > small {
+  display: block;
   overflow: hidden;
   color: #6a7585;
   font-size: 10px;
@@ -232,7 +234,7 @@
   .template-home-nav-inner,
   .site-header {
     width: min(720px, calc(100% - 28px));
-    min-height: 68px;
+    min-height: 76px;
     gap: 10px;
     overflow: visible;
   }
@@ -245,14 +247,10 @@
 
   .template-home-brand-mark,
   .brand-mark {
-    width: 44px;
+    width: 54px;
+    flex: 0 0 54px;
     height: 38px;
     font-size: 15px;
-  }
-
-  .template-home-brand .brand-text > small,
-  .brand .brand-text > small {
-    display: none;
   }
 
   .template-home-nav-links,
@@ -322,6 +320,7 @@
   .template-home-nav-inner,
   .site-header {
     width: calc(100% - 24px);
+    min-height: 78px;
     padding-inline: 10px;
   }
 
@@ -332,13 +331,33 @@
 
   .template-home-brand,
   .brand {
-    flex: 1 1 calc(100% - 56px);
-    max-width: calc(100% - 56px);
+    flex: 1 1 calc(100% - 58px);
+    max-width: calc(100% - 58px);
+    gap: 8px;
+    min-height: 54px;
+  }
+
+  .template-home-brand span:last-child,
+  .brand span:last-child,
+  .template-home-brand .brand-text,
+  .brand .brand-text {
+    width: auto;
+    max-width: calc(100% - 62px);
+  }
+
+  .template-home-brand .brand-text > strong,
+  .brand .brand-text > strong {
+    font-size: 14px;
+  }
+
+  .template-home-brand .brand-text > small,
+  .brand .brand-text > small {
+    font-size: 9px;
   }
 
   .mobile-nav-panel {
     position: fixed;
-    top: 82px;
+    top: 92px;
     right: 12px;
     left: 12px;
     width: auto;
