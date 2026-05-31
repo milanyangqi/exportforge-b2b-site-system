@@ -22,8 +22,8 @@
       "custom_domain": true
     },
     {
-      "pattern": "www.xiyidapackaging.com",
-      "custom_domain": true
+      "pattern": "www.xiyidapackaging.com/*",
+      "zone_name": "xiyidapackaging.com"
     }
   ],
   "kv_namespaces": [
