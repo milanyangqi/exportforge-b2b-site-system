@@ -25,6 +25,7 @@
   align-items: baseline;
   gap: 0;
   letter-spacing: 0;
+  white-space: nowrap;
 }
 
 .brand-monogram span:first-child {
@@ -329,6 +330,7 @@
   .site-header {
     width: calc(100% - 24px);
     min-height: 78px;
+    gap: 8px;
     padding-inline: 10px;
   }
 
@@ -339,10 +341,24 @@
 
   .template-home-brand,
   .brand {
-    flex: 1 1 calc(100% - 58px);
-    max-width: calc(100% - 58px);
-    gap: 8px;
+    display: grid;
+    grid-template-columns: 76px minmax(0, 1fr);
+    flex: 1 1 calc(100% - 54px);
+    max-width: calc(100% - 54px);
+    gap: 10px;
     min-height: 54px;
+    align-items: center;
+  }
+
+  .template-home-brand-mark,
+  .brand-mark {
+    width: 76px;
+    min-width: 76px;
+    max-width: 76px;
+    flex-basis: 76px;
+    justify-self: start;
+    overflow: visible;
+    font-size: 16px;
   }
 
   .template-home-brand span:last-child,
@@ -350,7 +366,7 @@
   .template-home-brand .brand-text,
   .brand .brand-text {
     width: auto;
-    max-width: calc(100% - 72px);
+    max-width: 100%;
   }
 
   .template-home-brand .brand-text > strong,
