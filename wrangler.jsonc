@@ -20,10 +20,6 @@
     {
       "pattern": "xiyidapackaging.com",
       "custom_domain": true
-    },
-    {
-      "pattern": "www.xiyidapackaging.com/*",
-      "zone_name": "xiyidapackaging.com"
     }
   ],
   "kv_namespaces": [
@@ -33,7 +29,7 @@
     }
   ],
   "vars": {
-    "NEXT_PUBLIC_SITE_URL": "https://www.xiyidapackaging.com",
+    "NEXT_PUBLIC_SITE_URL": "https://xiyidapackaging.com",
     "INITIAL_ADMIN_EMAIL": "admin@example.com"
   }
 }
