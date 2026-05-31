@@ -6,12 +6,6 @@
   "compatibility_flags": ["nodejs_compat"],
   "workers_dev": true,
   "preview_urls": true,
-  "routes": [
-    {
-      "pattern": "www.xiyidapackaging.com",
-      "custom_domain": true
-    }
-  ],
   "assets": {
     "directory": ".open-next/assets",
     "binding": "ASSETS"
@@ -20,6 +14,16 @@
     {
       "binding": "WORKER_SELF_REFERENCE",
       "service": "xiyida-packaging-site"
+    }
+  ],
+  "routes": [
+    {
+      "pattern": "xiyidapackaging.com",
+      "custom_domain": true
+    },
+    {
+      "pattern": "www.xiyidapackaging.com",
+      "custom_domain": true
     }
   ],
   "kv_namespaces": [

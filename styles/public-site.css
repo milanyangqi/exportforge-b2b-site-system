@@ -261,6 +261,91 @@ body:has(.template-visual-editor-shell.fullscreen) .site-header {
   gap: 10px;
 }
 
+.mobile-nav {
+  position: relative;
+  display: none;
+  flex: 0 0 auto;
+  margin-left: auto;
+}
+
+.mobile-nav-toggle {
+  display: inline-flex;
+  width: 44px;
+  height: 44px;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 5px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  color: var(--ink);
+  background: #fff;
+  cursor: pointer;
+}
+
+.mobile-nav-toggle span {
+  display: block;
+  width: 18px;
+  height: 2px;
+  border-radius: 999px;
+  background: currentColor;
+}
+
+.mobile-nav-panel {
+  position: absolute;
+  z-index: 80;
+  top: calc(100% + 12px);
+  right: 0;
+  display: none;
+  width: min(320px, calc(100vw - 32px));
+  max-height: min(70vh, 520px);
+  overflow-y: auto;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 8px;
+  background: rgba(255, 255, 255, 0.98);
+  box-shadow: 0 22px 54px rgba(9, 36, 54, 0.18);
+}
+
+.mobile-nav-panel.open {
+  display: grid;
+  gap: 4px;
+}
+
+.mobile-nav-item {
+  display: grid;
+  gap: 4px;
+}
+
+.mobile-nav-link {
+  display: flex;
+  min-height: 42px;
+  align-items: center;
+  border-radius: 6px;
+  padding: 0 12px;
+  color: var(--ink);
+  font-weight: 850;
+}
+
+.mobile-nav-link:hover {
+  color: var(--primary);
+  background: color-mix(in srgb, var(--primary), white 92%);
+}
+
+.mobile-nav-children {
+  display: grid;
+  gap: 4px;
+  margin-left: 10px;
+  border-left: 1px solid var(--line);
+  padding-left: 8px;
+}
+
+.mobile-nav-children .mobile-nav-link {
+  min-height: 38px;
+  color: var(--muted);
+  font-size: 13px;
+}
+
 .quote-link,
 .button,
 .rfq-form button {
@@ -2744,6 +2829,10 @@ html[data-theme="consumer-goods"] .dark-band {
 
   .nav-links {
     display: none;
+  }
+
+  .mobile-nav {
+    display: block;
   }
 }
 

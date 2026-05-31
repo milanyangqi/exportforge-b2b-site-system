@@ -233,7 +233,7 @@
   .site-header {
     width: min(720px, calc(100% - 28px));
     min-height: 68px;
-    overflow: hidden;
+    overflow: visible;
   }
 
   .template-home-brand,
@@ -257,6 +257,10 @@
   .template-home-nav-links,
   .nav-links {
     display: none;
+  }
+
+  .mobile-nav {
+    display: block;
   }
 
   .template-home-header-actions,

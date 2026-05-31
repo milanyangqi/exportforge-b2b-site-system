@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import type { CSSProperties, MouseEvent, ReactNode } from "react";
 import Link from "next/link";
 import { ContactChannelIcon } from "@/components/ContactChannelIcon";
@@ -93,6 +94,78 @@ function NavigationTreeLink({
   );
 }
 
+function MobileNavigationTreeLink({
+  locale,
+  node,
+  onLinkClick
+}: {
+  locale: LocaleCode;
+  node: NavigationNode;
+  onLinkClick?: LinkClickHandler;
+}) {
+  const href = resolvePublicHref(node.href, locale);
+  const external = href.startsWith("http");
+  const hasChildren = node.children.length > 0;
+
+  return (
+    <div className={hasChildren ? "mobile-nav-item has-children" : "mobile-nav-item"}>
+      <Link
+        className="mobile-nav-link"
+        href={href}
+        target={node.openInNewTab || external ? "_blank" : undefined}
+        rel={node.openInNewTab || external ? "noreferrer" : undefined}
+        onClick={onLinkClick}
+      >
+        {t(node.label, locale)}
+      </Link>
+      {hasChildren ? (
+        <div className="mobile-nav-children">
+          {node.children.map((child) => (
+            <MobileNavigationTreeLink locale={locale} node={child} onLinkClick={onLinkClick} key={child.id} />
+          ))}
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+function MobileNavigationMenu({
+  locale,
+  navigationTree,
+  onLinkClick
+}: {
+  locale: LocaleCode;
+  navigationTree: NavigationNode[];
+  onLinkClick?: LinkClickHandler;
+}) {
+  const [isOpen, setIsOpen] = useState(false);
+  const handleLinkClick: LinkClickHandler = (event) => {
+    onLinkClick?.(event);
+    setIsOpen(false);
+  };
+
+  return (
+    <div className="mobile-nav">
+      <button
+        className="mobile-nav-toggle"
+        type="button"
+        aria-label={isOpen ? "关闭导航菜单" : "打开导航菜单"}
+        aria-expanded={isOpen}
+        onClick={() => setIsOpen((current) => !current)}
+      >
+        <span aria-hidden="true" />
+        <span aria-hidden="true" />
+        <span aria-hidden="true" />
+      </button>
+      <div className={isOpen ? "mobile-nav-panel open" : "mobile-nav-panel"}>
+        {navigationTree.map((item) => (
+          <MobileNavigationTreeLink locale={locale} node={item} onLinkClick={handleLinkClick} key={item.id} />
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function BrandLink({
   brandName,
   className,
@@ -159,6 +232,7 @@ export function PublicHeaderShell({
           <NavigationTreeLink locale={locale} node={item} onLinkClick={handleLinkClick} key={item.id} />
         ))}
       </nav>
+      <MobileNavigationMenu locale={locale} navigationTree={navigationTree} onLinkClick={handleLinkClick} />
       <div className="header-actions">
         <LanguageSwitcher locale={locale} enabledLocales={enabledLocales} preventNavigation={preventNavigation} />
         <a className="quote-link" href={ctaHref} onClick={handleLinkClick}>
@@ -204,6 +278,7 @@ export function HomeNavigationShell({
             <NavigationTreeLink locale={locale} node={item} onLinkClick={handleLinkClick} key={item.id} />
           ))}
         </nav>
+        <MobileNavigationMenu locale={locale} navigationTree={navigationTree} onLinkClick={handleLinkClick} />
         <div className="template-home-header-actions">
           <LanguageSwitcher locale={locale} enabledLocales={enabledLocales} preventNavigation={preventNavigation} />
           <a className="template-home-nav-cta" href="#rfq" onClick={handleLinkClick}>
