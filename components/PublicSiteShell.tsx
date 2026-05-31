@@ -130,10 +130,16 @@ function MobileNavigationTreeLink({
 }
 
 function MobileNavigationMenu({
+  ctaHref = "#rfq",
+  ctaLabel,
+  enabledLocales,
   locale,
   navigationTree,
   onLinkClick
 }: {
+  ctaHref?: string;
+  ctaLabel?: ReactNode;
+  enabledLocales: LocaleCode[];
   locale: LocaleCode;
   navigationTree: NavigationNode[];
   onLinkClick?: LinkClickHandler;
@@ -158,6 +164,12 @@ function MobileNavigationMenu({
         <span aria-hidden="true" />
       </button>
       <div className={isOpen ? "mobile-nav-panel open" : "mobile-nav-panel"}>
+        <div className="mobile-nav-panel-actions">
+          <LanguageSwitcher locale={locale} enabledLocales={enabledLocales} preventNavigation={Boolean(onLinkClick)} />
+          <a className="mobile-nav-cta" href={ctaHref} onClick={handleLinkClick}>
+            {ctaLabel ?? t(ui.quote, locale)}
+          </a>
+        </div>
         {navigationTree.map((item) => (
           <MobileNavigationTreeLink locale={locale} node={item} onLinkClick={handleLinkClick} key={item.id} />
         ))}
@@ -232,7 +244,14 @@ export function PublicHeaderShell({
           <NavigationTreeLink locale={locale} node={item} onLinkClick={handleLinkClick} key={item.id} />
         ))}
       </nav>
-      <MobileNavigationMenu locale={locale} navigationTree={navigationTree} onLinkClick={handleLinkClick} />
+      <MobileNavigationMenu
+        ctaHref={ctaHref}
+        ctaLabel={ctaLabel}
+        enabledLocales={enabledLocales}
+        locale={locale}
+        navigationTree={navigationTree}
+        onLinkClick={handleLinkClick}
+      />
       <div className="header-actions">
         <LanguageSwitcher locale={locale} enabledLocales={enabledLocales} preventNavigation={preventNavigation} />
         <a className="quote-link" href={ctaHref} onClick={handleLinkClick}>
@@ -278,7 +297,14 @@ export function HomeNavigationShell({
             <NavigationTreeLink locale={locale} node={item} onLinkClick={handleLinkClick} key={item.id} />
           ))}
         </nav>
-        <MobileNavigationMenu locale={locale} navigationTree={navigationTree} onLinkClick={handleLinkClick} />
+        <MobileNavigationMenu
+          ctaHref="#rfq"
+          ctaLabel={ctaLabel}
+          enabledLocales={enabledLocales}
+          locale={locale}
+          navigationTree={navigationTree}
+          onLinkClick={handleLinkClick}
+        />
         <div className="template-home-header-actions">
           <LanguageSwitcher locale={locale} enabledLocales={enabledLocales} preventNavigation={preventNavigation} />
           <a className="template-home-nav-cta" href="#rfq" onClick={handleLinkClick}>

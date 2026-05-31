@@ -312,6 +312,37 @@ body:has(.template-visual-editor-shell.fullscreen) .site-header {
   gap: 4px;
 }
 
+.mobile-nav-panel-actions {
+  display: grid;
+  gap: 8px;
+  border-bottom: 1px solid var(--line);
+  margin-bottom: 6px;
+  padding-bottom: 8px;
+}
+
+.mobile-nav-panel-actions .language-select {
+  display: flex;
+  width: 100%;
+  max-width: none;
+}
+
+.mobile-nav-panel-actions .language-select select {
+  width: 100%;
+  max-width: none;
+}
+
+.mobile-nav-cta {
+  display: inline-flex;
+  min-height: 42px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  padding: 0 12px;
+  color: #fff;
+  background: var(--accent);
+  font-weight: 900;
+}
+
 .mobile-nav-item {
   display: grid;
   gap: 4px;
