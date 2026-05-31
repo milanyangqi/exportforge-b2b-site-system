@@ -4,6 +4,14 @@
   "main": ".open-next/worker.js",
   "compatibility_date": "2026-05-23",
   "compatibility_flags": ["nodejs_compat"],
+  "workers_dev": true,
+  "preview_urls": true,
+  "routes": [
+    {
+      "pattern": "www.xiyidapackaging.com",
+      "custom_domain": true
+    }
+  ],
   "assets": {
     "directory": ".open-next/assets",
     "binding": "ASSETS"
@@ -21,7 +29,7 @@
     }
   ],
   "vars": {
-    "NEXT_PUBLIC_SITE_URL": "https://xiyida-packaging-site.437991663.workers.dev",
+    "NEXT_PUBLIC_SITE_URL": "https://www.xiyidapackaging.com",
     "INITIAL_ADMIN_EMAIL": "admin@example.com"
   }
 }
