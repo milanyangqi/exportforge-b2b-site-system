@@ -1101,6 +1101,19 @@ function ArticleDetail({ currentArticle, locale }: { currentArticle?: Article; l
   );
 }
 
+function PageDetail({ currentPage, locale }: { currentPage?: SitePage; locale: LocaleCode }) {
+  if (!currentPage) return null;
+
+  return (
+    <article className="content-detail">
+      <span className="eyebrow">Page</span>
+      <h1>{t(currentPage.title, locale)}</h1>
+      <p className="detail-excerpt">{t(currentPage.excerpt, locale)}</p>
+      <ArticleContent body={t(currentPage.body, locale)} />
+    </article>
+  );
+}
+
 function FileList({ state }: { state: AdminState }) {
   const files = state.uploadedFiles.filter((file) => file.enabled !== false);
 
@@ -1135,7 +1148,7 @@ function ContactChannels({ props, state, locale }: { props: Record<string, unkno
   );
 }
 
-export function PuckVisualBlock({ item, state, locale, currentProduct, currentArticle, editable }: PuckVisualBlockProps) {
+export function PuckVisualBlock({ item, state, locale, currentProduct, currentArticle, currentPage, editable }: PuckVisualBlockProps) {
   const props = item.props as Record<string, unknown>;
 
   switch (item.type) {
@@ -1191,6 +1204,8 @@ export function PuckVisualBlock({ item, state, locale, currentProduct, currentAr
       return <ProductDetail currentProduct={currentProduct} locale={locale} />;
     case "ArticleDetail":
       return <ArticleDetail currentArticle={currentArticle} locale={locale} />;
+    case "PageDetail":
+      return <PageDetail currentPage={currentPage} locale={locale} />;
     case "FileList":
       return <FileList state={state} />;
     case "ContactChannels":

@@ -7,8 +7,13 @@ import type { LocaleCode } from "@/types/site";
 
 export const dynamic = "force-dynamic";
 
-const articlesTitle = "Buying guides for custom tin structures, printing, sampling, and export packing.";
-const articlesDescription = "Read Xiyida Packaging buyer guides for tin box structure, printing finishes, samples, quality checks, and export packing preparation.";
+function articlesTitle(siteTitle: string) {
+  return `${siteTitle} articles`;
+}
+
+function articlesDescription(siteTitle: string) {
+  return `Read current ${siteTitle} articles, buying guides, and application notes.`;
+}
 
 export async function generateMetadata({ params }: { params: Promise<{ locale: LocaleCode }> }) {
   const { locale } = await params;
@@ -24,8 +29,8 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: L
   return buildPageMetadata(state, {
     locale,
     path: localePath(locale, "/articles"),
-    title: articlesTitle,
-    description: articlesDescription,
+    title: articlesTitle(state.siteSettings.title),
+    description: articlesDescription(state.siteSettings.title),
     kind: "articles",
     image: publishedArticles.find((article) => article.coverImageUrl)?.coverImageUrl,
     contentComplete: publishedArticles.some((article) => articleContentComplete(article, locale)),
@@ -37,6 +42,7 @@ export default async function ArticlesPage({ params }: { params: Promise<{ local
   const { locale } = await params;
   const state = await readAdminState();
   const publishedArticles = state.articles.filter((article) => article.status === "published");
+  const pageTitle = articlesTitle(state.siteSettings.title);
   const structuredData = (
     <script
       type="application/ld+json"
@@ -53,8 +59,8 @@ export default async function ArticlesPage({ params }: { params: Promise<{ local
       {structuredData}
       <section className="section">
         <div className="section-head subpage-head">
-          <span className="eyebrow">Technical library</span>
-          <h1>Buying guides for custom tin structures, printing, sampling, and export packing.</h1>
+          <span className="eyebrow">Articles</span>
+          <h1>{pageTitle}</h1>
         </div>
         <div className="article-grid">
           {publishedArticles.map((article) => (

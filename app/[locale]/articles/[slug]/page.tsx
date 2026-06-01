@@ -87,8 +87,8 @@ export default async function ArticleDetailPage({
       <section className="section rfq-section" id="rfq">
         <div>
           <span className="eyebrow">Need project support?</span>
-          <h2>Turn this packaging note into a clear RFQ.</h2>
-          <p>Share shape, size, artwork, finish, quantity target, packing, and destination so Xiyida Packaging can respond with practical project guidance.</p>
+          <h2>Turn this article into a clear RFQ.</h2>
+          <p>Share product requirements, quantity, packaging, and destination so {state.siteSettings.title} can respond with practical project guidance.</p>
         </div>
         <RfqForm locale={locale} />
       </section>

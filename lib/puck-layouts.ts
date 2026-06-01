@@ -12,7 +12,9 @@ import type {
   VisualPageLayoutData
 } from "@/types/site";
 
-const baseLayoutLabels: Record<Exclude<PageLayoutKey, `page:${string}`>, string> = {
+type SystemPageLayoutKey = Exclude<PageLayoutKey, `page:${string}`>;
+
+const baseLayoutLabels: Record<SystemPageLayoutKey, string> = {
   home: "首页",
   "products-index": "产品列表页",
   "product-detail": "产品详情页",
@@ -31,6 +33,10 @@ const coreSectionLabels: Record<HomeSectionKey, string> = {
   articles: "文章列表",
   rfq: "询盘表单"
 };
+
+function isSystemLayoutKey(key: PageLayoutKey): key is SystemPageLayoutKey {
+  return !key.startsWith("page:");
+}
 
 function asPuckData(content: VisualPageLayoutData["content"]): VisualPageLayoutData {
   return {
@@ -236,22 +242,82 @@ function createHomeLayout(settings: SiteTemplateSettings) {
 function defaultPageLayout(page: SitePage) {
   return asPuckData([
     {
-      type: "PageHero",
+      type: "PageDetail",
       props: {
-        id: `page-${page.slug}-hero`,
-        eyebrow: "Page",
-        title: text(page.title, page.slug),
-        body: text(page.excerpt, "")
-      }
-    },
-    {
-      type: "RichTextBlock",
-      props: {
-        id: `page-${page.slug}-body`,
-        body: text(page.body, "")
+        id: `page-${page.slug}-detail`
       }
     }
   ]);
+}
+
+function isLegacyStaticPageLayout(key: PageLayoutKey, data: VisualPageLayoutData) {
+  if (!key.startsWith("page:")) return false;
+  const slug = key.replace(/^page:/, "");
+  const content = data.content;
+
+  return content.length === 2
+    && content[0]?.type === "PageHero"
+    && content[1]?.type === "RichTextBlock"
+    && String(content[0]?.props?.id ?? "") === `page-${slug}-hero`
+    && String(content[1]?.props?.id ?? "") === `page-${slug}-body`;
+}
+
+const defaultLayoutSignatures: Partial<Record<SystemPageLayoutKey, string[]>> = {
+  "products-index": ["PageHero:products-index-hero", "ProductList:products-index-list"],
+  "product-detail": ["ProductDetail:product-detail-main", "RfqSection:product-detail-rfq"],
+  "articles-index": ["PageHero:articles-index-hero", "ArticleList:articles-index-list"],
+  "article-detail": ["ArticleDetail:article-detail-main", "RfqSection:article-detail-rfq"],
+  "files-index": ["PageHero:files-index-hero", "FileList:files-index-list"],
+  contact: ["PageHero:contact-hero", "ContactChannels:contact-channels", "RfqSection:contact-rfq"]
+};
+
+const legacyDefaultLayoutText: Partial<Record<SystemPageLayoutKey, string[]>> = {
+  "products-index": [
+    "Xiyida Packaging products",
+    "Custom tin box packaging for food, gifts, cosmetics, tea, coffee, and candles.",
+    "Browse the main packaging applications"
+  ],
+  "product-detail": [
+    "Send shape, size, artwork, finish, packing, and destination details.",
+    "Xiyida Packaging will review structure",
+    "Xiyida Packaging will review the category details"
+  ],
+  "articles-index": [
+    "Technical library",
+    "Buying guides for custom tin structures",
+    "Read Xiyida Packaging buyer guides"
+  ],
+  "article-detail": [
+    "Turn this packaging note into a clear RFQ.",
+    "Share shape, size, artwork, finish"
+  ],
+  "files-index": [
+    "Xiyida Packaging product images and tin box resources",
+    "Tin box images, packaging references"
+  ],
+  contact: [
+    "Send your custom tin box packaging request to Xiyida Packaging.",
+    "Share tin shape, size, artwork status"
+  ]
+};
+
+function layoutSignature(data: VisualPageLayoutData) {
+  return data.content.map((item) => `${item.type}:${String(item.props?.id ?? "")}`);
+}
+
+function isLegacyDefaultSystemLayout(key: PageLayoutKey, data: VisualPageLayoutData) {
+  if (!isSystemLayoutKey(key)) return false;
+  const expectedSignature = defaultLayoutSignatures[key];
+  const legacyText = legacyDefaultLayoutText[key];
+  if (!expectedSignature || !legacyText) return false;
+
+  const signature = layoutSignature(data);
+  const matchesDefaultStructure = signature.length === expectedSignature.length
+    && expectedSignature.every((item: string, index: number) => signature[index] === item);
+  if (!matchesDefaultStructure) return false;
+
+  const serialized = JSON.stringify(data);
+  return legacyText.some((item: string) => serialized.includes(item));
 }
 
 function baseLayouts(state: Pick<AdminState, "templateSettings">, now: string): SitePageLayout[] {
@@ -270,9 +336,9 @@ function baseLayouts(state: Pick<AdminState, "templateSettings">, now: string): 
           type: "PageHero",
           props: {
             id: "products-index-hero",
-            eyebrow: "Xiyida Packaging products",
-            title: "Custom tin box packaging for food, gifts, cosmetics, tea, coffee, and candles.",
-            body: "Browse the main packaging applications, compare structure and finish options, and send RFQ details for artwork, inspection, and export packing."
+            eyebrow: "Products",
+            title: "Product categories",
+            body: "Browse current product categories, compare fit, and send RFQ details."
           }
         },
         { type: "ProductList", props: { id: "products-index-list", limit: 0, flat: false } }
@@ -288,9 +354,9 @@ function baseLayouts(state: Pick<AdminState, "templateSettings">, now: string): 
           type: "RfqSection",
           props: {
             id: "product-detail-rfq",
-            eyebrow: "Request category review",
-            title: "Send shape, size, artwork, finish, packing, and destination details.",
-            body: "Xiyida Packaging will review structure, printing, surface finish, inspection, and export packing for your buying program."
+            eyebrow: "Request category quote",
+            title: "Send quantity, requirements, packaging, and destination.",
+            body: "The team will review the category details and respond with a practical quotation."
           }
         }
       ]),
@@ -304,9 +370,9 @@ function baseLayouts(state: Pick<AdminState, "templateSettings">, now: string): 
           type: "PageHero",
           props: {
             id: "articles-index-hero",
-            eyebrow: "Technical library",
-            title: "Buying guides for custom tin structures, printing, sampling, and export packing.",
-            body: "Read Xiyida Packaging buyer guides for tin box structure, printing finishes, samples, quality checks, and export packing preparation."
+            eyebrow: "Articles",
+            title: "Articles and application notes",
+            body: "Read current buying guides, application notes, and updates."
           }
         },
         { type: "ArticleList", props: { id: "articles-index-list", limit: 0 } }
@@ -322,9 +388,9 @@ function baseLayouts(state: Pick<AdminState, "templateSettings">, now: string): 
           type: "RfqSection",
           props: {
             id: "article-detail-rfq",
-            eyebrow: "Need project support?",
-            title: "Turn this packaging note into a clear RFQ.",
-            body: "Share shape, size, artwork, finish, quantity target, packing, and destination so Xiyida Packaging can respond with practical project guidance."
+            eyebrow: "Need a quote?",
+            title: "Turn this article into a clear request.",
+            body: "Share product details, quantity, packaging, and destination so the team can respond with a practical quotation."
           }
         }
       ]),
@@ -339,8 +405,8 @@ function baseLayouts(state: Pick<AdminState, "templateSettings">, now: string): 
           props: {
             id: "files-index-hero",
             eyebrow: "Downloads",
-            title: "Xiyida Packaging product images and tin box resources",
-            body: "Tin box images, packaging references, application media, and article resources are collected here for buyer review."
+            title: "Downloads and media resources",
+            body: "Download current images, documents, and media resources."
           }
         },
         { type: "FileList", props: { id: "files-index-list" } }
@@ -356,13 +422,13 @@ function baseLayouts(state: Pick<AdminState, "templateSettings">, now: string): 
           props: {
             id: "contact-hero",
             eyebrow: "Contact",
-            title: "Send your custom tin box packaging request to Xiyida Packaging.",
-            body: "Share tin shape, size, artwork status, finish, packing details, and destination so the sales team can review your export packaging project."
+            title: "Send your request",
+            body: "Share product details, quantity, packaging, and destination so the team can prepare a practical quotation."
           }
         },
         { type: "ContactChannels", props: { id: "contact-channels", title: "Contact channels" } },
-        { type: "RfqSection", props: { id: "contact-rfq", eyebrow: "RFQ details", title: "Tell us what to review.", body: "" } }
-      ]),
+        { type: "RfqSection", props: { id: "contact-rfq", eyebrow: "RFQ details", title: "Tell us what to quote.", body: "" } }
+	      ]),
       updatedAt: now
     }
   ];
@@ -377,6 +443,7 @@ function isValidLayoutData(data: unknown): data is VisualPageLayoutData {
 export function normalizePageLayouts(layouts: unknown, state: Pick<AdminState, "pages" | "templateSettings">): SitePageLayout[] {
   const now = new Date().toISOString();
   const defaultLayouts = baseLayouts(state, now);
+  const defaultLayoutByKey = new Map(defaultLayouts.map((layout) => [layout.key, layout]));
   const byKey = new Map<PageLayoutKey, SitePageLayout>();
 
   defaultLayouts.forEach((layout) => byKey.set(layout.key, layout));
@@ -385,13 +452,21 @@ export function normalizePageLayouts(layouts: unknown, state: Pick<AdminState, "
     layouts.forEach((layout, index) => {
       const key = typeof layout?.key === "string" ? layout.key as PageLayoutKey : null;
       if (!key || !isValidLayoutData(layout.data)) return;
+      const pageSlug = key.startsWith("page:") ? key.replace(/^page:/, "") : "";
+      const pageForLegacyLayout = pageSlug ? state.pages.find((page) => page.slug === pageSlug) : undefined;
+      const defaultSystemLayout = isSystemLayoutKey(key) ? defaultLayoutByKey.get(key) : undefined;
+      const data = pageForLegacyLayout && isLegacyStaticPageLayout(key, layout.data)
+        ? defaultPageLayout(pageForLegacyLayout)
+        : defaultSystemLayout && isLegacyDefaultSystemLayout(key, layout.data)
+          ? defaultSystemLayout.data
+        : layout.data;
 
       byKey.set(key, {
         key,
         label: typeof layout.label === "string" && layout.label.trim()
           ? layout.label
           : key.startsWith("page:") ? `页面：${key.replace(/^page:/, "")}` : baseLayoutLabels[key as keyof typeof baseLayoutLabels] ?? `布局 ${index + 1}`,
-        data: layout.data,
+        data,
         updatedAt: typeof layout.updatedAt === "string" ? layout.updatedAt : now,
         publishedAt: typeof layout.publishedAt === "string" ? layout.publishedAt : undefined
       });

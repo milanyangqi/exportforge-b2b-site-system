@@ -99,8 +99,8 @@ export default async function ProductCategoryPage({
       <section className="section rfq-section" id="rfq">
         <div>
           <span className="eyebrow">Request category review</span>
-          <h2>Send shape, size, artwork, finish, packing, and destination details.</h2>
-          <p>Xiyida Packaging will review structure, printing, surface finish, inspection, and export packing for your buying program.</p>
+          <h2>Send quantity, requirements, packaging, and destination.</h2>
+          <p>{state.siteSettings.title} will review product details, customization, inspection, and export packing for your buying program.</p>
         </div>
         <RfqForm locale={locale} />
       </section>

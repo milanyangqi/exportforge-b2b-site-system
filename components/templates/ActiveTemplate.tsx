@@ -8,7 +8,7 @@ import { locales } from "@/config/locales";
 import { themes } from "@/config/themes";
 import { siteSettings } from "@/data/site";
 import { t, ui } from "@/lib/i18n";
-import type { AdminState, HomeSectionKey, LocaleCode, ProductCategory, SiteTemplateCustomBlock } from "@/types/site";
+import type { AdminState, HomeSectionKey, LocaleCode, SiteTemplateCustomBlock } from "@/types/site";
 
 export function ActiveTemplate({ locale, state }: { locale: LocaleCode; state: AdminState }) {
   const activeTheme = themes[state.activeTheme] ?? themes.industrial;
@@ -16,20 +16,7 @@ export function ActiveTemplate({ locale, state }: { locale: LocaleCode; state: A
   const homeArticles = state.articles
     .filter((article) => article.status === "published" && article.featuredOnHome)
     .slice(0, templateSettings.homeArticleCount);
-  const homeProductSlugs = [
-    "food-tin-packaging",
-    "gift-tin-packaging",
-    "cosmetic-tin-packaging",
-    "tea-coffee-tins",
-    "candle-tins",
-    "custom-tin-box-manufacturing"
-  ];
-  const preferredHomeProducts = homeProductSlugs
-    .map((slug) => state.products.find((product) => product.slug === slug))
-    .filter((product): product is ProductCategory => Boolean(product));
-  const preferredHomeProductSlugs = new Set(preferredHomeProducts.map((product) => product.slug));
-  const additionalHomeProducts = state.products.filter((product) => !preferredHomeProductSlugs.has(product.slug));
-  const homeProducts = [...preferredHomeProducts, ...additionalHomeProducts].slice(0, templateSettings.homeProductCount);
+  const homeProducts = state.products.slice(0, templateSettings.homeProductCount);
   const visibleLocales = locales.filter((item) => state.enabledLocales.includes(item.code));
   const templateText = (key: string, fallback: string) => {
     const value = templateSettings.textBlocks[key];
@@ -95,7 +82,7 @@ export function ActiveTemplate({ locale, state }: { locale: LocaleCode; state: A
       order: templateSettings.sectionOrder.navigation,
       node: (
         <HomeNavigationShell
-          brandName={state.siteSettings.title || "Xiyida Packaging"}
+          brandName={state.siteSettings.title || "Export site"}
           ctaLabel={t(templateSettings.primaryCtaLabel, locale) || t(ui.quote, locale)}
           enabledLocales={state.enabledLocales}
           locale={locale}
