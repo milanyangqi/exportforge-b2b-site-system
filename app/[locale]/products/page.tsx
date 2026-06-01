@@ -6,8 +6,13 @@ import type { LocaleCode } from "@/types/site";
 
 export const dynamic = "force-dynamic";
 
-const productsTitle = "Carbide end mills, drill bits, and OEM tooling for metalworking buyers.";
-const productsDescription = "Browse KeyproTools cutting tool categories, compare application fit, and send RFQ details for distributor pricing, coating, marking, and export packing.";
+function productsTitle(siteTitle: string) {
+  return `${siteTitle} products`;
+}
+
+function productsDescription(siteTitle: string) {
+  return `Browse current ${siteTitle} product categories, compare fit, and send RFQ details.`;
+}
 
 export async function generateMetadata({ params }: { params: Promise<{ locale: LocaleCode }> }) {
   const { locale } = await params;
@@ -22,8 +27,8 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: L
   return buildPageMetadata(state, {
     locale,
     path: localePath(locale, "/products"),
-    title: productsTitle,
-    description: productsDescription,
+    title: productsTitle(state.siteSettings.title),
+    description: productsDescription(state.siteSettings.title),
     kind: "products",
     image: state.products.find((product) => product.imageUrl)?.imageUrl,
     contentComplete: state.products.some((product) => productContentComplete(product, locale)),
@@ -34,6 +39,8 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: L
 export default async function ProductsPage({ params }: { params: Promise<{ locale: LocaleCode }> }) {
   const { locale } = await params;
   const state = await readAdminState();
+  const pageTitle = productsTitle(state.siteSettings.title);
+  const pageDescription = productsDescription(state.siteSettings.title);
   const structuredData = (
     <script
       type="application/ld+json"
@@ -50,9 +57,9 @@ export default async function ProductsPage({ params }: { params: Promise<{ local
       {structuredData}
       <section className="section">
         <div className="section-head">
-          <span className="eyebrow">KeyproTools products</span>
-          <h1>Carbide end mills, drill bits, and OEM tooling for metalworking buyers.</h1>
-          <p>Browse the main tooling families, compare application fit, and send RFQ details for distributor pricing, coating, marking, and export packing.</p>
+          <span className="eyebrow">{state.siteSettings.title} products</span>
+          <h1>{pageTitle}</h1>
+          <p>{pageDescription}</p>
         </div>
         <ProductGrid locale={locale} products={state.products} />
       </section>
