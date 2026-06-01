@@ -7,8 +7,13 @@ import type { LocaleCode } from "@/types/site";
 
 export const dynamic = "force-dynamic";
 
-const contactTitle = "Contact KeyproTools for end mills, drill bits, and OEM tooling quotes.";
-const contactDescription = "Send drawings, size lists, coating requirements, packaging details, and destination so KeyproTools can prepare a practical export quote.";
+function contactTitle(siteTitle: string) {
+  return `Contact ${siteTitle}`;
+}
+
+function contactDescription(siteTitle: string) {
+  return `Send your request to ${siteTitle} and the team will follow up with details.`;
+}
 
 export async function generateMetadata({ params }: { params: Promise<{ locale: LocaleCode }> }) {
   const { locale } = await params;
@@ -21,8 +26,8 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: L
   return buildPageMetadata(state, {
     locale,
     path: localePath(locale, "/contact"),
-    title: contactTitle,
-    description: contactDescription,
+    title: contactTitle(state.siteSettings.title),
+    description: contactDescription(state.siteSettings.title),
     kind: "contact",
     contentComplete: locale === "en" || locale === "zh",
     alternates
@@ -32,6 +37,8 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: L
 export default async function ContactPage({ params }: { params: Promise<{ locale: LocaleCode }> }) {
   const { locale } = await params;
   const state = await readAdminState();
+  const pageTitle = contactTitle(state.siteSettings.title);
+  const pageDescription = contactDescription(state.siteSettings.title);
   const structuredData = (
     <>
       <script
@@ -40,8 +47,8 @@ export default async function ContactPage({ params }: { params: Promise<{ locale
           __html: jsonLd({
             "@context": "https://schema.org",
             "@type": "ContactPage",
-            name: contactTitle,
-            description: contactDescription,
+            name: pageTitle,
+            description: pageDescription,
             url: absoluteUrl(state, localePath(locale, "/contact"))
           })
         }}
@@ -63,8 +70,8 @@ export default async function ContactPage({ params }: { params: Promise<{ locale
       <section className="section split contact-section">
         <div className="contact-copy">
           <span className="eyebrow">Contact</span>
-          <h1>Send your end mill, drill bit, or OEM tooling request to KeyproTools.</h1>
-          <p>Share drawings, size lists, coating requirements, packaging details, and destination so the sales team can prepare a practical export quote.</p>
+          <h1>{pageTitle}</h1>
+          <p>{pageDescription}</p>
           <PublicContactList channels={state.contactChannels} locale={locale} />
         </div>
         <div className="contact-rfq-panel" id="rfq">

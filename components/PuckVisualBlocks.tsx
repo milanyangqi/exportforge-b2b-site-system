@@ -164,7 +164,7 @@ function HomeNavigation({ props, state, locale }: { props: Record<string, unknow
 
   return (
     <HomeNavigationShell
-      brandName={state.siteSettings.title || "KeyproTools"}
+      brandName={state.siteSettings.title || "Export site"}
       ctaLabel={ctaLabel}
       enabledLocales={state.enabledLocales}
       locale={locale}
@@ -174,7 +174,7 @@ function HomeNavigation({ props, state, locale }: { props: Record<string, unknow
 }
 
 function HeroSection({ props, locale }: { props: Record<string, unknown>; locale: LocaleCode }) {
-  const title = propString(props, "title", "KeyproTools");
+  const title = propString(props, "title", "Page");
   const backgroundMode = propString(props, "backgroundMode", "single");
   const images = collectImages(props, [propString(props, "mediaLibraryUrl"), propString(props, "imageUrl")]);
   const imageUrl = backgroundMode !== "none" ? images[0]?.url ?? "" : "";
@@ -607,6 +607,19 @@ function ArticleDetail({ currentArticle, locale }: { currentArticle?: Article; l
   );
 }
 
+function PageDetail({ currentPage, locale }: { currentPage?: SitePage; locale: LocaleCode }) {
+  if (!currentPage) return null;
+
+  return (
+    <article className="content-detail">
+      <span className="eyebrow">Page</span>
+      <h1>{t(currentPage.title, locale)}</h1>
+      <p className="detail-excerpt">{t(currentPage.excerpt, locale)}</p>
+      <ArticleContent body={t(currentPage.body, locale)} />
+    </article>
+  );
+}
+
 function FileList({ state }: { state: AdminState }) {
   const files = state.uploadedFiles.filter((file) => file.enabled !== false);
 
@@ -641,7 +654,7 @@ function ContactChannels({ props, state, locale }: { props: Record<string, unkno
   );
 }
 
-export function PuckVisualBlock({ item, state, locale, currentProduct, currentArticle }: PuckVisualBlockProps) {
+export function PuckVisualBlock({ item, state, locale, currentProduct, currentArticle, currentPage }: PuckVisualBlockProps) {
   const props = item.props as Record<string, unknown>;
 
   switch (item.type) {
@@ -681,6 +694,8 @@ export function PuckVisualBlock({ item, state, locale, currentProduct, currentAr
       return <ProductDetail currentProduct={currentProduct} locale={locale} />;
     case "ArticleDetail":
       return <ArticleDetail currentArticle={currentArticle} locale={locale} />;
+    case "PageDetail":
+      return <PageDetail currentPage={currentPage} locale={locale} />;
     case "FileList":
       return <FileList state={state} />;
     case "ContactChannels":

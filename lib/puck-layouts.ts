@@ -12,7 +12,9 @@ import type {
   VisualPageLayoutData
 } from "@/types/site";
 
-const baseLayoutLabels: Record<Exclude<PageLayoutKey, `page:${string}`>, string> = {
+type SystemPageLayoutKey = Exclude<PageLayoutKey, `page:${string}`>;
+
+const baseLayoutLabels: Record<SystemPageLayoutKey, string> = {
   home: "首页",
   "products-index": "产品列表页",
   "product-detail": "产品详情页",
@@ -32,6 +34,10 @@ const coreSectionLabels: Record<HomeSectionKey, string> = {
   rfq: "询盘表单"
 };
 
+function isSystemLayoutKey(key: PageLayoutKey): key is SystemPageLayoutKey {
+  return !key.startsWith("page:");
+}
+
 function asPuckData(content: VisualPageLayoutData["content"]): VisualPageLayoutData {
   return {
     root: { props: { title: "" } },
@@ -41,7 +47,7 @@ function asPuckData(content: VisualPageLayoutData["content"]): VisualPageLayoutD
 }
 
 function text(value: Translation | undefined, fallback = "") {
-  return value?.zh || value?.en || fallback;
+  return value?.en || value?.zh || fallback;
 }
 
 function templateText(settings: SiteTemplateSettings, key: string, fallback = "") {
@@ -67,7 +73,7 @@ function coreHomeComponents(settings: SiteTemplateSettings) {
         type: "HomeNavigation",
         props: {
           id: createId("home-navigation", index),
-          ctaLabel: text(settings.primaryCtaLabel, "获取报价")
+          ctaLabel: text(settings.primaryCtaLabel, "Request quote")
         }
       };
     }
@@ -78,21 +84,21 @@ function coreHomeComponents(settings: SiteTemplateSettings) {
         type: "HeroSection",
         props: {
           id: createId("hero-section", index),
-          eyebrow: text(settings.heroKicker, "面向全球买家的 CNC 刀具供应"),
-          title: text(settings.heroTitle, "硬质合金铣刀与钻头"),
-          body: text(settings.heroBody, "面向经销商长期备货的硬质合金刀具供应。"),
-          primaryLabel: text(settings.primaryCtaLabel, "获取报价"),
+          eyebrow: text(settings.heroKicker, "Built for global buyers"),
+          title: text(settings.heroTitle, "Export-ready product supply"),
+          body: text(settings.heroBody, "Create a focused B2B storefront with current products, articles, downloads, and RFQ details."),
+          primaryLabel: text(settings.primaryCtaLabel, "Request quote"),
           primaryHref: "#rfq",
-          secondaryLabel: text(settings.secondaryCtaLabel, "产品目录"),
+          secondaryLabel: text(settings.secondaryCtaLabel, "Products"),
           secondaryHref: "/products",
           imageUrl: firstSlide?.imageUrl ?? "",
           showMetrics: settings.showHeroMetrics,
-          metric1Value: templateText(settings, "heroMetric1Value", "0.2-25mm"),
-          metric1Label: templateText(settings, "heroMetric1Label", "End mill diameter range"),
-          metric2Value: templateText(settings, "heroMetric2Value", "HSS / M35 / Carbide"),
-          metric2Label: templateText(settings, "heroMetric2Label", "Drill bit supply"),
+          metric1Value: templateText(settings, "heroMetric1Value", "24h"),
+          metric1Label: templateText(settings, "heroMetric1Label", "RFQ response workflow"),
+          metric2Value: templateText(settings, "heroMetric2Value", "OEM"),
+          metric2Label: templateText(settings, "heroMetric2Label", "Custom supply support"),
           metric3Value: templateText(settings, "heroMetric3Value", "OEM"),
-          metric3Label: templateText(settings, "heroMetric3Label", "Laser marking and packing")
+          metric3Label: templateText(settings, "heroMetric3Label", "Packing and documentation")
         }
       };
     }
@@ -103,8 +109,8 @@ function coreHomeComponents(settings: SiteTemplateSettings) {
         props: {
           id: createId("product-list", index),
           eyebrow: templateText(settings, "productsEyebrow", coreSectionLabels.products),
-          title: templateText(settings, "productsTitle", "硬质合金刀具目录"),
-          body: templateText(settings, "productsBody", "覆盖经销商备货、工厂加工与定制刀具需求。"),
+          title: templateText(settings, "productsTitle", "Product categories"),
+          body: templateText(settings, "productsBody", "Browse current categories and send requirements for quotation."),
           limit: settings.homeProductCount,
           flat: true
         }
@@ -117,13 +123,13 @@ function coreHomeComponents(settings: SiteTemplateSettings) {
         props: {
           id: createId("feature-cards", index),
           eyebrow: templateText(settings, "factoryEyebrow", coreSectionLabels.factory),
-          title: templateText(settings, "factoryTitle", "从几何、涂层到包装的供应能力"),
-          card1Title: templateText(settings, "factoryCard1Title", "OEM 图纸定制"),
-          card1Body: templateText(settings, "factoryCard1Body", "适合经销商长期备货、样品确认与批量订单。"),
-          card2Title: templateText(settings, "factoryCard2Title", "涂层与刃口处理"),
-          card2Body: templateText(settings, "factoryCard2Body", "适合经销商长期备货、样品确认与批量订单。"),
-          card3Title: templateText(settings, "factoryCard3Title", "私标包装交付"),
-          card3Body: templateText(settings, "factoryCard3Body", "适合经销商长期备货、样品确认与批量订单。"),
+          title: templateText(settings, "factoryTitle", "Supply capabilities for repeat orders"),
+          card1Title: templateText(settings, "factoryCard1Title", "OEM customization"),
+          card1Body: templateText(settings, "factoryCard1Body", "Support sample confirmation, batch production, and repeat buying programs."),
+          card2Title: templateText(settings, "factoryCard2Title", "Quality checkpoints"),
+          card2Body: templateText(settings, "factoryCard2Body", "Keep specifications, inspection, and delivery details visible for buyers."),
+          card3Title: templateText(settings, "factoryCard3Title", "Export packing"),
+          card3Body: templateText(settings, "factoryCard3Body", "Prepare buyer-ready labels, cartons, and shipment documentation."),
           tone: "dark"
         }
       };
@@ -135,12 +141,12 @@ function coreHomeComponents(settings: SiteTemplateSettings) {
         props: {
           id: createId("market-section", index),
           eyebrow: templateText(settings, "marketsEyebrow", coreSectionLabels.markets),
-          title: templateText(settings, "marketsTitle", "多语言市场与 RFQ 清单"),
-          body: templateText(settings, "marketsBody", "支持多语言产品页、快速 RFQ 信息和出口文件。"),
-          checklistTitle: templateText(settings, "marketsChecklistTitle", "RFQ 清单"),
-          item1: templateText(settings, "marketsChecklist1", "刀具类型、直径、刃长、总长和柄径。"),
-          item2: templateText(settings, "marketsChecklist2", "工件材料、硬度、涂层和切削条件。"),
-          item3: templateText(settings, "marketsChecklist3", "数量、包装、激光打标、目的地和交付目标。")
+          title: templateText(settings, "marketsTitle", "Multilingual markets and RFQ details"),
+          body: templateText(settings, "marketsBody", "Support localized pages, quick RFQ information, and export documentation."),
+          checklistTitle: templateText(settings, "marketsChecklistTitle", "RFQ checklist"),
+          item1: templateText(settings, "marketsChecklist1", "Product type, specification, and target use."),
+          item2: templateText(settings, "marketsChecklist2", "Material, quality requirements, and preferred standards."),
+          item3: templateText(settings, "marketsChecklist3", "Quantity, packing, destination, and delivery target.")
         }
       };
     }
@@ -162,8 +168,8 @@ function coreHomeComponents(settings: SiteTemplateSettings) {
       props: {
         id: createId("rfq-section", index),
         eyebrow: templateText(settings, "rfqEyebrow", coreSectionLabels.rfq),
-        title: templateText(settings, "rfqTitle", "把刀具清单发给 KeyproTools"),
-        body: templateText(settings, "rfqBody", "规格、数量、涂层、包装和交期信息会在前台询盘表单中收集。")
+        title: templateText(settings, "rfqTitle", "Send the details for quotation"),
+        body: templateText(settings, "rfqBody", "The RFQ form collects product, quantity, packing, destination, and delivery details.")
       }
     };
   }) satisfies VisualPageLayoutData["content"];
@@ -173,7 +179,7 @@ function customBlockComponent(block: SiteTemplateCustomBlock, index: number) {
   const shared = {
     id: block.id || createId("custom-block", index),
     eyebrow: text(block.eyebrow, ""),
-    title: text(block.title, "自定义模块"),
+    title: text(block.title, "Custom section"),
     body: text(block.body, ""),
     align: block.align ?? "left",
     tone: block.theme ?? "light"
@@ -212,7 +218,7 @@ function customBlockComponent(block: SiteTemplateCustomBlock, index: number) {
       type: "CtaSection",
       props: {
         ...shared,
-        buttonLabel: text(block.buttonLabel, "了解更多"),
+        buttonLabel: text(block.buttonLabel, "Learn more"),
         href: block.linkUrl || "#rfq"
       }
     };
@@ -236,22 +242,82 @@ function createHomeLayout(settings: SiteTemplateSettings) {
 function defaultPageLayout(page: SitePage) {
   return asPuckData([
     {
-      type: "PageHero",
+      type: "PageDetail",
       props: {
-        id: `page-${page.slug}-hero`,
-        eyebrow: "Page",
-        title: text(page.title, page.slug),
-        body: text(page.excerpt, "")
-      }
-    },
-    {
-      type: "RichTextBlock",
-      props: {
-        id: `page-${page.slug}-body`,
-        body: text(page.body, "")
+        id: `page-${page.slug}-detail`
       }
     }
   ]);
+}
+
+function isLegacyStaticPageLayout(key: PageLayoutKey, data: VisualPageLayoutData) {
+  if (!key.startsWith("page:")) return false;
+  const slug = key.replace(/^page:/, "");
+  const content = data.content;
+
+  return content.length === 2
+    && content[0]?.type === "PageHero"
+    && content[1]?.type === "RichTextBlock"
+    && String(content[0]?.props?.id ?? "") === `page-${slug}-hero`
+    && String(content[1]?.props?.id ?? "") === `page-${slug}-body`;
+}
+
+const defaultLayoutSignatures: Partial<Record<SystemPageLayoutKey, string[]>> = {
+  "products-index": ["PageHero:products-index-hero", "ProductList:products-index-list"],
+  "product-detail": ["ProductDetail:product-detail-main", "RfqSection:product-detail-rfq"],
+  "articles-index": ["PageHero:articles-index-hero", "ArticleList:articles-index-list"],
+  "article-detail": ["ArticleDetail:article-detail-main", "RfqSection:article-detail-rfq"],
+  "files-index": ["PageHero:files-index-hero", "FileList:files-index-list"],
+  contact: ["PageHero:contact-hero", "ContactChannels:contact-channels", "RfqSection:contact-rfq"]
+};
+
+const legacyDefaultLayoutText: Partial<Record<SystemPageLayoutKey, string[]>> = {
+  "products-index": [
+    "KeyproTools products",
+    "Carbide end mills, drill bits, and OEM tooling for metalworking buyers.",
+    "Browse the main tooling families"
+  ],
+  "product-detail": [
+    "Send diameter, quantity, coating, material, packaging, and destination.",
+    "KeyproTools will match geometry",
+    "KeyproTools will review the category details"
+  ],
+  "articles-index": [
+    "Technical library",
+    "Buying guides and application notes for end mills",
+    "Read KeyproTools buying guides"
+  ],
+  "article-detail": [
+    "Turn this tooling note into a clear RFQ.",
+    "Share diameter, coating, workpiece material"
+  ],
+  "files-index": [
+    "KeyproTools product images and tooling resources",
+    "End mill, drill bit, coating, packaging"
+  ],
+  contact: [
+    "Send your end mill, drill bit, or OEM tooling request to KeyproTools.",
+    "Share drawings, size lists, coating requirements"
+  ]
+};
+
+function layoutSignature(data: VisualPageLayoutData) {
+  return data.content.map((item) => `${item.type}:${String(item.props?.id ?? "")}`);
+}
+
+function isLegacyDefaultSystemLayout(key: PageLayoutKey, data: VisualPageLayoutData) {
+  if (!isSystemLayoutKey(key)) return false;
+  const expectedSignature = defaultLayoutSignatures[key];
+  const legacyText = legacyDefaultLayoutText[key];
+  if (!expectedSignature || !legacyText) return false;
+
+  const signature = layoutSignature(data);
+  const matchesDefaultStructure = signature.length === expectedSignature.length
+    && expectedSignature.every((item: string, index: number) => signature[index] === item);
+  if (!matchesDefaultStructure) return false;
+
+  const serialized = JSON.stringify(data);
+  return legacyText.some((item: string) => serialized.includes(item));
 }
 
 function baseLayouts(state: Pick<AdminState, "templateSettings">, now: string): SitePageLayout[] {
@@ -270,9 +336,9 @@ function baseLayouts(state: Pick<AdminState, "templateSettings">, now: string): 
           type: "PageHero",
           props: {
             id: "products-index-hero",
-            eyebrow: "KeyproTools products",
-            title: "Carbide end mills, drill bits, and OEM tooling for metalworking buyers.",
-            body: "Browse the main tooling families, compare application fit, and send RFQ details for distributor pricing, coating, marking, and export packing."
+            eyebrow: "Products",
+            title: "Product categories",
+            body: "Browse current product categories, compare fit, and send RFQ details."
           }
         },
         { type: "ProductList", props: { id: "products-index-list", limit: 0, flat: false } }
@@ -289,8 +355,8 @@ function baseLayouts(state: Pick<AdminState, "templateSettings">, now: string): 
           props: {
             id: "product-detail-rfq",
             eyebrow: "Request category quote",
-            title: "Send diameter, quantity, coating, material, packaging, and destination.",
-            body: "KeyproTools will match geometry, stock range, OEM marking, and export packing for your buying program."
+            title: "Send quantity, requirements, packaging, and destination.",
+            body: "The team will review the category details and respond with a practical quotation."
           }
         }
       ]),
@@ -304,9 +370,9 @@ function baseLayouts(state: Pick<AdminState, "templateSettings">, now: string): 
           type: "PageHero",
           props: {
             id: "articles-index-hero",
-            eyebrow: "Technical library",
-            title: "Buying guides and application notes for end mills, drill bits, and OEM tool orders.",
-            body: "Read KeyproTools buying guides for cutting tool geometry, coating choices, drill bit assortments, OEM packaging, and distributor RFQ preparation."
+            eyebrow: "Articles",
+            title: "Articles and application notes",
+            body: "Read current buying guides, application notes, and updates."
           }
         },
         { type: "ArticleList", props: { id: "articles-index-list", limit: 0 } }
@@ -323,8 +389,8 @@ function baseLayouts(state: Pick<AdminState, "templateSettings">, now: string): 
           props: {
             id: "article-detail-rfq",
             eyebrow: "Need a quote?",
-            title: "Turn this tooling note into a clear RFQ.",
-            body: "Share diameter, coating, workpiece material, quantity, packaging, and destination so KeyproTools can respond with a practical quotation."
+            title: "Turn this article into a clear request.",
+            body: "Share product details, quantity, packaging, and destination so the team can respond with a practical quotation."
           }
         }
       ]),
@@ -339,8 +405,8 @@ function baseLayouts(state: Pick<AdminState, "templateSettings">, now: string): 
           props: {
             id: "files-index-hero",
             eyebrow: "Downloads",
-            title: "KeyproTools product images and tooling resources",
-            body: "End mill, drill bit, coating, packaging, catalog, specification, and article media are collected here for buyer review."
+            title: "Downloads and media resources",
+            body: "Download current images, documents, and media resources."
           }
         },
         { type: "FileList", props: { id: "files-index-list" } }
@@ -356,8 +422,8 @@ function baseLayouts(state: Pick<AdminState, "templateSettings">, now: string): 
           props: {
             id: "contact-hero",
             eyebrow: "Contact",
-            title: "Send your end mill, drill bit, or OEM tooling request to KeyproTools.",
-            body: "Share drawings, size lists, coating requirements, packaging details, and destination so the sales team can prepare a practical export quote."
+            title: "Send your request",
+            body: "Share product details, quantity, packaging, and destination so the team can prepare a practical quotation."
           }
         },
         { type: "ContactChannels", props: { id: "contact-channels", title: "Contact channels" } },
@@ -377,6 +443,7 @@ function isValidLayoutData(data: unknown): data is VisualPageLayoutData {
 export function normalizePageLayouts(layouts: unknown, state: Pick<AdminState, "pages" | "templateSettings">): SitePageLayout[] {
   const now = new Date().toISOString();
   const defaultLayouts = baseLayouts(state, now);
+  const defaultLayoutByKey = new Map(defaultLayouts.map((layout) => [layout.key, layout]));
   const byKey = new Map<PageLayoutKey, SitePageLayout>();
 
   defaultLayouts.forEach((layout) => byKey.set(layout.key, layout));
@@ -386,12 +453,21 @@ export function normalizePageLayouts(layouts: unknown, state: Pick<AdminState, "
       const key = typeof layout?.key === "string" ? layout.key as PageLayoutKey : null;
       if (!key || !isValidLayoutData(layout.data)) return;
 
+      const pageSlug = key.startsWith("page:") ? key.replace(/^page:/, "") : "";
+      const pageForLegacyLayout = pageSlug ? state.pages.find((page) => page.slug === pageSlug) : undefined;
+      const defaultSystemLayout = isSystemLayoutKey(key) ? defaultLayoutByKey.get(key) : undefined;
+      const data = pageForLegacyLayout && isLegacyStaticPageLayout(key, layout.data)
+        ? defaultPageLayout(pageForLegacyLayout)
+        : defaultSystemLayout && isLegacyDefaultSystemLayout(key, layout.data)
+          ? defaultSystemLayout.data
+        : layout.data;
+
       byKey.set(key, {
         key,
         label: typeof layout.label === "string" && layout.label.trim()
           ? layout.label
           : key.startsWith("page:") ? `页面：${key.replace(/^page:/, "")}` : baseLayoutLabels[key as keyof typeof baseLayoutLabels] ?? `布局 ${index + 1}`,
-        data: layout.data,
+        data,
         updatedAt: typeof layout.updatedAt === "string" ? layout.updatedAt : now,
         publishedAt: typeof layout.publishedAt === "string" ? layout.publishedAt : undefined
       });
