@@ -94,8 +94,8 @@ export default async function ProductCategoryPage({
       <section className="section rfq-section" id="rfq">
         <div>
           <span className="eyebrow">Request category quote</span>
-          <h2>Send diameter, quantity, coating, material, packaging, and destination.</h2>
-          <p>KeyproTools will match geometry, stock range, OEM marking, and export packing for your buying program.</p>
+          <h2>Send quantity, requirements, packaging, and destination.</h2>
+          <p>{state.siteSettings.title} will match product details, stock range, customization, and export packing for your buying program.</p>
         </div>
         <RfqForm locale={locale} />
       </section>

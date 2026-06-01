@@ -9,7 +9,7 @@ import { locales } from "@/config/locales";
 import { themes } from "@/config/themes";
 import { siteSettings } from "@/data/site";
 import { t, ui } from "@/lib/i18n";
-import type { AdminState, HomeSectionKey, LocaleCode, ProductCategory, SiteTemplateCustomBlock } from "@/types/site";
+import type { AdminState, HomeSectionKey, LocaleCode, SiteTemplateCustomBlock } from "@/types/site";
 
 export function ActiveTemplate({ locale, state }: { locale: LocaleCode; state: AdminState }) {
   const activeTheme = themes[state.activeTheme] ?? themes.industrial;
@@ -17,20 +17,7 @@ export function ActiveTemplate({ locale, state }: { locale: LocaleCode; state: A
   const homeArticles = state.articles
     .filter((article) => article.status === "published" && article.featuredOnHome)
     .slice(0, templateSettings.homeArticleCount);
-  const homeProductSlugs = [
-    "carbide-end-mills",
-    "drill-bits",
-    "custom-tooling",
-    "square-end-mills",
-    "solid-carbide-drills",
-    "coating-oem-packaging"
-  ];
-  const preferredHomeProducts = homeProductSlugs
-    .map((slug) => state.products.find((product) => product.slug === slug))
-    .filter((product): product is ProductCategory => Boolean(product));
-  const preferredHomeProductSlugs = new Set(preferredHomeProducts.map((product) => product.slug));
-  const additionalHomeProducts = state.products.filter((product) => !preferredHomeProductSlugs.has(product.slug));
-  const homeProducts = [...preferredHomeProducts, ...additionalHomeProducts].slice(0, templateSettings.homeProductCount);
+  const homeProducts = state.products.slice(0, templateSettings.homeProductCount);
   const visibleLocales = locales.filter((item) => state.enabledLocales.includes(item.code));
   const homeNavigation = [...state.navigation]
     .filter((item) => item.enabled && !item.parentId)
@@ -102,7 +89,7 @@ export function ActiveTemplate({ locale, state }: { locale: LocaleCode; state: A
           <div className="template-home-nav-inner">
             <a className="template-home-brand" href={`/${locale}`}>
               <span className="template-home-brand-mark" aria-hidden="true"><ShieldCheck size={22} /></span>
-              <span>{state.siteSettings.title || "KeyproTools"}</span>
+              <span>{state.siteSettings.title || "Export site"}</span>
             </a>
             <nav className="template-home-nav-links" aria-label="Primary navigation">
               {homeNavigation.map((item) => (
@@ -143,9 +130,9 @@ export function ActiveTemplate({ locale, state }: { locale: LocaleCode; state: A
               </div>
               {templateSettings.showHeroMetrics ? (
                 <div className="metrics">
-                  <div><strong>{templateText("heroMetric1Value", "0.2-25mm")}</strong><span>{templateText("heroMetric1Label", "End mill diameter range")}</span></div>
-                  <div><strong>{templateText("heroMetric2Value", "HSS / M35 / Carbide")}</strong><span>{templateText("heroMetric2Label", "Drill bit supply")}</span></div>
-                  <div><strong>{templateText("heroMetric3Value", "OEM")}</strong><span>{templateText("heroMetric3Label", "Laser marking and packing")}</span></div>
+                  <div><strong>{templateText("heroMetric1Value", "24h")}</strong><span>{templateText("heroMetric1Label", "RFQ response workflow")}</span></div>
+                  <div><strong>{templateText("heroMetric2Value", "OEM")}</strong><span>{templateText("heroMetric2Label", "Custom supply support")}</span></div>
+                  <div><strong>{templateText("heroMetric3Value", "Docs")}</strong><span>{templateText("heroMetric3Label", "Packing and documentation")}</span></div>
                 </div>
               ) : null}
             </div>
@@ -160,9 +147,9 @@ export function ActiveTemplate({ locale, state }: { locale: LocaleCode; state: A
       node: (
         <section className="section">
           <div className="section-head">
-            <span className="eyebrow">{templateText("productsEyebrow", "Cutting tool catalog")}</span>
-            <h2>{templateText("productsTitle", "End mills, drill bits, and OEM tooling built for repeat purchasing.")}</h2>
-            <p>{templateText("productsBody", "Browse core categories for CNC shops, hardware distributors, maintenance suppliers, and private-label tool programs.")}</p>
+            <span className="eyebrow">{templateText("productsEyebrow", "Product catalog")}</span>
+            <h2>{templateText("productsTitle", "Product categories built for repeat purchasing.")}</h2>
+            <p>{templateText("productsBody", "Browse current categories, compare application fit, and send RFQ details.")}</p>
           </div>
           <ProductGrid flat locale={locale} products={homeProducts} />
         </section>
@@ -200,9 +187,9 @@ export function ActiveTemplate({ locale, state }: { locale: LocaleCode; state: A
         <section className="section split">
           <div>
             <span className="eyebrow">{templateText("marketsEyebrow", "Export markets")}</span>
-            <h2>{templateText("marketsTitle", "Buyer-ready communication for distributors across major tooling markets.")}</h2>
+            <h2>{templateText("marketsTitle", "Buyer-ready communication for global markets.")}</h2>
             <p>
-              {templateText("marketsBody", "KeyproTools supports multilingual product pages, quick RFQ details, and export documentation for buyers comparing end mills, drill bits, and OEM assortments.")}
+              {templateText("marketsBody", "Support multilingual product pages, quick RFQ details, and export documentation for buyers comparing supplier options.")}
             </p>
             <div className="language-strip">
               {visibleLocales.map((item) => (
@@ -267,7 +254,7 @@ export function ActiveTemplate({ locale, state }: { locale: LocaleCode; state: A
                 <li>{templateText("rfqGuidance3", "Packaging, private label, target quantity, and delivery market.")}</li>
               </ul>
             </div>
-            <p className="rfq-response-note">{templateText("rfqNote", "KeyproTools usually reviews RFQ details by product family so the quotation can match stock, OEM marking, and export packing requirements.")}</p>
+            <p className="rfq-response-note">{templateText("rfqNote", "RFQ details are reviewed by product family so the quotation can match stock, customization, and export packing requirements.")}</p>
           </div>
           <RfqForm locale={locale} />
         </section>

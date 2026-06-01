@@ -498,14 +498,6 @@ const imageLayoutOptions: { key: SiteTemplateImageLayout; label: string }[] = [
   { key: "mosaic", label: "拼贴展示" },
   { key: "carousel", label: "图片轮播" }
 ];
-const homeProductSlugs = [
-  "carbide-end-mills",
-  "drill-bits",
-  "custom-tooling",
-  "square-end-mills",
-  "solid-carbide-drills",
-  "coating-oem-packaging"
-];
 const aiTargetOptions: { key: AiContentTarget; label: string; description: string }[] = [
   { key: "article", label: "文章", description: "生成技术文章、采购指南和 SEO 内容。" },
   { key: "page", label: "页面", description: "生成关于我们、服务说明、资料页等独立页面。" }
@@ -828,6 +820,44 @@ function pickLocalizedText(value?: Partial<Record<LocaleCode, string>> | Transla
   return preferredLocale ? value[preferredLocale] ?? value.zh ?? value.en ?? "" : value.zh ?? value.en ?? "";
 }
 
+function mergeLocalizedText(existing: Partial<Record<LocaleCode, string>> | undefined, localeCode: LocaleCode, value: string, fallback: string): Translation {
+  const trimmedValue = value.trim();
+  const fallbackValue = fallback.trim();
+  const nextValue = trimmedValue || fallbackValue;
+  const next = {
+    en: existing?.en ?? "",
+    zh: existing?.zh ?? "",
+    ...(existing ?? {}),
+    [localeCode]: nextValue
+  } as Translation;
+
+  if (!next.en) next.en = localeCode === "en" ? nextValue : fallbackValue || nextValue;
+  if (!next.zh) next.zh = localeCode === "zh" ? nextValue : fallbackValue || nextValue;
+
+  return next;
+}
+
+function mergeOptionalLocalizedText(existing: Partial<Record<LocaleCode, string>> | undefined, localeCode: LocaleCode, value: string): Translation | undefined {
+  const trimmedValue = value.trim();
+  const next = { ...(existing ?? {}) } as Partial<Record<LocaleCode, string>>;
+
+  if (trimmedValue) {
+    next[localeCode] = trimmedValue;
+    if (!next.en) next.en = trimmedValue;
+    if (!next.zh) next.zh = trimmedValue;
+  } else {
+    delete next[localeCode];
+  }
+
+  const fallbackValue = Object.values(next).find((item) => item?.trim())?.trim();
+  if (!fallbackValue) return undefined;
+
+  return {
+    ...next,
+    en: next.en?.trim() ? next.en : fallbackValue
+  };
+}
+
 function encodeMailtoValue(value: string) {
   return encodeURIComponent(value).replace(/%20/g, "+");
 }
@@ -970,17 +1000,6 @@ function pageStatusLabel(page: SitePage) {
   if (page.status === "trash") return "回收站";
   if (page.status === "published") return "已发布";
   return "草稿";
-}
-
-function createSingleLanguageTranslation(value: string) {
-  return { en: value, zh: value };
-}
-
-function mergeSeoTranslation(en: string, zh: string) {
-  const titleEn = en.trim();
-  const titleZh = zh.trim();
-  if (!titleEn && !titleZh) return undefined;
-  return { en: titleEn || titleZh, zh: titleZh || titleEn };
 }
 
 function hasLocaleText(value: Partial<Record<LocaleCode, string>> | undefined, locale: LocaleCode) {
@@ -1878,7 +1897,7 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
     setFrontendSettingsDirty(true);
   }
 
-  function updateTemplateText(field: "heroKicker" | "heroTitle" | "heroBody" | "primaryCtaLabel" | "secondaryCtaLabel", localeCode: "zh" | "en", value: string) {
+  function updateTemplateText(field: "heroKicker" | "heroTitle" | "heroBody" | "primaryCtaLabel" | "secondaryCtaLabel", localeCode: LocaleCode, value: string) {
     if (!state || !guardFrontendSettingsAccess()) return;
     updateTemplateSettings({
       [field]: {
@@ -1891,10 +1910,10 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
   function commitTemplateEditableText(field: "heroKicker" | "heroTitle" | "heroBody" | "primaryCtaLabel" | "secondaryCtaLabel", element: HTMLElement | null) {
     if (!element) return;
     const value = element.innerText.replace(/\s+\n/g, "\n").trim();
-    updateTemplateText(field, "zh", value);
+    updateTemplateText(field, locale, value);
   }
 
-  function updateTemplateTextBlock(blockKey: string, localeCode: "zh" | "en", value: string) {
+  function updateTemplateTextBlock(blockKey: string, localeCode: LocaleCode, value: string) {
     if (!state || !guardFrontendSettingsAccess()) return;
     const currentBlock = state.templateSettings.textBlocks[blockKey] ?? { en: value };
 
@@ -2158,7 +2177,7 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
 
   function createCustomBlockImageItem(block: SiteTemplateCustomBlock, imageUrl: string, label?: string): SiteTemplateImageItem {
     const currentItems = block.imageItems ?? [];
-    const title = label || block.title.zh || block.title.en || "Custom image";
+    const title = label || pickLocalizedText(block.title, locale) || "Custom image";
 
     return {
       id: `custom-image-${Date.now()}`,
@@ -2394,7 +2413,7 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
   function addHeroSlideFromMedia(file: UploadedFile) {
     if (!state || !guardFrontendSettingsAccess()) return;
     updateTemplateSettings({
-      heroSlides: [...state.templateSettings.heroSlides, createHeroSlide(file.url, file.description?.zh ?? file.name)]
+      heroSlides: [...state.templateSettings.heroSlides, createHeroSlide(file.url, pickLocalizedText(file.description, locale) || file.name)]
     });
   }
 
@@ -2417,29 +2436,30 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
 
   function submitProductForm() {
     if (!state) return;
-    const nameZh = productForm.zh.trim();
-    const nameEn = productForm.en.trim() || nameZh || "New Category";
-    const slug = slugify(productForm.slug || nameEn || nameZh) || `category-${Date.now()}`;
+    const visibleName = productForm.zh.trim();
+    const fallbackName = productForm.en.trim() || visibleName || "New Category";
+    const slug = slugify(productForm.slug || fallbackName) || `category-${Date.now()}`;
     const id = editingProductId ?? `product-${slug}-${Date.now()}`;
     const existingProduct = editingProductId
       ? state.products.find((product) => (product.id ?? product.slug) === editingProductId)
       : undefined;
+    const visibleSummary = productForm.summaryZh.trim();
+    const fallbackSummary = productForm.summaryEn.trim() || visibleSummary || existingProduct?.summary.en || "Describe this category for overseas buyers.";
+    const seoTitle = productForm.seoTitleZh || productForm.seoTitleEn;
+    const seoDescription = productForm.seoDescriptionZh || productForm.seoDescriptionEn;
     const nextProduct: ProductCategory = {
       id,
       slug,
-      name: { en: nameEn, zh: nameZh || nameEn },
-      summary: {
-        en: productForm.summaryEn.trim() || productForm.summaryZh.trim() || existingProduct?.summary.en || "Describe this category for overseas buyers.",
-        zh: productForm.summaryZh.trim() || productForm.summaryEn.trim() || existingProduct?.summary.zh || "填写分类描述。"
-      },
+      name: mergeLocalizedText(existingProduct?.name, locale, visibleName, fallbackName),
+      summary: mergeLocalizedText(existingProduct?.summary, locale, visibleSummary, fallbackSummary),
       parentId: productForm.parentId || undefined,
       applications: existingProduct?.applications ?? { en: ["Export catalog"], zh: ["外贸目录"] },
       specs: existingProduct?.specs ?? [],
       themeFit: existingProduct?.themeFit ?? [state.activeTheme],
       seo: {
         ...(existingProduct?.seo ?? {}),
-        title: mergeSeoTranslation(productForm.seoTitleEn, productForm.seoTitleZh),
-        description: mergeSeoTranslation(productForm.seoDescriptionEn, productForm.seoDescriptionZh),
+        title: mergeOptionalLocalizedText(existingProduct?.seo?.title, locale, seoTitle),
+        description: mergeOptionalLocalizedText(existingProduct?.seo?.description, locale, seoDescription),
         ogImageUrl: productForm.seoOgImageUrl.trim() || undefined,
         canonicalUrl: productForm.seoCanonicalUrl.trim() || undefined,
         indexable: productForm.seoIndexable
@@ -2458,7 +2478,13 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
 
   function editProduct(product: ProductCategory) {
     setEditingProductId(product.id ?? product.slug);
-    setProductForm(productToForm(product));
+    setProductForm({
+      ...productToForm(product),
+      zh: pickLocalizedText(product.name, locale),
+      summaryZh: pickLocalizedText(product.summary, locale),
+      seoTitleZh: pickLocalizedText(product.seo?.title, locale),
+      seoDescriptionZh: pickLocalizedText(product.seo?.description, locale)
+    });
   }
 
   function switchTheme(theme: ThemeKey) {
@@ -2844,15 +2870,15 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
   }
 
   function updatePageTitle(value: string) {
-    updateActivePage({ title: createSingleLanguageTranslation(value) });
+    updateActivePage({ title: mergeLocalizedText(activePage?.title, locale, value, value) });
   }
 
   function updatePageExcerpt(value: string) {
-    updateActivePage({ excerpt: createSingleLanguageTranslation(value) });
+    updateActivePage({ excerpt: mergeLocalizedText(activePage?.excerpt, locale, value, value) });
   }
 
   function updatePageBody(value: string) {
-    updateActivePage({ body: createSingleLanguageTranslation(value) });
+    updateActivePage({ body: mergeLocalizedText(activePage?.body, locale, value, value) });
   }
 
   function insertTextIntoPageBody(insertText: string) {
@@ -3741,15 +3767,15 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
   });
 
   function updateArticleTitle(value: string) {
-    updateActiveArticle({ title: createSingleLanguageTranslation(value) });
+    updateActiveArticle({ title: mergeLocalizedText(activeArticle?.title, locale, value, value) });
   }
 
   function updateArticleExcerpt(value: string) {
-    updateActiveArticle({ excerpt: createSingleLanguageTranslation(value) });
+    updateActiveArticle({ excerpt: mergeLocalizedText(activeArticle?.excerpt, locale, value, value) });
   }
 
   function updateArticleBody(value: string) {
-    updateActiveArticle({ body: createSingleLanguageTranslation(value) });
+    updateActiveArticle({ body: mergeLocalizedText(activeArticle?.body, locale, value, value) });
   }
 
   function syncVisualEditorBody() {
@@ -3918,7 +3944,7 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
         return response.json() as Promise<{ file: UploadedFile; state: AdminState }>;
       })
       .then(({ file: uploadedFile, state: savedState }) => {
-        const imageMarkdown = `\n\n![${sanitizeMarkdownLabel(uploadedFile.name || activeArticle.title.zh || activeArticle.title.en || "文章图片")}](${uploadedFile.url})\n\n`;
+        const imageMarkdown = `\n\n![${sanitizeMarkdownLabel(uploadedFile.name || pickLocalizedText(activeArticle.title, locale) || "文章图片")}](${uploadedFile.url})\n\n`;
         const nextState = {
           ...savedState,
           articles: savedState.articles.map((article) => {
@@ -3929,7 +3955,7 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
             };
 
             if (insertIntoBody) {
-              nextArticle.body = createSingleLanguageTranslation(`${currentBody.slice(0, start)}${imageMarkdown}${currentBody.slice(end)}`);
+              nextArticle.body = mergeLocalizedText(article.body, locale, `${currentBody.slice(0, start)}${imageMarkdown}${currentBody.slice(end)}`, currentBody);
             }
 
             return nextArticle;
@@ -3969,7 +3995,7 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
       ...sourceState,
       articles: sourceState.articles.map((article) => (
         (article.id ?? article.slug) === targetId
-          ? { ...article, body: createSingleLanguageTranslation(nextBody) }
+          ? { ...article, body: mergeLocalizedText(article.body, locale, nextBody, nextBody) }
           : article
       ))
     };
@@ -4190,25 +4216,27 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
     ? state.aiUsageRecords
     : state.aiUsageRecords.filter((record) => record.userEmail.toLowerCase() === currentEmail.toLowerCase());
   const shouldShowAdminStatus = Boolean(status && status !== "已连接本地后台数据" && !hiddenAdminStatusMessages.has(status));
-  const navigationProductOptions = [...state.products].sort((a, b) => (a.name.zh || a.name.en).localeCompare(b.name.zh || b.name.en));
+  const navigationProductOptions = [...state.products].sort((a, b) => (
+    (pickLocalizedText(a.name, locale) || a.slug).localeCompare(pickLocalizedText(b.name, locale) || b.slug)
+  ));
   const navigationArticleOptions = state.articles
     .filter((article) => article.status !== "trash")
-    .sort((a, b) => (a.title.zh || a.title.en).localeCompare(b.title.zh || b.title.en));
+    .sort((a, b) => (pickLocalizedText(a.title, locale) || a.slug).localeCompare(pickLocalizedText(b.title, locale) || b.slug));
   const navigationPageOptions = state.pages
     .filter((page) => page.status !== "trash")
-    .sort((a, b) => (a.title.zh || a.title.en).localeCompare(b.title.zh || b.title.en));
+    .sort((a, b) => (pickLocalizedText(a.title, locale) || a.slug).localeCompare(pickLocalizedText(b.title, locale) || b.slug));
   const aiArticleTargets = state.articles
     .filter((article) => article.status !== "trash")
-    .sort((a, b) => (a.title.zh || a.title.en).localeCompare(b.title.zh || b.title.en));
+    .sort((a, b) => (pickLocalizedText(a.title, locale) || a.slug).localeCompare(pickLocalizedText(b.title, locale) || b.slug));
   const aiPageTargets = state.pages
     .filter((page) => page.status !== "trash")
-    .sort((a, b) => (a.title.zh || a.title.en).localeCompare(b.title.zh || b.title.en));
+    .sort((a, b) => (pickLocalizedText(a.title, locale) || a.slug).localeCompare(pickLocalizedText(b.title, locale) || b.slug));
   const aiSelectedTargetId = aiContentForm.target === "article" ? aiContentForm.targetArticleId : aiContentForm.targetPageId;
   const aiCanApply = aiContentForm.writeMode === "new" || Boolean(aiSelectedTargetId);
   const articleProductCategoryOptions = [...state.products]
-    .sort((a, b) => (a.name.zh || a.name.en).localeCompare(b.name.zh || b.name.en))
+    .sort((a, b) => (pickLocalizedText(a.name, locale) || a.slug).localeCompare(pickLocalizedText(b.name, locale) || b.slug))
     .map((product) => ({
-      label: product.name.zh || product.name.en,
+      label: pickLocalizedText(product.name, locale) || product.slug,
       value: product.slug
     }));
   const articleProductCategoryValues = new Set(articleProductCategoryOptions.map((item) => item.value));
@@ -4220,18 +4248,13 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
   const heroImageFiles = state.uploadedFiles
     .filter((file) => getMediaType(file) === "image")
     .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-  const preferredVisualProducts = homeProductSlugs
-    .map((slug) => state.products.find((product) => product.slug === slug))
-    .filter((product): product is ProductCategory => Boolean(product));
-  const preferredVisualProductSlugs = new Set(preferredVisualProducts.map((product) => product.slug));
-  const visualProducts = [...preferredVisualProducts, ...state.products.filter((product) => !preferredVisualProductSlugs.has(product.slug))]
-    .slice(0, templateSettings.homeProductCount);
+  const visualProducts = state.products.slice(0, templateSettings.homeProductCount);
   const visualArticles = state.articles
     .filter((article) => article.status === "published" && article.featuredOnHome)
     .slice(0, templateSettings.homeArticleCount);
   const visualHeroImage = activeVisualSlide?.imageUrl || "/assets/current-template/hero-tooling-range.jpg";
   const visualHeroImageStyle = { "--visual-hero-image": `url(${visualHeroImage})` } as CSSProperties;
-  const visualText = (blockKey: string, fallback: string) => templateSettings.textBlocks[blockKey]?.zh || templateSettings.textBlocks[blockKey]?.en || fallback;
+  const visualText = (blockKey: string, fallback: string) => pickLocalizedText(templateSettings.textBlocks[blockKey], locale) || fallback;
   const visualFactoryCards = [1, 2, 3].map((index) => ({
     titleKey: `factoryCard${index}Title`,
     bodyKey: `factoryCard${index}Body`
@@ -4253,7 +4276,7 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
     ...templateSettings.customBlocks.map((block) => ({
       id: block.id,
       kind: "custom" as VisualBuilderModuleKind,
-      label: block.title.zh || block.title.en,
+      label: pickLocalizedText(block.title, locale),
       typeLabel: block.type === "image" ? "图片模块" : block.type === "video" ? "视频模块" : block.type === "cta" ? "按钮模块" : "文字模块",
       enabled: block.enabled,
       order: block.order
@@ -4363,8 +4386,8 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
         {visibleImages.length > 0 ? visibleImages.map((item, index) => (
           <figure className="visual-custom-image-frame" key={item.id}>
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={item.url} alt={item.alt?.zh || item.alt?.en || block.title.zh || block.title.en} />
-            {item.caption?.zh || item.caption?.en ? <figcaption>{item.caption.zh || item.caption.en}</figcaption> : null}
+            <img src={item.url} alt={pickLocalizedText(item.alt, locale) || pickLocalizedText(block.title, locale)} />
+            {pickLocalizedText(item.caption, locale) ? <figcaption>{pickLocalizedText(item.caption, locale)}</figcaption> : null}
             {layout === "carousel" && index === 0 ? <span className="visual-image-badge"><ImageIcon size={14} />轮播</span> : null}
           </figure>
         )) : (
@@ -4392,7 +4415,7 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
           /\.(mp4|webm|ogg)(\?.*)?$/i.test(videoUrl) ? (
             <video src={videoUrl} controls preload="metadata" />
           ) : (
-            <iframe src={videoUrl} title={block.title.zh || block.title.en} allow="autoplay; fullscreen; picture-in-picture" allowFullScreen />
+            <iframe src={videoUrl} title={pickLocalizedText(block.title, locale)} allow="autoplay; fullscreen; picture-in-picture" allowFullScreen />
           )
         ) : (
           <div className="visual-video-placeholder"><Video size={24} />双击添加视频链接</div>
@@ -4474,10 +4497,10 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
             <span>编辑首页首屏标题、说明、按钮和背景显示。</span>
           </div>
           <label>主标题
-            <textarea value={templateSettings.heroTitle.zh || templateSettings.heroTitle.en} onChange={(event) => updateTemplateText("heroTitle", "zh", event.target.value)} />
+            <textarea value={pickLocalizedText(templateSettings.heroTitle, locale)} onChange={(event) => updateTemplateText("heroTitle", locale, event.target.value)} />
           </label>
           <label>说明
-            <textarea value={templateSettings.heroBody.zh || templateSettings.heroBody.en} onChange={(event) => updateTemplateText("heroBody", "zh", event.target.value)} />
+            <textarea value={pickLocalizedText(templateSettings.heroBody, locale)} onChange={(event) => updateTemplateText("heroBody", locale, event.target.value)} />
           </label>
           <label className="checkline">
             <input disabled={!canManageFrontendSettings} type="checkbox" checked={templateSettings.heroCarouselEnabled} onChange={(event) => updateTemplateSettings({ heroCarouselEnabled: event.target.checked })} />
@@ -4517,13 +4540,13 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
             <span>编辑当前选中模块的内容、布局、背景和链接。</span>
           </div>
           <label>眉标
-            <input value={selectedCustomBlock.eyebrow?.zh || selectedCustomBlock.eyebrow?.en || ""} onChange={(event) => updateCustomTemplateBlock(selectedCustomBlock.id, { eyebrow: { ...(selectedCustomBlock.eyebrow ?? { en: "", zh: "" }), zh: event.target.value, en: selectedCustomBlock.eyebrow?.en || event.target.value } })} />
+            <input value={pickLocalizedText(selectedCustomBlock.eyebrow, locale)} onChange={(event) => updateCustomTemplateBlock(selectedCustomBlock.id, { eyebrow: mergeLocalizedText(selectedCustomBlock.eyebrow, locale, event.target.value, event.target.value) })} />
           </label>
           <label>标题
-            <input value={selectedCustomBlock.title.zh || selectedCustomBlock.title.en} onChange={(event) => updateCustomTemplateBlock(selectedCustomBlock.id, { title: { ...selectedCustomBlock.title, zh: event.target.value, en: selectedCustomBlock.title.en || event.target.value } })} />
+            <input value={pickLocalizedText(selectedCustomBlock.title, locale)} onChange={(event) => updateCustomTemplateBlock(selectedCustomBlock.id, { title: mergeLocalizedText(selectedCustomBlock.title, locale, event.target.value, event.target.value) })} />
           </label>
           <label>正文
-            <textarea value={selectedCustomBlock.body.zh || selectedCustomBlock.body.en} onChange={(event) => updateCustomTemplateBlock(selectedCustomBlock.id, { body: { ...selectedCustomBlock.body, zh: event.target.value, en: selectedCustomBlock.body.en || event.target.value } })} />
+            <textarea value={pickLocalizedText(selectedCustomBlock.body, locale)} onChange={(event) => updateCustomTemplateBlock(selectedCustomBlock.id, { body: mergeLocalizedText(selectedCustomBlock.body, locale, event.target.value, event.target.value) })} />
           </label>
           {selectedCustomBlock.type === "image" || selectedCustomBlock.type === "video" ? (
             <label>{selectedCustomBlock.type === "image" ? "图片 URL" : "视频 URL"}
@@ -4581,11 +4604,11 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
                   <article className={item.enabled ? "visual-image-item" : "visual-image-item disabled"} key={item.id}>
                     <div className="visual-image-item-thumb">
                       {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img src={item.url} alt={item.alt?.zh || item.alt?.en || selectedCustomBlock.title.zh || selectedCustomBlock.title.en} />
+                      <img src={item.url} alt={pickLocalizedText(item.alt, locale) || pickLocalizedText(selectedCustomBlock.title, locale)} />
                     </div>
                     <div className="visual-image-item-fields">
                       <input disabled={!canManageFrontendSettings} value={item.url} onChange={(event) => updateCustomImageItem(selectedCustomBlock, item.id, { url: event.target.value })} />
-                      <input disabled={!canManageFrontendSettings} placeholder="图片说明" value={item.caption?.zh || item.caption?.en || ""} onChange={(event) => updateCustomImageItem(selectedCustomBlock, item.id, { caption: { ...(item.caption ?? { en: "", zh: "" }), zh: event.target.value, en: item.caption?.en || event.target.value } })} />
+                      <input disabled={!canManageFrontendSettings} placeholder="图片说明" value={pickLocalizedText(item.caption, locale)} onChange={(event) => updateCustomImageItem(selectedCustomBlock, item.id, { caption: mergeLocalizedText(item.caption, locale, event.target.value, event.target.value) })} />
                     </div>
                     <div className="visual-image-item-actions">
                       <label className="checkline"><input disabled={!canManageFrontendSettings} type="checkbox" checked={item.enabled} onChange={(event) => updateCustomImageItem(selectedCustomBlock, item.id, { enabled: event.target.checked })} />显示</label>
@@ -4600,7 +4623,7 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
           {selectedCustomBlock.type === "cta" ? (
             <>
               <label>按钮文字
-                <input value={selectedCustomBlock.buttonLabel?.zh || selectedCustomBlock.buttonLabel?.en || "发送询盘"} onChange={(event) => updateCustomTemplateBlock(selectedCustomBlock.id, { buttonLabel: { ...(selectedCustomBlock.buttonLabel ?? { en: "", zh: "" }), zh: event.target.value, en: selectedCustomBlock.buttonLabel?.en || event.target.value } })} />
+                <input value={pickLocalizedText(selectedCustomBlock.buttonLabel, locale) || "发送询盘"} onChange={(event) => updateCustomTemplateBlock(selectedCustomBlock.id, { buttonLabel: mergeLocalizedText(selectedCustomBlock.buttonLabel, locale, event.target.value, event.target.value) })} />
               </label>
               <label>按钮链接
                 <input value={selectedCustomBlock.linkUrl || "#rfq"} onChange={(event) => updateCustomTemplateBlock(selectedCustomBlock.id, { linkUrl: event.target.value })} />
@@ -4674,7 +4697,7 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
 	                <span className="visual-front-brand-mark"><ShieldCheck size={20} /></span>
 	                {renderVisualTextTarget({
 	                  editorKey: "site-title-navigation",
-	                  value: state.siteSettings.title || "KeyproTools",
+	                  value: state.siteSettings.title || "Export site",
 	                  element: "strong",
 	                  onCommit: (value) => updateSiteSettings({ title: value })
 	                })}
@@ -4705,10 +4728,10 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
 	                </span>
 	                {renderVisualTextTarget({
 	                  editorKey: "navigation-primary-cta",
-	                  value: templateSettings.primaryCtaLabel[locale] || templateSettings.primaryCtaLabel.en,
+	                  value: pickLocalizedText(templateSettings.primaryCtaLabel, locale),
 	                  element: "span",
 	                  className: "visual-front-nav-cta",
-	                  onCommit: (value) => updateTemplateText("primaryCtaLabel", locale === "zh" ? "zh" : "en", value)
+	                  onCommit: (value) => updateTemplateText("primaryCtaLabel", locale, value)
 	                })}
 	              </div>
 	            </div>
@@ -4731,40 +4754,40 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
 	            {renderVisualHeroBackgroundEditor()}
 	            {renderVisualTextTarget({
 	              editorKey: "hero-kicker",
-	              value: templateSettings.heroKicker.zh || templateSettings.heroKicker.en,
+	              value: pickLocalizedText(templateSettings.heroKicker, locale),
 	              element: "span",
 	              className: "visual-eyebrow",
-	              onCommit: (value) => updateTemplateText("heroKicker", "zh", value)
+	              onCommit: (value) => updateTemplateText("heroKicker", locale, value)
 	            })}
 	            {renderVisualTextTarget({
 	              editorKey: "hero-title",
-	              value: templateSettings.heroTitle.zh || templateSettings.heroTitle.en,
+	              value: pickLocalizedText(templateSettings.heroTitle, locale),
 	              element: "h1",
 	              multiline: true,
-	              onCommit: (value) => updateTemplateText("heroTitle", "zh", value)
+	              onCommit: (value) => updateTemplateText("heroTitle", locale, value)
 	            })}
 	            {renderVisualTextTarget({
 	              editorKey: "hero-body",
-	              value: templateSettings.heroBody.zh || templateSettings.heroBody.en,
+	              value: pickLocalizedText(templateSettings.heroBody, locale),
 	              element: "p",
 	              className: "visual-hero-copy",
 	              multiline: true,
-	              onCommit: (value) => updateTemplateText("heroBody", "zh", value)
+	              onCommit: (value) => updateTemplateText("heroBody", locale, value)
 	            })}
 	            <div className="visual-hero-actions">
 	              {renderVisualTextTarget({
 	                editorKey: "hero-primary-cta",
-	                value: templateSettings.primaryCtaLabel.zh || templateSettings.primaryCtaLabel.en,
+	                value: pickLocalizedText(templateSettings.primaryCtaLabel, locale),
 	                element: "span",
 	                className: "visual-cta primary",
-	                onCommit: (value) => updateTemplateText("primaryCtaLabel", "zh", value)
+	                onCommit: (value) => updateTemplateText("primaryCtaLabel", locale, value)
 	              })}
 	              {renderVisualTextTarget({
 	                editorKey: "hero-secondary-cta",
-	                value: templateSettings.secondaryCtaLabel.zh || templateSettings.secondaryCtaLabel.en,
+	                value: pickLocalizedText(templateSettings.secondaryCtaLabel, locale),
 	                element: "span",
 	                className: "visual-cta secondary",
-	                onCommit: (value) => updateTemplateText("secondaryCtaLabel", "zh", value)
+	                onCommit: (value) => updateTemplateText("secondaryCtaLabel", locale, value)
 	              })}
 	            </div>
 	            {templateSettings.showHeroMetrics ? (
@@ -4775,13 +4798,13 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
 	                      editorKey: `text-${item.valueKey}`,
 	                      value: visualText(item.valueKey, "指标"),
 	                      element: "strong",
-	                      onCommit: (value) => updateTemplateTextBlock(item.valueKey, "zh", value)
+	                      onCommit: (value) => updateTemplateTextBlock(item.valueKey, locale, value)
 	                    })}
 	                    {renderVisualTextTarget({
 	                      editorKey: `text-${item.labelKey}`,
 	                      value: visualText(item.labelKey, "说明"),
 	                      element: "span",
-	                      onCommit: (value) => updateTemplateTextBlock(item.labelKey, "zh", value)
+	                      onCommit: (value) => updateTemplateTextBlock(item.labelKey, locale, value)
 	                    })}
 	                  </div>
 	                ))}
@@ -4801,13 +4824,13 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
                   value: visualText("productsEyebrow", "PRODUCT CATALOG"),
                   element: "span",
                   className: "eyebrow",
-                  onCommit: (value) => updateTemplateTextBlock("productsEyebrow", "zh", value)
+                  onCommit: (value) => updateTemplateTextBlock("productsEyebrow", locale, value)
                 })}
                 {renderVisualTextTarget({
                   editorKey: "text-productsTitle",
                   value: visualText("productsTitle", "硬质合金刀具目录"),
                   element: "h3",
-                  onCommit: (value) => updateTemplateTextBlock("productsTitle", "zh", value)
+                  onCommit: (value) => updateTemplateTextBlock("productsTitle", locale, value)
                 })}
               </div>
               {renderVisualTextTarget({
@@ -4816,7 +4839,7 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
                 element: "p",
                 className: "visual-section-summary",
                 multiline: true,
-                onCommit: (value) => updateTemplateTextBlock("productsBody", "zh", value)
+                onCommit: (value) => updateTemplateTextBlock("productsBody", locale, value)
               })}
             </div>
             <div className="visual-front-grid products">
@@ -4827,22 +4850,22 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
                     {renderVisualImageTarget({
                       editorKey: `product-image-${productId}`,
                       value: product.imageUrl ?? "",
-                      alt: product.name.zh || product.name.en,
+                      alt: pickLocalizedText(product.name, locale),
                       className: "visual-card-media",
                       onCommit: (value) => updateVisualProduct(productId, (currentProduct) => ({ ...currentProduct, imageUrl: value || undefined }))
                     })}
                     {renderVisualTextTarget({
                       editorKey: `product-title-${productId}`,
-                      value: product.name.zh || product.name.en,
+                      value: pickLocalizedText(product.name, locale),
                       element: "strong",
-                      onCommit: (value) => updateVisualProduct(productId, (currentProduct) => ({ ...currentProduct, name: { ...currentProduct.name, zh: value } }))
+                      onCommit: (value) => updateVisualProduct(productId, (currentProduct) => ({ ...currentProduct, name: mergeLocalizedText(currentProduct.name, locale, value, value) }))
                     })}
                     {renderVisualTextTarget({
                       editorKey: `product-summary-${productId}`,
-                      value: product.summary.zh || product.summary.en,
+                      value: pickLocalizedText(product.summary, locale),
                       element: "p",
                       multiline: true,
-                      onCommit: (value) => updateVisualProduct(productId, (currentProduct) => ({ ...currentProduct, summary: { ...currentProduct.summary, zh: value } }))
+                      onCommit: (value) => updateVisualProduct(productId, (currentProduct) => ({ ...currentProduct, summary: mergeLocalizedText(currentProduct.summary, locale, value, value) }))
                     })}
                   </article>
                 );
@@ -4862,14 +4885,14 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
                   value: visualText("factoryEyebrow", "工厂能力"),
                   element: "span",
                   className: "eyebrow",
-                  onCommit: (value) => updateTemplateTextBlock("factoryEyebrow", "zh", value)
+                  onCommit: (value) => updateTemplateTextBlock("factoryEyebrow", locale, value)
                 })}
                 {renderVisualTextTarget({
                   editorKey: "text-factoryTitle",
                   value: visualText("factoryTitle", "从几何、涂层到包装的供应能力"),
                   element: "h3",
                   multiline: true,
-                  onCommit: (value) => updateTemplateTextBlock("factoryTitle", "zh", value)
+                  onCommit: (value) => updateTemplateTextBlock("factoryTitle", locale, value)
                 })}
               </div>
             </div>
@@ -4880,14 +4903,14 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
                     editorKey: `text-${item.titleKey}`,
                     value: visualText(item.titleKey, "工厂能力"),
                     element: "strong",
-                    onCommit: (value) => updateTemplateTextBlock(item.titleKey, "zh", value)
+                    onCommit: (value) => updateTemplateTextBlock(item.titleKey, locale, value)
                   })}
                   {renderVisualTextTarget({
                     editorKey: `text-${item.bodyKey}`,
                     value: visualText(item.bodyKey, "适合经销商长期备货、样品确认与批量订单。"),
                     element: "p",
                     multiline: true,
-                    onCommit: (value) => updateTemplateTextBlock(item.bodyKey, "zh", value)
+                    onCommit: (value) => updateTemplateTextBlock(item.bodyKey, locale, value)
                   })}
                 </article>
               ))}
@@ -4906,14 +4929,14 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
                   value: visualText("marketsEyebrow", "出口市场"),
                   element: "span",
                   className: "eyebrow",
-                  onCommit: (value) => updateTemplateTextBlock("marketsEyebrow", "zh", value)
+                  onCommit: (value) => updateTemplateTextBlock("marketsEyebrow", locale, value)
                 })}
                 {renderVisualTextTarget({
                   editorKey: "text-marketsTitle",
                   value: visualText("marketsTitle", "多语言市场与 RFQ 清单"),
                   element: "h3",
                   multiline: true,
-                  onCommit: (value) => updateTemplateTextBlock("marketsTitle", "zh", value)
+                  onCommit: (value) => updateTemplateTextBlock("marketsTitle", locale, value)
                 })}
               </div>
               {renderVisualTextTarget({
@@ -4922,7 +4945,7 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
                 element: "p",
                 className: "visual-section-summary",
                 multiline: true,
-                onCommit: (value) => updateTemplateTextBlock("marketsBody", "zh", value)
+                onCommit: (value) => updateTemplateTextBlock("marketsBody", locale, value)
               })}
             </div>
             <div className="visual-market-strip">
@@ -4945,14 +4968,14 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
                   value: visualText("articlesEyebrow", "技术文章"),
                   element: "span",
                   className: "eyebrow",
-                  onCommit: (value) => updateTemplateTextBlock("articlesEyebrow", "zh", value)
+                  onCommit: (value) => updateTemplateTextBlock("articlesEyebrow", locale, value)
                 })}
                 {renderVisualTextTarget({
                   editorKey: "text-articlesTitle",
                   value: visualText("articlesTitle", "技术文章"),
                   element: "h3",
                   multiline: true,
-                  onCommit: (value) => updateTemplateTextBlock("articlesTitle", "zh", value)
+                  onCommit: (value) => updateTemplateTextBlock("articlesTitle", locale, value)
                 })}
               </div>
             </div>
@@ -4964,7 +4987,7 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
                     {renderVisualImageTarget({
                       editorKey: `article-image-${articleId}`,
                       value: article.coverImageUrl ?? "",
-                      alt: article.title.zh || article.title.en,
+                      alt: pickLocalizedText(article.title, locale),
                       className: "visual-card-media",
                       onCommit: (value) => updateVisualArticle(articleId, (currentArticle) => ({ ...currentArticle, coverImageUrl: value || undefined }))
                     })}
@@ -4977,17 +5000,17 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
                     })}
                     {renderVisualTextTarget({
                       editorKey: `article-title-${articleId}`,
-                      value: article.title.zh || article.title.en,
+                      value: pickLocalizedText(article.title, locale),
                       element: "strong",
                       multiline: true,
-                      onCommit: (value) => updateVisualArticle(articleId, (currentArticle) => ({ ...currentArticle, title: { ...currentArticle.title, zh: value } }))
+                      onCommit: (value) => updateVisualArticle(articleId, (currentArticle) => ({ ...currentArticle, title: mergeLocalizedText(currentArticle.title, locale, value, value) }))
                     })}
                     {renderVisualTextTarget({
                       editorKey: `article-excerpt-${articleId}`,
-                      value: article.excerpt.zh || article.excerpt.en,
+                      value: pickLocalizedText(article.excerpt, locale),
                       element: "p",
                       multiline: true,
-                      onCommit: (value) => updateVisualArticle(articleId, (currentArticle) => ({ ...currentArticle, excerpt: { ...currentArticle.excerpt, zh: value } }))
+                      onCommit: (value) => updateVisualArticle(articleId, (currentArticle) => ({ ...currentArticle, excerpt: mergeLocalizedText(currentArticle.excerpt, locale, value, value) }))
                     })}
                   </article>
                 );
@@ -5006,29 +5029,29 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
                 value: visualText("rfqEyebrow", "询盘表单"),
                 element: "span",
                 className: "eyebrow",
-                onCommit: (value) => updateTemplateTextBlock("rfqEyebrow", "zh", value)
+                onCommit: (value) => updateTemplateTextBlock("rfqEyebrow", locale, value)
               })}
               {renderVisualTextTarget({
                 editorKey: "text-rfqTitle",
-                value: visualText("rfqTitle", "把刀具清单发给 KeyproTools"),
+                value: visualText("rfqTitle", "把产品需求发给我们"),
                 element: "h3",
                 multiline: true,
-                onCommit: (value) => updateTemplateTextBlock("rfqTitle", "zh", value)
+                onCommit: (value) => updateTemplateTextBlock("rfqTitle", locale, value)
               })}
               {renderVisualTextTarget({
                 editorKey: "text-rfqBody",
                 value: visualText("rfqBody", "规格、数量、涂层、包装和交期信息会在前台询盘表单中收集。"),
                 element: "p",
                 multiline: true,
-                onCommit: (value) => updateTemplateTextBlock("rfqBody", "zh", value)
+                onCommit: (value) => updateTemplateTextBlock("rfqBody", locale, value)
               })}
             </div>
             {renderVisualTextTarget({
               editorKey: "text-primaryCtaLabel-rfq",
-              value: templateSettings.primaryCtaLabel.zh || templateSettings.primaryCtaLabel.en,
+              value: pickLocalizedText(templateSettings.primaryCtaLabel, locale),
               element: "span",
               className: "visual-rfq-button",
-              onCommit: (value) => updateTemplateText("primaryCtaLabel", "zh", value)
+              onCommit: (value) => updateTemplateText("primaryCtaLabel", locale, value)
             })}
           </div>
         </section>
@@ -5056,29 +5079,29 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
             <div className="visual-custom-copy">
               {renderVisualTextTarget({
                 editorKey: `custom-eyebrow-${block.id}`,
-                value: block.eyebrow?.zh || block.eyebrow?.en || (block.type === "image" ? "图片" : block.type === "video" ? "视频" : block.type === "cta" ? "行动" : "自定义模块"),
+                value: pickLocalizedText(block.eyebrow, locale) || (block.type === "image" ? "图片" : block.type === "video" ? "视频" : block.type === "cta" ? "行动" : "自定义模块"),
                 element: "span",
                 className: "eyebrow",
-                onCommit: (value) => updateCustomTemplateBlock(block.id, { eyebrow: { ...(block.eyebrow ?? { en: "", zh: "" }), zh: value, en: block.eyebrow?.en || value } })
+                onCommit: (value) => updateCustomTemplateBlock(block.id, { eyebrow: mergeLocalizedText(block.eyebrow, locale, value, value) })
               })}
               {renderVisualTextTarget({
                 editorKey: `custom-title-${block.id}`,
-                value: block.title.zh || block.title.en,
+                value: pickLocalizedText(block.title, locale),
                 element: "h3",
                 multiline: true,
-                onCommit: (value) => updateCustomTemplateBlock(block.id, { title: { ...block.title, zh: value, en: block.title.en || value } })
+                onCommit: (value) => updateCustomTemplateBlock(block.id, { title: mergeLocalizedText(block.title, locale, value, value) })
               })}
               {renderVisualTextTarget({
                 editorKey: `custom-body-${block.id}`,
-                value: block.body.zh || block.body.en,
+                value: pickLocalizedText(block.body, locale),
                 element: "p",
                 multiline: true,
                 allowEmpty: true,
-                onCommit: (value) => updateCustomTemplateBlock(block.id, { body: { ...block.body, zh: value, en: block.body.en || value } })
+                onCommit: (value) => updateCustomTemplateBlock(block.id, { body: mergeLocalizedText(block.body, locale, value, value) })
               })}
               {block.type === "cta" ? (
                 <span className="visual-rfq-button" title="在左侧属性面板编辑链接">
-                  {block.buttonLabel?.zh || block.buttonLabel?.en || block.title.zh || block.title.en}
+                  {pickLocalizedText(block.buttonLabel, locale) || pickLocalizedText(block.title, locale)}
                 </span>
               ) : null}
             </div>
@@ -5406,7 +5429,7 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
               <div className="nav-hierarchy-cell">
                 <span className="nav-level-badge">{depth === 0 ? "一级导航" : `${depth + 1}级导航`}</span>
                 <label>导航名称
-                  <input disabled={!canManageFrontendSettings} value={item.label.zh || item.label.en} onChange={(event) => updateNavigationItem(item.id, { label: { ...item.label, en: event.target.value, zh: event.target.value } })} />
+                  <input disabled={!canManageFrontendSettings} value={pickLocalizedText(item.label, locale)} onChange={(event) => updateNavigationItem(item.id, { label: mergeLocalizedText(item.label, locale, event.target.value, event.target.value) })} />
                 </label>
                 {childCount > 0 ? <small>包含 {childCount} 个下级导航</small> : <small>可添加为下拉菜单项</small>}
               </div>
@@ -5417,7 +5440,7 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
                     const parentDepth = navigationDepthById.get(parent.id) ?? 0;
                     return (
                       <option key={parent.id} value={parent.id}>
-                        {`${parentDepth + 1}级 · ${parent.label.zh || parent.label.en}`}
+                        {`${parentDepth + 1}级 · ${pickLocalizedText(parent.label, locale)}`}
                       </option>
                     );
                   })}
@@ -5429,9 +5452,9 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
                 }}>
                   <option value="">手动输入或选择</option>
                   <optgroup label="系统页面">{systemNavigationOptions.map((option) => <option key={option.href} value={option.href}>{option.label}</option>)}</optgroup>
-                  {navigationPageOptions.length > 0 ? <optgroup label="页面">{navigationPageOptions.map((page) => <option key={page.id ?? page.slug} value={`/pages/${page.slug}`}>{compactOptionLabel(page.title.zh || page.title.en, "页面")}</option>)}</optgroup> : null}
-                  {navigationProductOptions.length > 0 ? <optgroup label="产品分类">{navigationProductOptions.map((product) => <option key={product.id ?? product.slug} value={`/products/${product.slug}`}>{compactOptionLabel(product.name.zh || product.name.en, "产品分类")}</option>)}</optgroup> : null}
-                  {navigationArticleOptions.length > 0 ? <optgroup label="文章">{navigationArticleOptions.map((article) => <option key={article.id ?? article.slug} value={`/articles/${article.slug}`}>{compactOptionLabel(article.title.zh || article.title.en, "文章")}</option>)}</optgroup> : null}
+                  {navigationPageOptions.length > 0 ? <optgroup label="页面">{navigationPageOptions.map((page) => <option key={page.id ?? page.slug} value={`/pages/${page.slug}`}>{compactOptionLabel(pickLocalizedText(page.title, locale) || page.slug, "页面")}</option>)}</optgroup> : null}
+                  {navigationProductOptions.length > 0 ? <optgroup label="产品分类">{navigationProductOptions.map((product) => <option key={product.id ?? product.slug} value={`/products/${product.slug}`}>{compactOptionLabel(pickLocalizedText(product.name, locale) || product.slug, "产品分类")}</option>)}</optgroup> : null}
+                  {navigationArticleOptions.length > 0 ? <optgroup label="文章">{navigationArticleOptions.map((article) => <option key={article.id ?? article.slug} value={`/articles/${article.slug}`}>{compactOptionLabel(pickLocalizedText(article.title, locale) || article.slug, "文章")}</option>)}</optgroup> : null}
                 </select>
               </label>
               <label className="nav-link-field">链接<input disabled={!canManageFrontendSettings} value={item.href} onChange={(event) => updateNavigationItem(item.id, { href: event.target.value })} /></label>
@@ -5542,7 +5565,7 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
                       {state.products
                         .filter((product) => (product.id ?? product.slug) !== editingProductId)
                         .map((product) => (
-                          <option key={product.id ?? product.slug} value={product.id ?? product.slug}>{product.name.zh || product.name.en}</option>
+                          <option key={product.id ?? product.slug} value={product.id ?? product.slug}>{pickLocalizedText(product.name, locale) || product.slug}</option>
                         ))}
                     </select>
                     <small>可用于目录分层，例如“刀具”下面再放“铣刀”。</small>
@@ -5604,13 +5627,15 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
                       const parent = state.products.find((item) => (item.id ?? item.slug) === product.parentId);
                       const childCount = productChildCounts.get(productId) ?? 0;
                       const expanded = productSearchActive || expandedProductSet.has(productId);
+                      const productName = pickLocalizedText(product.name, locale) || product.slug;
+                      const productSummary = pickLocalizedText(product.summary, locale);
 
                       return (
                         <div className={childCount > 0 ? "wp-taxonomy-row has-children" : "wp-taxonomy-row"} role="row" key={productId} style={{ "--category-depth": depth } as CSSProperties}>
                           <span>
                             <input
                               type="checkbox"
-                              aria-label={`选择 ${product.name.zh || product.name.en}`}
+                              aria-label={`选择 ${productName}`}
                               checked={selectedProductIds.includes(productId)}
                               onChange={(event) => toggleProductSelection(productId, event.target.checked)}
                             />
@@ -5628,14 +5653,14 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
                               </button>
                             ) : null}
                             <button className="taxonomy-edit-trigger" type="button" onClick={() => editProduct(product)}>
-                              <span className="taxonomy-name">{product.name.zh || product.name.en}</span>
+                              <span className="taxonomy-name">{productName}</span>
                               <small>编辑</small>
                             </button>
                             {childCount > 0 ? <span className="taxonomy-child-count">子目录 {childCount}</span> : null}
                           </div>
-                          <span>{product.summary.zh || product.summary.en || "-"}</span>
+                          <span>{productSummary || "-"}</span>
                           <span>{product.slug}</span>
-                          <span>{parent ? parent.name.zh || parent.name.en : "-"}</span>
+                          <span>{parent ? pickLocalizedText(parent.name, locale) || parent.slug : "-"}</span>
                           <span>0</span>
                           <div className="wp-row-actions">
                             <button type="button" onClick={() => editProduct(product)}>编辑</button>
@@ -5722,7 +5747,7 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
                             target="_blank"
                             rel="noopener noreferrer"
                           >
-                            {page.title.zh || page.title.en || "未命名页面"}
+                            {pickLocalizedText(page.title, locale) || "未命名页面"}
                             <small>查看 · /pages/{page.slug}</small>
                           </Link>
                           <span>{page.slug}</span>
@@ -5762,10 +5787,10 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
                       <input
                         className="wp-title-input"
                         placeholder="添加页面标题"
-                        value={activePage.title.zh ?? activePage.title.en ?? ""}
+                        value={pickLocalizedText(activePage.title, locale)}
                         onChange={(event) => updatePageTitle(event.target.value)}
                       />
-                      <label>页面摘要<textarea className="wp-excerpt" value={activePage.excerpt.zh ?? activePage.excerpt.en ?? ""} onChange={(event) => updatePageExcerpt(event.target.value)} /></label>
+                      <label>页面摘要<textarea className="wp-excerpt" value={pickLocalizedText(activePage.excerpt, locale)} onChange={(event) => updatePageExcerpt(event.target.value)} /></label>
                       <div className="article-editor-toolbar page-editor-toolbar" aria-label="页面编辑器工具栏">
                         <button title="插入视频链接" aria-label="插入视频链接" type="button" onClick={() => openVideoDialog("page")}><Video size={16} /></button>
                       </div>
@@ -5820,22 +5845,22 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
                         <h2>SEO</h2>
                         <label>SEO 标题
                           <input
-                            value={activePage.seo?.title?.zh ?? ""}
+                            value={pickLocalizedText(activePage.seo?.title, locale)}
                             onChange={(event) => updateActivePage({
                               seo: {
                                 ...(activePage.seo ?? {}),
-                                title: { en: activePage.seo?.title?.en || event.target.value, zh: event.target.value }
+                                title: mergeOptionalLocalizedText(activePage.seo?.title, locale, event.target.value)
                               }
                             })}
                           />
                         </label>
                         <label>SEO 描述
                           <textarea
-                            value={activePage.seo?.description?.zh ?? ""}
+                            value={pickLocalizedText(activePage.seo?.description, locale)}
                             onChange={(event) => updateActivePage({
                               seo: {
                                 ...(activePage.seo ?? {}),
-                                description: { en: activePage.seo?.description?.en || event.target.value, zh: event.target.value }
+                                description: mergeOptionalLocalizedText(activePage.seo?.description, locale, event.target.value)
                               }
                             })}
                           />
@@ -5999,7 +6024,7 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
                         <div className="wp-article-row" role="row" key={articleId}>
                           <span>
                             <input
-                              aria-label={`选择 ${article.title.zh || article.title.en}`}
+                              aria-label={`选择 ${pickLocalizedText(article.title, locale) || article.slug}`}
                               checked={selectedArticleIds.includes(articleId)}
                               onChange={(event) => toggleArticleSelection(articleId, event.target.checked)}
                               type="checkbox"
@@ -6011,7 +6036,7 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
                             target="_blank"
                             rel="noopener noreferrer"
                           >
-                            {article.title.zh || article.title.en || "未命名文章"}
+                            {pickLocalizedText(article.title, locale) || "未命名文章"}
                             <small>查看 · {article.slug}</small>
                           </Link>
                           <span>{currentEmail}</span>
@@ -6052,10 +6077,10 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
                       <input
                         className="wp-title-input"
                         placeholder="添加标题"
-                        value={activeArticle.title.zh ?? activeArticle.title.en ?? ""}
+                        value={pickLocalizedText(activeArticle.title, locale)}
                         onChange={(event) => updateArticleTitle(event.target.value)}
                       />
-                      <label>摘要<textarea className="wp-excerpt" value={activeArticle.excerpt.zh ?? activeArticle.excerpt.en ?? ""} onChange={(event) => updateArticleExcerpt(event.target.value)} /></label>
+                      <label>摘要<textarea className="wp-excerpt" value={pickLocalizedText(activeArticle.excerpt, locale)} onChange={(event) => updateArticleExcerpt(event.target.value)} /></label>
                       <div className="article-editor-shell">
                         <div className="article-editor-viewbar" aria-label="编辑器模式">
                           <button
@@ -6224,7 +6249,7 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
                         {activeArticle.coverImageUrl ? (
                           <div className="article-cover-preview">
                             {/* eslint-disable-next-line @next/next/no-img-element */}
-                            <img src={activeArticle.coverImageUrl} alt={activeArticle.title.zh || activeArticle.title.en || "文章图片"} />
+                            <img src={activeArticle.coverImageUrl} alt={pickLocalizedText(activeArticle.title, locale) || "文章图片"} />
                             <button type="button" onClick={() => updateActiveArticle({ coverImageUrl: undefined })}>移除图片</button>
                           </div>
                         ) : (
@@ -6261,22 +6286,22 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
                         <h2>SEO</h2>
                         <label>SEO 标题
                           <input
-                            value={activeArticle.seo?.title?.zh ?? ""}
+                            value={pickLocalizedText(activeArticle.seo?.title, locale)}
                             onChange={(event) => updateActiveArticle({
                               seo: {
                                 ...(activeArticle.seo ?? {}),
-                                title: { en: activeArticle.seo?.title?.en || event.target.value, zh: event.target.value }
+                                title: mergeOptionalLocalizedText(activeArticle.seo?.title, locale, event.target.value)
                               }
                             })}
                           />
                         </label>
                         <label>SEO 描述
                           <textarea
-                            value={activeArticle.seo?.description?.zh ?? ""}
+                            value={pickLocalizedText(activeArticle.seo?.description, locale)}
                             onChange={(event) => updateActiveArticle({
                               seo: {
                                 ...(activeArticle.seo ?? {}),
-                                description: { en: activeArticle.seo?.description?.en || event.target.value, zh: event.target.value }
+                                description: mergeOptionalLocalizedText(activeArticle.seo?.description, locale, event.target.value)
                               }
                             })}
                           />
@@ -6589,9 +6614,12 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
                 </button>
               </div>
               <div className="admin-form-list contact-channel-list">
-                {state.contactChannels.map((channel, index) => (
+                {state.contactChannels.map((channel, index) => {
+                  const channelLabel = pickLocalizedText(channel.label, locale);
+
+                  return (
                   <article className="admin-edit-card compact contact-card" key={channel.id}>
-                    <label>显示名称<input value={channel.label.zh ?? channel.label.en} onChange={(event) => updateContact(index, { label: { ...channel.label, en: event.target.value, zh: event.target.value } })} /></label>
+                    <label>显示名称<input value={channelLabel} onChange={(event) => updateContact(index, { label: mergeLocalizedText(channel.label, locale, event.target.value, event.target.value) })} /></label>
                     <label>类型
                       <select value={channel.type} onChange={(event) => updateContact(index, { type: event.target.value as ContactChannelType })}>
                         {contactTypeOptions.map((type) => (
@@ -6605,7 +6633,7 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
                     <label className="checkline"><input type="checkbox" checked={channel.enabled} onChange={(event) => updateContact(index, { enabled: event.target.checked })} />启用</label>
                     <div className="contact-icon-manager">
                       {channel.iconUrl ? (
-                        <Image className="contact-icon-thumb" src={channel.iconUrl} alt={`${channel.label.zh ?? channel.label.en} 图标`} width={34} height={34} unoptimized />
+                        <Image className="contact-icon-thumb" src={channel.iconUrl} alt={`${channelLabel} 图标`} width={34} height={34} unoptimized />
                       ) : (
                         <span className="contact-icon-empty">默认</span>
                       )}
@@ -6626,7 +6654,7 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
                     </div>
                     <div className="contact-qr-manager">
                       {channel.qrCodeUrl ? (
-                        <Image className="contact-qr-thumb" src={channel.qrCodeUrl} alt={`${channel.label.zh ?? channel.label.en} 二维码`} width={34} height={34} unoptimized />
+                        <Image className="contact-qr-thumb" src={channel.qrCodeUrl} alt={`${channelLabel} 二维码`} width={34} height={34} unoptimized />
                       ) : (
                         <span className="contact-qr-empty">无</span>
                       )}
@@ -6647,7 +6675,8 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
                     </div>
                     <button className="contact-delete-button" type="button" onClick={() => removeContactChannel(channel.id)}>删除</button>
                   </article>
-                ))}
+                  );
+                })}
               </div>
               <section className="contact-create-panel">
                 <div>
@@ -8041,7 +8070,7 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
                             >
                               <option value="">{aiContentForm.writeMode === "new" ? "新建时不需要选择目标" : "选择要填充的内容"}</option>
                               {(aiContentForm.target === "article" ? aiArticleTargets : aiPageTargets).map((item) => (
-                                <option key={item.id ?? item.slug} value={item.id ?? item.slug}>{item.title.zh || item.title.en || item.slug}</option>
+                                <option key={item.id ?? item.slug} value={item.id ?? item.slug}>{pickLocalizedText(item.title, locale) || item.slug}</option>
                               ))}
                             </select>
                           </label>

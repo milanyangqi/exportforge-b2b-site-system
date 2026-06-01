@@ -6,8 +6,13 @@ import type { LocaleCode } from "@/types/site";
 
 export const dynamic = "force-dynamic";
 
-const articlesTitle = "Buying guides and application notes for end mills, drill bits, and OEM tool orders.";
-const articlesDescription = "Read KeyproTools buying guides for cutting tool geometry, coating choices, drill bit assortments, OEM packaging, and distributor RFQ preparation.";
+function articlesTitle(siteTitle: string) {
+  return `${siteTitle} articles`;
+}
+
+function articlesDescription(siteTitle: string) {
+  return `Read current ${siteTitle} articles, buying guides, and application notes.`;
+}
 
 export async function generateMetadata({ params }: { params: Promise<{ locale: LocaleCode }> }) {
   const { locale } = await params;
@@ -23,8 +28,8 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: L
   return buildPageMetadata(state, {
     locale,
     path: localePath(locale, "/articles"),
-    title: articlesTitle,
-    description: articlesDescription,
+    title: articlesTitle(state.siteSettings.title),
+    description: articlesDescription(state.siteSettings.title),
     kind: "articles",
     image: publishedArticles.find((article) => article.coverImageUrl)?.coverImageUrl,
     contentComplete: publishedArticles.some((article) => articleContentComplete(article, locale)),
@@ -36,6 +41,7 @@ export default async function ArticlesPage({ params }: { params: Promise<{ local
   const { locale } = await params;
   const state = await readAdminState();
   const publishedArticles = state.articles.filter((article) => article.status === "published");
+  const pageTitle = articlesTitle(state.siteSettings.title);
 
   return (
     <main className="subpage articles-subpage">
@@ -50,8 +56,8 @@ export default async function ArticlesPage({ params }: { params: Promise<{ local
       />
       <section className="section">
         <div className="section-head subpage-head">
-          <span className="eyebrow">Technical library</span>
-          <h1>Buying guides and application notes for end mills, drill bits, and OEM tool orders.</h1>
+          <span className="eyebrow">Articles</span>
+          <h1>{pageTitle}</h1>
         </div>
         <div className="article-grid">
           {publishedArticles.map((article) => (
