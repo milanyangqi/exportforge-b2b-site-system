@@ -37,8 +37,8 @@ export default async function ArticleDetailPage({
       <section className="section rfq-section" id="rfq">
         <div>
           <span className="eyebrow">Need a quote?</span>
-          <h2>Turn this tooling note into a clear RFQ.</h2>
-          <p>Share diameter, coating, workpiece material, quantity, packaging, and destination so KeyproTools can respond with a practical quotation.</p>
+          <h2>Turn this article into a clear RFQ.</h2>
+          <p>Share product requirements, quantity, packaging, and destination so {state.siteSettings.title} can respond with a practical quotation.</p>
         </div>
         <RfqForm locale={locale} />
       </section>

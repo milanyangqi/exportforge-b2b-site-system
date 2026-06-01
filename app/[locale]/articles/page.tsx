@@ -5,17 +5,22 @@ import type { LocaleCode } from "@/types/site";
 
 export const dynamic = "force-dynamic";
 
+function articlesTitle(siteTitle: string) {
+  return `${siteTitle} articles`;
+}
+
 export default async function ArticlesPage({ params }: { params: Promise<{ locale: LocaleCode }> }) {
   const { locale } = await params;
   const state = await readAdminState();
   const publishedArticles = state.articles.filter((article) => article.status === "published");
+  const pageTitle = articlesTitle(state.siteSettings.title);
 
   return (
     <main className="subpage articles-subpage">
       <section className="section">
         <div className="section-head subpage-head">
-          <span className="eyebrow">Technical library</span>
-          <h1>Buying guides and application notes for end mills, drill bits, and OEM tool orders.</h1>
+          <span className="eyebrow">Articles</span>
+          <h1>{pageTitle}</h1>
         </div>
         <div className="article-grid">
           {publishedArticles.map((article) => (

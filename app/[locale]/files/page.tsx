@@ -3,6 +3,14 @@ import type { LocaleCode } from "@/types/site";
 
 export const dynamic = "force-dynamic";
 
+function filesTitle(siteTitle: string) {
+  return `${siteTitle} downloads`;
+}
+
+function filesDescription(siteTitle: string) {
+  return `Download current ${siteTitle} images, documents, and media resources.`;
+}
+
 function formatFileSize(size: number) {
   if (size < 1024) return `${size} B`;
   if (size < 1024 * 1024) return `${Math.round(size / 1024)} KB`;
@@ -13,14 +21,16 @@ export default async function FilesPage({ params }: { params: Promise<{ locale: 
   await params;
   const state = await readAdminState();
   const files = state.uploadedFiles.filter((file) => file.enabled !== false);
+  const pageTitle = filesTitle(state.siteSettings.title);
+  const pageDescription = filesDescription(state.siteSettings.title);
 
   return (
     <main className="subpage">
       <section className="section">
         <div className="section-head">
           <span className="eyebrow">Downloads</span>
-          <h1>KeyproTools product images and tooling resources</h1>
-          <p>End mill, drill bit, coating, packaging, catalog, specification, and article media are collected here for buyer review.</p>
+          <h1>{pageTitle}</h1>
+          <p>{pageDescription}</p>
         </div>
         <div className="download-grid">
           {files.map((file) => (
