@@ -50,7 +50,7 @@ export function verifyPasswordHash(password: string, passwordHash?: string) {
 }
 
 export function verifyAdminCredentials(email: string, password: string) {
-  const adminEmail = process.env.INITIAL_ADMIN_EMAIL ?? "admin@grillbeats.com";
+  const adminEmail = process.env.INITIAL_ADMIN_EMAIL ?? "437991663@qq.com";
   const adminPassword = process.env.INITIAL_ADMIN_PASSWORD;
   return Boolean(adminPassword) && email.trim().toLowerCase() === adminEmail.toLowerCase() && password === adminPassword;
 }

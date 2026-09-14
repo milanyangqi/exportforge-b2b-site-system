@@ -7,7 +7,7 @@
 - Worker：`grillbeats-wholesale`
 - KV：`grillbeats-wholesale-kv`，资源 ID 见 `wrangler.jsonc`
 - 目标域名：`https://grillbeats.com`，`www` 使用永久重定向
-- 后台：`/zh/admin`；初始管理员标识：`admin@grillbeats.com`（不是已开通邮箱的声明）
+- 后台：`/zh/admin`；初始管理员标识：`437991663@qq.com`（不是已开通邮箱的声明）
 - 需要 Secrets：`AUTH_SECRET`、`INITIAL_ADMIN_PASSWORD`。不得提交到 Git。
 - 本分支不得使用原站 KV、原站密钥或覆盖原 Worker，不合并 `main`。
 

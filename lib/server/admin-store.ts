@@ -70,7 +70,7 @@ const defaultSiteSettings: SiteSettings = {
   siteIconUrl: "",
   fontFamily: "\"Manrope\", \"PingFang SC\", \"Microsoft YaHei\", sans-serif",
   siteUrl: process.env.NEXT_PUBLIC_SITE_URL ?? "https://grillbeats.com",
-  adminEmail: process.env.INITIAL_ADMIN_EMAIL ?? "admin@grillbeats.com",
+  adminEmail: process.env.INITIAL_ADMIN_EMAIL ?? "437991663@qq.com",
   mailFromEmail: "",
   mailFromName: "",
   mailReplyToEmail: "",
@@ -163,7 +163,7 @@ export function createDefaultAdminState(): AdminState {
       {
         id: "u-super-admin",
         name: "System Admin",
-        email: process.env.INITIAL_ADMIN_EMAIL ?? "admin@grillbeats.com",
+        email: process.env.INITIAL_ADMIN_EMAIL ?? "437991663@qq.com",
         role: "super-admin",
         active: true,
         aiCredits: 100000,

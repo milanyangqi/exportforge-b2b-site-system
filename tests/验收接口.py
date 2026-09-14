@@ -20,9 +20,9 @@ def check(name,condition,detail=''):
  results.append({'检查':name,'通过':bool(condition),'说明':detail});Path(args.output).write_text(json.dumps({'地址':base,'结果':results},ensure_ascii=False,indent=2));print(name, 'PASS' if condition else 'FAIL');assert condition,name
 check('后台接口未登录保护',req('/api/admin/state',anon=True)[0]==401)
 check('媒体上传未登录保护',req('/api/admin/upload','POST',{},anon=True)[0]==401)
-check('禁用默认密码',req('/api/auth/login','POST',{'email':'admin@grillbeats.com','password':'change-me'})[0]==401)
-password=os.environ.get('GRILLBEATS_ADMIN_PASSWORD') or subprocess.check_output(['security','find-generic-password','-s','GrillBeats Wholesale','-a','admin@grillbeats.com','-w'],text=True).strip()
-check('独立管理员登录',req('/api/auth/login','POST',{'email':'admin@grillbeats.com','password':password})[0]==200)
+check('禁用默认密码',req('/api/auth/login','POST',{'email':'437991663@qq.com','password':'change-me'})[0]==401)
+password=os.environ.get('GRILLBEATS_ADMIN_PASSWORD') or subprocess.check_output(['security','find-generic-password','-s','GrillBeats Wholesale','-a','437991663@qq.com','-w'],text=True).strip()
+check('独立管理员登录',req('/api/auth/login','POST',{'email':'437991663@qq.com','password':password})[0]==200)
 del password
 status,raw,_=req('/api/admin/state');state=json.loads(raw);check('GrillBeats 独立初始数据',len(state['products'])==4 and state['siteSettings']['title']=='GrillBeats' and not state['contactChannels'])
 check('仅启用英文中文',state['enabledLocales']==['en','zh'])
