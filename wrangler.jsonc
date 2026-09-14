@@ -28,5 +28,15 @@
     "INITIAL_ADMIN_EMAIL": "437991663@qq.com"
   },
   "account_id": "de7479ac412c7ecd4ddaa6d7e6e8cdcf",
-  "workers_dev": true
+  "workers_dev": true,
+  "routes": [
+    {
+      "pattern": "grillbeats.com",
+      "custom_domain": true
+    },
+    {
+      "pattern": "www.grillbeats.com",
+      "custom_domain": true
+    }
+  ]
 }
