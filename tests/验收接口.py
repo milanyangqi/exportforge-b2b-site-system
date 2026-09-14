@@ -4,7 +4,7 @@ from pathlib import Path
 p=argparse.ArgumentParser();p.add_argument('--base',default='http://localhost:3023');p.add_argument('--output',required=True);args=p.parse_args()
 base=args.base.rstrip('/');jar=http.cookiejar.CookieJar();client=urllib.request.build_opener(urllib.request.HTTPCookieProcessor(jar));results=[]
 def req(path,method='GET',data=None,headers=None,anon=False):
- h=headers or {};raw=data
+ h={'User-Agent':'GrillBeats-Acceptance/1.0',**(headers or {})};raw=data
  if isinstance(data,dict): raw=json.dumps(data).encode();h={**h,'Content-Type':'application/json'}
  r=urllib.request.Request(base+path,data=raw,headers=h,method=method)
  if not base.startswith('http://localhost') and method!='GET': time.sleep(1.2)
