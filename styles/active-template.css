@@ -1178,3 +1178,8 @@
   background: #245941;
   color: #fff;
 }
+
+/* Give native language controls enough room for the flag and full label. */
+.language-select{max-width:none;flex-shrink:0}
+.language-select select{max-width:none;width:112px}
+@media(max-width:540px){.language-select select{width:96px;max-width:none}}
