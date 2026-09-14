@@ -3,6 +3,15 @@ import type { CSSProperties, ReactNode } from "react";
 import { ArticleContent } from "@/components/ArticleContent";
 import { HeroPosterCarousel } from "@/components/HeroPosterCarousel";
 import { LoopingImagesOrbit } from "@/components/LoopingImagesOrbit";
+import {
+  PresetAccordion,
+  PresetCarousel,
+  PresetLogoCloud,
+  PresetStatsGrid,
+  PresetTabs,
+  PresetTestimonials,
+  PresetTimelineSteps
+} from "@/components/PresetInteractiveBlocks";
 import { ProductGrid } from "@/components/ProductGrid";
 import { HomeNavigationShell } from "@/components/PublicSiteShell";
 import { PublicContactList } from "@/components/PublicContactList";
@@ -1163,6 +1172,20 @@ export function PuckVisualBlock({ item, state, locale, currentProduct, currentAr
       return <ImageGallery props={props} />;
     case "LoopingImagesPreset":
       return <LoopingImagesPreset props={props} />;
+    case "PresetAccordion":
+      return <PresetAccordion props={props} />;
+    case "PresetTabs":
+      return <PresetTabs props={props} />;
+    case "PresetCarousel":
+      return <PresetCarousel props={props} />;
+    case "PresetStatsGrid":
+      return <PresetStatsGrid props={props} />;
+    case "PresetLogoCloud":
+      return <PresetLogoCloud props={props} />;
+    case "PresetTimelineSteps":
+      return <PresetTimelineSteps props={props} />;
+    case "PresetTestimonials":
+      return <PresetTestimonials props={props} />;
     case "VideoSection":
       return <VideoSection props={props} />;
     case "CtaSection":

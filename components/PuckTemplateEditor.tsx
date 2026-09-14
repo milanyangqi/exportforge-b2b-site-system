@@ -319,6 +319,11 @@ function getPrimaryEditTarget(type: string, props: Record<string, unknown>): Omi
   if (type === "RichTextBlock") return { field: "body", kind: "text", label: "正文 Markdown" };
   if (type === "ImageGallery") return { field: "mediaLibraryUrl", kind: "image", label: "主图/首图" };
   if (type === "LoopingImagesPreset") return { field: "imageItems", kind: "image", label: "循环图片" };
+  if (type === "PresetAccordion" || type === "PresetTabs" || type === "PresetTimelineSteps") return { field: "items", kind: "text", label: "条目列表" };
+  if (type === "PresetCarousel") return { field: "items", kind: "image", label: "轮播卡片" };
+  if (type === "PresetStatsGrid") return { field: "stats", kind: "text", label: "数据卡片" };
+  if (type === "PresetLogoCloud") return { field: "logos", kind: "image", label: "Logo 列表" };
+  if (type === "PresetTestimonials") return { field: "testimonials", kind: "text", label: "客户评价" };
   if (type === "VideoSection") return { field: "mediaLibraryUrl", kind: "video", label: "从媒体库选择视频" };
   if (type === "CtaSection") return { field: "buttonLabel", kind: "button", label: "按钮文字" };
   if (type === "ProductList" || type === "ArticleList" || type === "FeatureCards" || type === "MarketSection" || type === "RfqSection" || type === "ContactChannels") return { field: "title", kind: "text", label: "标题" };
@@ -809,6 +814,140 @@ function booleanField(label: string) {
       { label: "显示", value: true },
       { label: "隐藏", value: false }
     ]
+  };
+}
+
+function sectionToneField(label = "背景") {
+  return radioField(label, [
+    { label: "白色", value: "light" },
+    { label: "浅色强调", value: "tint" },
+    { label: "深色", value: "dark" }
+  ]);
+}
+
+function presetSectionFields() {
+  return {
+    eyebrow: field("text", "眉标"),
+    title: field("textarea", "标题"),
+    body: field("textarea", "说明"),
+    tone: sectionToneField()
+  };
+}
+
+function presetAccordionItemsField() {
+  return {
+    type: "array" as const,
+    label: "折叠条目",
+    min: 1,
+    max: 12,
+    arrayFields: {
+      id: field("text", "ID"),
+      title: field("text", "标题"),
+      body: field("textarea", "正文")
+    },
+    defaultItemProps: { id: "", title: "问题标题", body: "回答内容" },
+    getItemSummary: (item: { title?: string }, index?: number) => item.title || `条目 ${(index ?? 0) + 1}`
+  };
+}
+
+function presetTabsItemsField(imageMediaItems: MediaPickerItem[]) {
+  return {
+    type: "array" as const,
+    label: "标签页",
+    min: 1,
+    max: 8,
+    arrayFields: {
+      id: field("text", "ID"),
+      label: field("text", "标签"),
+      metric: field("text", "短指标"),
+      title: field("text", "标题"),
+      body: field("textarea", "正文"),
+      imageUrl: mediaPickerField("配图", imageMediaItems, "image")
+    },
+    defaultItemProps: { id: "", label: "Tab", metric: "", title: "内容标题", body: "", imageUrl: "" },
+    getItemSummary: (item: { label?: string; title?: string }, index?: number) => item.label || item.title || `标签 ${(index ?? 0) + 1}`
+  };
+}
+
+function presetCarouselItemsField(imageMediaItems: MediaPickerItem[]) {
+  return {
+    type: "array" as const,
+    label: "轮播卡片",
+    min: 1,
+    max: 12,
+    arrayFields: {
+      tag: field("text", "标签"),
+      title: field("text", "标题"),
+      body: field("textarea", "正文"),
+      imageUrl: mediaPickerField("图片", imageMediaItems, "image"),
+      href: field("text", "链接")
+    },
+    defaultItemProps: { tag: "", title: "Slide", body: "", imageUrl: "", href: "" },
+    getItemSummary: (item: { title?: string; tag?: string }, index?: number) => item.title || item.tag || `轮播 ${(index ?? 0) + 1}`
+  };
+}
+
+function presetStatsField() {
+  return {
+    type: "array" as const,
+    label: "数据项",
+    min: 1,
+    max: 8,
+    arrayFields: {
+      value: field("text", "数值"),
+      label: field("text", "标签"),
+      body: field("textarea", "说明")
+    },
+    defaultItemProps: { value: "24h", label: "Fast response", body: "" },
+    getItemSummary: (item: { value?: string; label?: string }, index?: number) => item.value || item.label || `数据 ${(index ?? 0) + 1}`
+  };
+}
+
+function presetLogoField(imageMediaItems: MediaPickerItem[]) {
+  return {
+    type: "array" as const,
+    label: "Logo / 伙伴",
+    min: 1,
+    max: 12,
+    arrayFields: {
+      name: field("text", "名称"),
+      logoUrl: mediaPickerField("Logo 图片", imageMediaItems, "image")
+    },
+    defaultItemProps: { name: "Partner", logoUrl: "" },
+    getItemSummary: (item: { name?: string }, index?: number) => item.name || `Logo ${(index ?? 0) + 1}`
+  };
+}
+
+function presetTimelineStepsField() {
+  return {
+    type: "array" as const,
+    label: "步骤",
+    min: 1,
+    max: 8,
+    arrayFields: {
+      label: field("text", "编号/标签"),
+      title: field("text", "标题"),
+      body: field("textarea", "说明")
+    },
+    defaultItemProps: { label: "01", title: "Step", body: "" },
+    getItemSummary: (item: { title?: string; label?: string }, index?: number) => item.title || item.label || `步骤 ${(index ?? 0) + 1}`
+  };
+}
+
+function presetTestimonialsField(imageMediaItems: MediaPickerItem[]) {
+  return {
+    type: "array" as const,
+    label: "评价",
+    min: 1,
+    max: 8,
+    arrayFields: {
+      quote: field("textarea", "评价内容"),
+      name: field("text", "姓名/公司"),
+      role: field("text", "身份"),
+      imageUrl: mediaPickerField("头像/Logo", imageMediaItems, "image")
+    },
+    defaultItemProps: { quote: "The page structure made the offer easier to understand.", name: "Project partner", role: "", imageUrl: "" },
+    getItemSummary: (item: { name?: string; quote?: string }, index?: number) => item.name || item.quote || `评价 ${(index ?? 0) + 1}`
   };
 }
 
@@ -2588,6 +2727,11 @@ function createConfig(
         components: ["CustomMediaSection", "CustomTextSection", "CustomVideoSection", "CustomCtaSection", "CustomSection"],
         defaultExpanded: true
       },
+      presetInteractive: {
+        title: "交互预设组件",
+        components: ["PresetAccordion", "PresetTabs", "PresetCarousel", "PresetStatsGrid", "PresetLogoCloud", "PresetTimelineSteps", "PresetTestimonials"],
+        defaultExpanded: false
+      },
       containerElements: {
         title: "容器元素",
         components: containerSlotComponentTypes,
@@ -2865,6 +3009,81 @@ function createConfig(
         },
         defaultProps: { eyebrow: "Gallery", title: "Image gallery", body: "", mediaLibraryUrl: "", imageUrls: "", imageItems: [], layout: "grid", imageFit: "cover", imageAspect: "standard" },
         render: render("ImageGallery")
+      },
+      PresetAccordion: {
+        label: "预设 FAQ 折叠",
+        fields: {
+          ...presetSectionFields(),
+          items: presetAccordionItemsField(),
+          defaultOpenIndex: field("number", "默认展开序号", { min: 0, max: 11 })
+        },
+        defaultProps: { eyebrow: "FAQ", title: "Common questions", body: "", tone: "light", defaultOpenIndex: 0, items: [] },
+        render: render("PresetAccordion")
+      },
+      PresetTabs: {
+        label: "预设标签页",
+        fields: {
+          ...presetSectionFields(),
+          items: presetTabsItemsField(imageMediaItems)
+        },
+        defaultProps: { eyebrow: "Details", title: "Compare options", body: "", tone: "light", items: [] },
+        render: render("PresetTabs")
+      },
+      PresetCarousel: {
+        label: "预设轮播卡片",
+        fields: {
+          ...presetSectionFields(),
+          items: presetCarouselItemsField(imageMediaItems),
+          loop: yesNoField("循环播放")
+        },
+        defaultProps: { eyebrow: "Highlights", title: "Featured cards", body: "", tone: "light", loop: true, items: [] },
+        render: render("PresetCarousel")
+      },
+      PresetStatsGrid: {
+        label: "预设数据网格",
+        fields: {
+          ...presetSectionFields(),
+          stats: presetStatsField(),
+          columns: radioField("列数", [
+            { label: "自动", value: "auto" },
+            { label: "2 列", value: "2" },
+            { label: "3 列", value: "3" },
+            { label: "4 列", value: "4" }
+          ])
+        },
+        defaultProps: { eyebrow: "Numbers", title: "Proof points", body: "", tone: "light", columns: "auto", stats: [] },
+        render: render("PresetStatsGrid")
+      },
+      PresetLogoCloud: {
+        label: "预设 Logo 云",
+        fields: {
+          ...presetSectionFields(),
+          logos: presetLogoField(imageMediaItems)
+        },
+        defaultProps: { eyebrow: "Partners", title: "Trusted supply network", body: "", tone: "light", logos: [] },
+        render: render("PresetLogoCloud")
+      },
+      PresetTimelineSteps: {
+        label: "预设流程步骤",
+        fields: {
+          ...presetSectionFields(),
+          steps: presetTimelineStepsField()
+        },
+        defaultProps: { eyebrow: "Process", title: "How it works", body: "", tone: "light", steps: [] },
+        render: render("PresetTimelineSteps")
+      },
+      PresetTestimonials: {
+        label: "预设客户评价",
+        fields: {
+          ...presetSectionFields(),
+          testimonials: presetTestimonialsField(imageMediaItems),
+          layout: radioField("布局", [
+            { label: "网格", value: "grid" },
+            { label: "强调", value: "featured" }
+          ])
+        },
+        defaultProps: { eyebrow: "Testimonials", title: "What buyers say", body: "", tone: "light", layout: "grid", testimonials: [] },
+        render: render("PresetTestimonials")
       },
       VideoSection: {
         label: "视频",
