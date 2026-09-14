@@ -37,8 +37,8 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: L
 export default async function ContactPage({ params }: { params: Promise<{ locale: LocaleCode }> }) {
   const { locale } = await params;
   const state = await readAdminState();
-  const pageTitle = contactTitle(state.siteSettings.title);
-  const pageDescription = contactDescription(state.siteSettings.title);
+  const pageTitle = locale === "zh" ? "联系 GrillBeats" : contactTitle(state.siteSettings.title);
+  const pageDescription = locale === "zh" ? "说明你的采购需求，我们将根据具体信息跟进。" : contactDescription(state.siteSettings.title);
   const structuredData = (
     <>
       <script
@@ -69,14 +69,14 @@ export default async function ContactPage({ params }: { params: Promise<{ locale
       {structuredData}
       <section className="section split contact-section">
         <div className="contact-copy">
-          <span className="eyebrow">Contact</span>
+          <span className="eyebrow">{locale === "zh" ? "联系我们" : "Contact"}</span>
           <h1>{pageTitle}</h1>
           <p>{pageDescription}</p>
           <PublicContactList channels={state.contactChannels} locale={locale} />
         </div>
         <div className="contact-rfq-panel" id="rfq">
-          <span className="eyebrow">RFQ details</span>
-          <h2>Tell us what to quote.</h2>
+          <span className="eyebrow">{locale === "zh" ? "采购需求" : "RFQ details"}</span>
+          <h2>{locale === "zh" ? "告诉我们你的采购需求。" : "Tell us what you need."}</h2>
           <RfqForm locale={locale} />
         </div>
       </section>

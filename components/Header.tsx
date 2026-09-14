@@ -24,7 +24,7 @@ export function Header({
   const isAdminPath = pathname?.startsWith(`/${locale}/admin`);
   const isLocaleHomePath = pathname === `/${locale}` || pathname === `/${locale}/`;
   const ctaLabel = useMemo(() => isAdminPath ? "前台首页" : t(ui.quote, locale), [isAdminPath, locale]);
-  const ctaHref = isAdminPath ? `/${locale}` : "#rfq";
+  const ctaHref = isAdminPath ? `/${locale}` : `/${locale}/contact#rfq`;
 
   useEffect(() => {
     setCurrentBrandName(brandName);

@@ -2093,7 +2093,10 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
       `Email: ${lead.email || "No email"}`,
       `WhatsApp / Phone：${lead.whatsapp || "No WhatsApp / Phone"}`,
       `Destination: ${lead.destination || "No destination"}`,
-      `Material: ${lead.workpieceMaterial || "No material"}`,
+      `Length: ${lead.length || "Not specified"}`,
+      `Diameter: ${lead.diameter || "Not specified"}`,
+      `Tip: ${lead.tipType || "Not specified"}`,
+      `Packaging: ${lead.packaging || "Not specified"}`,
       `Status: ${lead.status}`,
       `Submitted at: ${new Date(lead.createdAt).toLocaleString("en-US")}`,
       lead.message ? `Message: ${lead.message}` : ""
@@ -4938,6 +4941,7 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
       lead.whatsapp,
       lead.destination,
       lead.workpieceMaterial,
+      lead.length, lead.diameter, lead.tipType, lead.packaging,
       lead.message,
       leadStatusLabels[lead.status]
     ].filter(Boolean).some((value) => value?.toLowerCase().includes(query));
@@ -7280,9 +7284,10 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
                       <small>目的地</small>
                       <span>{lead.destination || "No destination"}</span>
                     </div>
-                    <div className="lead-cell" title="双击复制材料" onDoubleClick={() => copyTextToClipboard(lead.workpieceMaterial || "No material", "材料已复制")}>
-                      <small>材料</small>
-                      <span>{lead.workpieceMaterial || "No material"}</span>
+                    <div className="lead-cell" title="竹签规格与包装">
+                      <small>规格与包装</small>
+                      <span>长度：{lead.length || "未指定"}；直径：{lead.diameter || "未指定"}</span>
+                      <span>签头：{lead.tipType || "未指定"}；包装：{lead.packaging || "未指定"}</span>
                     </div>
                     <div className="lead-cell" title="双击复制姓名" onDoubleClick={() => copyTextToClipboard(lead.fullName || "未填写姓名", "姓名已复制")}>
                       <small>姓名</small>

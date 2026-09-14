@@ -1,0 +1,12 @@
+import { mkdir, cp, writeFile } from 'node:fs/promises';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+if(!process.env.TEMPLATE_LIBRARY_DIR) throw new Error('请通过 TEMPLATE_LIBRARY_DIR 指定仓库外的模板库目录。');
+const library=path.resolve(root,process.env.TEMPLATE_LIBRARY_DIR);
+if(library===root || library.startsWith(root+path.sep)) throw new Error('模板库必须在生产代码目录之外。');
+const dest=path.join(library,'grillbeats-wholesale');
+await mkdir(dest,{recursive:true});
+for(const [source,target] of [['data/current-template-content.json','seed.json'],['components/templates/ActiveTemplate.tsx','ActiveTemplate.tsx'],['styles/active-template.css','active-template.css'],['public/assets/current-template','assets']]) await cp(path.join(root,source),path.join(dest,target),{recursive:true,force:true});
+await writeFile(path.join(dest,'manifest.json'),JSON.stringify({version:1,key:'grillbeats-wholesale',label:'GrillBeats 竹签批发',contentVersion:'current-template-grillbeats-wholesale-v1',paths:{content:'seed.json',assets:'assets',activeTemplate:'ActiveTemplate.tsx',styles:'active-template.css'}},null,2)+'\n');
+console.log('模板源包已导出：'+dest);

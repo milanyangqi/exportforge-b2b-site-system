@@ -6,7 +6,8 @@ if (process.env.NODE_ENV === "development" && process.env.EXPORTFORGE_SELF_HOST 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
-  typedRoutes: false
+  typedRoutes: false,
+  async redirects() { return [{ source: "/:path*", has: [{type: "host", value: "www.grillbeats.com"}], destination: "https://grillbeats.com/:path*", permanent: true }]; }
 };
 
 export default nextConfig;

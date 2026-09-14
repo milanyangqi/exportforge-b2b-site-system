@@ -22,6 +22,8 @@ export function ContactDock({ locale, channels }: { locale: LocaleCode; channels
     });
   }
 
+  if (!enabledChannels.length) return null;
+
   return (
     <aside className={open ? "contact-dock expanded" : "contact-dock"} aria-label="Contact channels">
       <button

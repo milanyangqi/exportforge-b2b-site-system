@@ -16,7 +16,7 @@ type MetadataInput = {
   seo?: SeoSettings;
 };
 
-const defaultSiteUrl = "https://exportforge-b2b-site-system.437991663.workers.dev";
+const defaultSiteUrl = "https://grillbeats.com";
 const fallbackLocale: LocaleCode = "en";
 
 export function normalizeSiteUrl(siteUrl?: string) {

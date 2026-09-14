@@ -54,6 +54,7 @@ function ProductCard({ locale, product, compact = false }: { locale: LocaleCode;
           <span key={spec}>{spec}</span>
         ))}
       </div>
+    <a className="gb-product-link" href={`/${locale}/products/${product.slug}`}>{locale === "zh" ? "查看与询价" : "View & enquire"} <ArrowUpRight size={14}/></a>
     </article>
   );
 }

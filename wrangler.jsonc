@@ -1,9 +1,11 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "exportforge-b2b-site-system",
+  "name": "grillbeats-wholesale",
   "main": ".open-next/worker.js",
-  "compatibility_date": "2026-05-23",
-  "compatibility_flags": ["nodejs_compat"],
+  "compatibility_date": "2026-09-14",
+  "compatibility_flags": [
+    "nodejs_compat"
+  ],
   "assets": {
     "directory": ".open-next/assets",
     "binding": "ASSETS"
@@ -11,17 +13,20 @@
   "services": [
     {
       "binding": "WORKER_SELF_REFERENCE",
-      "service": "exportforge-b2b-site-system"
+      "service": "grillbeats-wholesale"
     }
   ],
   "kv_namespaces": [
     {
       "binding": "EXPORTFORGE_KV",
-      "id": "dec332f8417141759ed4c6ffc1838bc3"
+      "id": "6e363ea4f25d4b6fbfec7acd3cf74935"
     }
   ],
   "vars": {
-    "NEXT_PUBLIC_SITE_URL": "https://exportforge-b2b-site-system.workers.dev",
-    "INITIAL_ADMIN_EMAIL": "admin@example.com"
-  }
+    "NEXT_PUBLIC_SITE_URL": "https://grillbeats.com",
+    "NEXT_PUBLIC_SITE_INDEXABLE": "true",
+    "INITIAL_ADMIN_EMAIL": "admin@grillbeats.com"
+  },
+  "account_id": "de7479ac412c7ecd4ddaa6d7e6e8cdcf",
+  "workers_dev": true
 }

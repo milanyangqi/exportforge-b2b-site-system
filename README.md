@@ -1,167 +1,57 @@
-# Export B2B Independent Site System
+# GrillBeats 竹签批发站
 
-多语言 B2B 外贸独立站系统骨架，支持产品展示、询盘、社交联系浮窗、角色权限、主题切换、AI 内容生成预留，以及托管/自部署。
+本分支 `codex/grillbeats-wholesale` 基于原站 `main` 的 `a128011`，使用白绿产品目录模板，保留原有 CMS。英文为默认前台，支持中文。
 
-## Quick Start
+## 独立部署
+
+- Worker：`grillbeats-wholesale`
+- KV：`grillbeats-wholesale-kv`，资源 ID 见 `wrangler.jsonc`
+- 目标域名：`https://grillbeats.com`，`www` 使用永久重定向
+- 后台：`/zh/admin`；初始管理员标识：`admin@grillbeats.com`（不是已开通邮箱的声明）
+- 需要 Secrets：`AUTH_SECRET`、`INITIAL_ADMIN_PASSWORD`。不得提交到 Git。
+- 本分支不得使用原站 KV、原站密钥或覆盖原 Worker，不合并 `main`。
+
+## 本地开发
+
+使用 Node.js 22 或更高版本，先 `npm install`。通过环境变量提供独立管理员密码和会话密钥，然后执行 `npm run dev`。本地数据保存在忽略提交的 `.data/` 中。
+
+前台只展示竹签与包装需求咨询，不预设价格、MOQ、库存、认证或交期；图片是设计示意。未配置联系方式时隐藏联系浮窗。`/api/leads` 成功表示后台落库，不代表邮件已发送。
+
+## 模板源包
+
+项目模板库在生产代码目录之外，通过环境变量指定位置：
+
+```bash
+TEMPLATE_LIBRARY_DIR='../模板库' npm run template:apply -- grillbeats-wholesale
+```
+
+源包通过固定入口导入组件、样式、内容与图片。新增的 `GrillBeatsHero`、`SkewerSpecification`、`TemplateCustomBlock`、`TemplateImageCarousel` 是本分支配套组件。不要向当前生产目录放入其他未启用模板。
+
+将当前分支的模板入口导出到独立模板库：
+
+```bash
+TEMPLATE_LIBRARY_DIR='../模板库' npm run template:export
+```
+
+## 验证与发布
 
 ```bash
 npm install
-npm run dev
-```
-
-访问 `http://localhost:3000/en`。
-
-## Admin
-
-后台地址：
-
-- `http://localhost:3000/zh/admin`
-- `http://localhost:3000/en/admin`
-
-默认开发账号：
-
-- Email: `admin@example.com`
-- Password: `change-me`
-
-生产环境请在 `.env` 修改：
-
-- `INITIAL_ADMIN_EMAIL`
-- `INITIAL_ADMIN_PASSWORD`
-- `AUTH_SECRET`
-- `AUTH_COOKIE_SECURE`，HTTP 自部署保持 `false`；放到 HTTPS 反向代理后可改为 `true`
-
-后台当前已具备真实登录、HTTP-only session、受保护 API、产品分类管理、文章发布、回收站、询盘管理、联系渠道配置、用户角色、前台导航与可显示语言设置、主题切换、AI 内容设置。数据在本地开发时保存到 `.data/admin-state.json`，部署到 Cloudflare Workers/OpenNext 后自动使用 `EXPORTFORGE_KV` 持久化。
-
-运营联动：
-
-- 后台产品分类保存后，同步到首页、产品列表和产品详情页。
-- 后台文章设置为 `已发布` 后进入文章列表，移至回收站后不再显示到前台。
-- 后台文章同时勾选 `同步首页` 后进入首页文章区。
-- 后台前台设置可控制 Header 导航项和语言选择器显示哪些语言。
-- 后台主题切换保存后，前台会读取当前主题颜色。
-- 后台 AI 内容中心可生成文章草稿，人工审核后再发布。
-
-## Template Library Workflow
-
-生产项目采用“只保留当前启用模板”的结构。未启用模板不要长期放在本仓库的生产包里，应放在独立模板库目录或仓库中。
-
-默认本机模板库目录：
-
-```bash
-/Users/zhang/Documents/Codex_project/WebsiteTemplates
-```
-
-当前项目固定读取这些生产模板入口：
-
-- `components/templates/ActiveTemplate.tsx`
-- `styles/active-template.css`
-- `data/current-template-content.json`
-- `public/assets/current-template/`
-
-从模板库导入模板：
-
-```bash
-npm run template:apply -- <templateKey>
-```
-
-也可以指定模板库位置：
-
-```bash
-TEMPLATE_LIBRARY_DIR=/path/to/WebsiteTemplates npm run template:apply -- <templateKey>
-```
-
-模板库中每个模板目录需包含 `manifest.json`，并至少提供内容 seed 和素材目录。示例结构：
-
-```text
-WebsiteTemplates/
-  keyprotools/
-    manifest.json
-    seed.json
-    assets/
-    ActiveTemplate.tsx
-    active-template.css
-```
-
-新站建议流程：
-
-```bash
-git switch main
-git switch -c client-template-preview
-npm run template:apply -- keyprotools
 npm run typecheck
-npm run build
+NEXT_PUBLIC_SITE_URL=https://grillbeats.com NEXT_PUBLIC_SITE_INDEXABLE=true npm run build
 ```
 
-确认无误后再提交该分支。只有确定要上线时，才合并到 `main` 或按发布流程部署。
-
-## Self-host
-
-Docker 自部署只需要 Web 服务。后台数据、上传文件会持久化到宿主机的 `.data/` 目录，不依赖 Postgres。
+先提交并推送当前分支，推送失败必须停止发布。本次用户明确要求新分支，覆盖旧流程中的 `git push origin main`：
 
 ```bash
-docker compose up -d --build
+git push -u origin codex/grillbeats-wholesale
+NEXT_PUBLIC_SITE_URL=https://grillbeats.com NEXT_PUBLIC_SITE_INDEXABLE=true npm run cf:build
+find .open-next -path '*codegraph*' -o -name '.codegraph'
+npx opennextjs-cloudflare deploy
 ```
 
-不配置 `.env` 也可以直接启动。生产部署前建议复制并修改 `.env`：
+只有 CodeGraph 检查为空才发布。发布后在独立 Worker 地址验证页面、登录、询盘、媒体和设置，再迁移域名。DNS 迁移前必须导出完整原记录，保留邮件记录；关闭旧 DNSSEC 并确认旧 DS 清除后再换 NS，Cloudflare 激活后重新启用 DNSSEC。
 
-```bash
-cp .env.example .env
-```
+## 依赖说明
 
-- `NEXT_PUBLIC_SITE_URL`
-- `APP_PORT`，宿主机端口，默认 `3000`
-- `NPM_CONFIG_REGISTRY`，Docker 构建拉包源，默认 `https://registry.npmmirror.com`
-- `INITIAL_ADMIN_EMAIL`
-- `INITIAL_ADMIN_PASSWORD`
-- `AUTH_SECRET`
-
-部署后访问：
-
-- `http://localhost:3000/zh`
-- `http://localhost:3000/zh/admin`
-
-查看运行状态：
-
-```bash
-docker compose ps
-docker compose logs -f web
-```
-
-## Cloudflare Workers
-
-本项目已配置 OpenNext Cloudflare 部署：
-
-```bash
-npm run cf:build
-npm run cf:deploy
-```
-
-线上后台数据使用 `wrangler.jsonc` 中的 `EXPORTFORGE_KV` 绑定。生产环境请通过 Wrangler Secret 设置：
-
-- `INITIAL_ADMIN_EMAIL`
-- `AUTH_SECRET`
-- `INITIAL_ADMIN_PASSWORD`
-
-后台入口仍为 `/zh/admin` 或 `/en/admin`。
-
-## Verification Notes
-
-`npm run typecheck` 会读取 `tsconfig.json` 中的 `.next/types/**/*.ts`。如果刚清理过 `.next`，或第一次在当前工作区运行校验，直接执行 `npm run typecheck` 可能会报 `.next/types/... not found`。
-
-推荐顺序：
-
-```bash
-npm run build
-npm run typecheck
-```
-
-`npm run build` 会先生成 Next.js 的 `.next/types`，之后再运行 `npm run typecheck` 就不会因为缺少生成类型而失败。
-
-## Included
-
-- 多语言路由：`en`、`zh`、`th`、`vi`、`id`、`ms`、`fil`、`my`、`km`、`lo`、`ar`、`es`、`fr`、`de`、`it`、`pt`、`hi`、`ru`、`ja`、`ko`、`ur`
-- 阿拉伯语、乌尔都语 RTL 布局支持
-- 后台演示页：`/en/admin`
-- 询盘 API：`POST /api/leads`
-- 主题配置、RBAC 权限配置、AI 生成草稿配置均已类型化
-- `config/`、`data/`、`lib/` 分层，方便二次开发与行业模板扩展
+Next.js 更新至 15.5.25；PostCSS 和 Tiptap 使用覆盖规则锁定兼容安全版本，避免旧 peer 锁文件阻止修复。Nodemailer 更新至 10 系列。发布前运行依赖审计；不要通过强制升级 Next.js 主版本来机械消除所有提示。

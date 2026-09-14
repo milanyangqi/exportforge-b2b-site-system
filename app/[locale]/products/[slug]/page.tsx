@@ -73,7 +73,7 @@ export default async function ProductCategoryPage({
       {structuredData}
       <section className="product-detail">
         <div>
-          <span className="eyebrow">Product category</span>
+          <span className="eyebrow">{locale === "zh" ? "产品类别" : "Product category"}</span>
           <h1>{t(product.name, locale)}</h1>
           <p>{t(product.summary, locale)}</p>
           <div className="chips">
@@ -88,7 +88,7 @@ export default async function ProductCategoryPage({
           </figure>
         ) : null}
         <div className="workflow-panel">
-          <h3>Applications</h3>
+          <h3>{locale === "zh" ? "适用场景" : "Applications"}</h3>
           <ul className="detail-list">
             {t(product.applications, locale).map((item) => (
               <li key={item}>{item}</li>
@@ -98,11 +98,11 @@ export default async function ProductCategoryPage({
       </section>
       <section className="section rfq-section" id="rfq">
         <div>
-          <span className="eyebrow">Request category quote</span>
-          <h2>Send quantity, requirements, packaging, and destination.</h2>
-          <p>{state.siteSettings.title} will review the category details and respond with a practical quotation.</p>
+          <span className="eyebrow">{locale === "zh" ? "产品询价" : "Request category quote"}</span>
+          <h2>{locale === "zh" ? "告诉我们数量、规格、包装与目的地。" : "Share your quantity, specifications and destination."}</h2>
+          <p>{locale === "zh" ? "不确定规格也可先说明用途。起订量与交期需报价确认。" : "Not sure about a specification? Describe your application. MOQ and timing are confirmed with your quote."}</p>
         </div>
-        <RfqForm locale={locale} />
+        <RfqForm locale={locale} productType={t(product.name,locale)} />
       </section>
     </main>
   );

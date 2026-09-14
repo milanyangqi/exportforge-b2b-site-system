@@ -39,8 +39,8 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: L
 export default async function ProductsPage({ params }: { params: Promise<{ locale: LocaleCode }> }) {
   const { locale } = await params;
   const state = await readAdminState();
-  const pageTitle = productsTitle(state.siteSettings.title);
-  const pageDescription = productsDescription(state.siteSettings.title);
+  const pageTitle = locale === "zh" ? "竹签与包装目录" : "Bamboo skewers & packaging";
+  const pageDescription = locale === "zh" ? "选择款式，沟通规格、数量和包装需求。" : "Choose a style, then discuss dimensions, quantity and packaging.";
   const structuredData = (
     <script
       type="application/ld+json"

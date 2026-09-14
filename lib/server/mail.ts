@@ -22,10 +22,10 @@ export function buildLeadMailDraft(state: Pick<AdminState, "siteSettings">, lead
   const body = template
     .replaceAll("{name}", lead.fullName || "there")
     .replaceAll("{company}", lead.company || "")
-    .replaceAll("{productType}", lead.productType || "your tooling request")
+    .replaceAll("{productType}", lead.productType || "your product enquiry")
     .replaceAll("{quantity}", lead.quantity || "")
     .replaceAll("{email}", lead.email || "")
-    .replaceAll("{siteTitle}", state.siteSettings.title || "KeyproTools");
+    .replaceAll("{siteTitle}", state.siteSettings.title || "GrillBeats");
 
   return {
     to: lead.email,
@@ -104,7 +104,10 @@ function appendLeadContext(body: string, lead?: AdminLead) {
     `Email: ${lead.email || "No email"}`,
     `WhatsApp / Phone: ${lead.whatsapp || "No WhatsApp / Phone"}`,
     `Destination: ${lead.destination || "No destination"}`,
-    `Material: ${lead.workpieceMaterial || "No material"}`,
+    lead.length ? `Length: ${lead.length}` : "",
+    lead.diameter ? `Diameter: ${lead.diameter}` : "",
+    lead.tipType ? `Tip type: ${lead.tipType}` : "",
+    lead.packaging ? `Packaging: ${lead.packaging}` : "",
     lead.message ? `Message: ${lead.message}` : ""
   ].filter(Boolean).join("\n");
 }

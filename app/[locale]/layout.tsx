@@ -25,6 +25,7 @@ export default async function LocaleLayout({
   const locale = resolvedParams.locale as LocaleCode;
   const meta = getLocaleMeta(locale);
   const state = await readAdminState();
+  if (!state.enabledLocales.includes(locale)) notFound();
   const activeTheme = themes[state.activeTheme] ?? themes.industrial;
 
   return (

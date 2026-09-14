@@ -172,6 +172,10 @@ export type LeadPayload = {
   whatsapp?: string;
   destination?: string;
   workpieceMaterial?: string;
+  length?: string;
+  diameter?: string;
+  tipType?: string;
+  packaging?: string;
   message?: string;
   locale?: LocaleCode;
   sourcePath?: string;
