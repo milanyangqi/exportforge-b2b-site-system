@@ -8,11 +8,16 @@ def req(path,method='GET',data=None,headers=None,anon=False):
  if isinstance(data,dict): raw=json.dumps(data).encode();h={**h,'Content-Type':'application/json'}
  r=urllib.request.Request(base+path,data=raw,headers=h,method=method)
  if not base.startswith('http://localhost') and method!='GET': time.sleep(1.2)
- try:
-  with (urllib.request.urlopen(r,timeout=30) if anon else client.open(r,timeout=30)) as response:return response.status,response.read(),dict(response.headers)
- except urllib.error.HTTPError as e:return e.code,e.read(),dict(e.headers)
+ for attempt in range(3):
+  try:
+   with (urllib.request.urlopen(r,timeout=30) if anon else client.open(r,timeout=30)) as response:return response.status,response.read(),dict(response.headers)
+  except urllib.error.HTTPError as e:return e.code,e.read(),dict(e.headers)
+  except urllib.error.URLError:
+   if method!='GET' or attempt==2:raise
+   time.sleep(2*(attempt+1))
+
 def check(name,condition,detail=''):
- results.append({'检查':name,'通过':bool(condition),'说明':detail});print(name, 'PASS' if condition else 'FAIL');assert condition,name
+ results.append({'检查':name,'通过':bool(condition),'说明':detail});Path(args.output).write_text(json.dumps({'地址':base,'结果':results},ensure_ascii=False,indent=2));print(name, 'PASS' if condition else 'FAIL');assert condition,name
 check('后台接口未登录保护',req('/api/admin/state',anon=True)[0]==401)
 check('媒体上传未登录保护',req('/api/admin/upload','POST',{},anon=True)[0]==401)
 check('禁用默认密码',req('/api/auth/login','POST',{'email':'admin@grillbeats.com','password':'change-me'})[0]==401)
@@ -27,7 +32,7 @@ lead={'fullName':'QA acceptance '+uuid.uuid4().hex[:8],'email':'grillbeats-qa@ex
 status,raw,_=req('/api/leads','POST',lead);check('合法询盘成功',status==201);lead_id=json.loads(raw)['id']
 def getstate():return json.loads(req('/api/admin/state')[1])
 def poll(test):
- for i in range(15):
+ for i in range(35):
   value=getstate()
   if test(value):return value
   time.sleep(2)
@@ -45,7 +50,12 @@ try:
  state['products'][0]['name']['en']='QA Bamboo Product';state['templateSettings']['heroTitle']['en']='QA GrillBeats Hero';state['templateSettings']['homeProductCount']=3
  check('后台产品模板设置保存',req('/api/admin/state','PUT',state)[0]==200)
  poll(lambda s:s['products'][0]['name']['en']=='QA Bamboo Product')
- html=req('/en')[1].decode();check('后台变更前台生效','QA Bamboo Product' in html and 'QA GrillBeats Hero' in html)
+ started=time.monotonic()
+ for attempt in range(35):
+  status,raw,_=req('/en');html=raw.decode()
+  if status==200 and 'QA Bamboo Product' in html and 'QA GrillBeats Hero' in html:break
+  time.sleep(2)
+ check('后台变更前台生效','QA Bamboo Product' in html and 'QA GrillBeats Hero' in html,'边缘传播等待 %.1f 秒' % (time.monotonic()-started))
 finally:
  latest=getstate();latest['products']=baseline['products'];latest['templateSettings']=baseline['templateSettings'];latest['leads']=[x for x in latest['leads'] if x['id']!=lead_id];req('/api/admin/state','PUT',latest)
  if upload_id:req('/api/admin/upload?id='+upload_id,'DELETE')
