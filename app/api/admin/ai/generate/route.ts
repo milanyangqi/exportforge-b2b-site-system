@@ -125,7 +125,7 @@ function chargeAiCredits(state: AdminState, userEmail: string, action: string, u
 function buildPrompt(settings: AiSettings, payload: GeneratePayload) {
   const target = payload.target === "page" ? "page" : "article";
   const purpose = payload.purpose || (target === "article" ? "buying guide" : "service page");
-  const topic = payload.topic?.trim() || "cutting tools";
+  const topic = payload.topic?.trim() || "bamboo skewers";
   const selectedTitle = payload.selectedTitle?.trim();
   const audience = payload.audience?.trim() || settings.targetMarkets.join(", ") || "global B2B buyers";
   const languages = (payload.languages?.length ? payload.languages : ["zh", "en"]).join(", ");
@@ -150,7 +150,7 @@ function buildPrompt(settings: AiSettings, payload: GeneratePayload) {
   return [
     "Return strict JSON only with this shape:",
     "{\"slug\":\"...\",\"title\":{\"en\":\"...\",\"zh\":\"...\"},\"excerpt\":{\"en\":\"...\",\"zh\":\"...\"},\"body\":{\"en\":\"markdown...\",\"zh\":\"markdown...\"}}",
-    `Create a complete ${target} draft for a B2B export website named KeyproTools.`,
+    `Create a complete ${target} draft for a B2B export website named GrillBeats.`,
     `Purpose: ${purpose}`,
     `Topic: ${topic}`,
     selectedTitle ? `Use this exact user-approved title as the main content direction: ${selectedTitle}` : "Create a suitable title if no user-approved title is provided.",

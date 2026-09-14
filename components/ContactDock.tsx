@@ -9,7 +9,7 @@ import type { ContactChannel, LocaleCode } from "@/types/site";
 
 export function ContactDock({ locale, channels }: { locale: LocaleCode; channels: ContactChannel[] }) {
   const items = channels ?? [];
-  const enabledChannels = items.filter((channel) => channel.enabled);
+  const enabledChannels = items.filter((channel) => channel.enabled && Boolean(channel.href?.trim() || channel.qrCodeUrl));
   const [open, setOpen] = useState(false);
   const [activeQrId, setActiveQrId] = useState<string | null>(null);
   const activeQrChannel = enabledChannels.find((channel) => channel.id === activeQrId && channel.qrCodeUrl);
