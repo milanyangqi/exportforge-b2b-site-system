@@ -7,7 +7,14 @@ if (process.env.NODE_ENV === "development" && process.env.EXPORTFORGE_SELF_HOST 
 const nextConfig = {
   reactStrictMode: true,
   typedRoutes: false,
-  async redirects() { return [{ source: "/:path*", has: [{type: "host", value: "www.grillbeats.com"}], destination: "https://grillbeats.com/:path*", permanent: true }]; }
+  async redirects() {
+    const wwwHost = [{ type: "host", value: "www.grillbeats.com" }];
+    return [
+      // OpenNext needs a literal destination when the root has no path segments.
+      { source: "/", has: wwwHost, destination: "https://grillbeats.com/", permanent: true },
+      { source: "/:path+", has: wwwHost, destination: "https://grillbeats.com/:path+", permanent: true }
+    ];
+  }
 };
 
 export default nextConfig;
