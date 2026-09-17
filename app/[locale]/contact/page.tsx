@@ -1,3 +1,4 @@
+import { YuvaContact } from "@/components/YuvaPages";
 import { RfqForm } from "@/components/RfqForm";
 import { PublicContactList } from "@/components/PublicContactList";
 import { PuckPageRenderer } from "@/components/PuckPageRenderer";
@@ -64,24 +65,7 @@ export default async function ContactPage({ params }: { params: Promise<{ locale
       />
     </>
   );
-  const fallback = (
-    <main className="subpage">
-      {structuredData}
-      <section className="section split contact-section">
-        <div className="contact-copy">
-          <span className="eyebrow">Contact</span>
-          <h1>{pageTitle}</h1>
-          <p>{pageDescription}</p>
-          <PublicContactList channels={state.contactChannels} locale={locale} />
-        </div>
-        <div className="contact-rfq-panel" id="rfq">
-          <span className="eyebrow">RFQ details</span>
-          <h2>Tell us what to quote.</h2>
-          <RfqForm locale={locale} />
-        </div>
-      </section>
-    </main>
-  );
+  const fallback = (<>{structuredData}<YuvaContact locale={locale}/></>);
 
   return (
     <PuckPageRenderer

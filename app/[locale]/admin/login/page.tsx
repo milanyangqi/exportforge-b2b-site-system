@@ -3,7 +3,7 @@ import { AdminLogin } from "@/components/AdminLogin";
 import type { LocaleCode } from "@/types/site";
 
 export const metadata: Metadata = {
-  title: "Admin Login | KeyproTools",
+  title: "Admin Login | Yuvacosmetics",
   robots: {
     index: false,
     follow: false

@@ -1,3 +1,4 @@
+import { YuvaStory } from "@/components/YuvaPages";
 import { notFound } from "next/navigation";
 import { ArticleContent } from "@/components/ArticleContent";
 import { PuckPageRenderer } from "@/components/PuckPageRenderer";
@@ -59,17 +60,7 @@ export default async function SitePageDetail({
       }}
     />
   );
-  const fallback = (
-    <main className="subpage">
-      {structuredData}
-      <article className="content-detail">
-        <span className="eyebrow">Page</span>
-        <h1>{t(page.title, locale)}</h1>
-        <p className="detail-excerpt">{t(page.excerpt, locale)}</p>
-        <ArticleContent body={t(page.body, locale)} />
-      </article>
-    </main>
-  );
+  const fallback = (<>{structuredData}<YuvaStory page={page} locale={locale}/></>);
 
   return (
     <PuckPageRenderer

@@ -6,7 +6,8 @@ if (process.env.NODE_ENV === "development" && process.env.EXPORTFORGE_SELF_HOST 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
-  typedRoutes: false
+  typedRoutes: false,
+  outputFileTracingExcludes: { "*": [".codegraph/**", ".env*", ".data/**"] }
 };
 
 export default nextConfig;

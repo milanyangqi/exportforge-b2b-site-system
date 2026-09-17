@@ -1,3 +1,4 @@
+import { YuvaProduct } from "@/components/YuvaPages";
 /* eslint-disable @next/next/no-img-element */
 import { notFound } from "next/navigation";
 import { PuckPageRenderer } from "@/components/PuckPageRenderer";
@@ -68,44 +69,7 @@ export default async function ProductCategoryPage({
       />
     </>
   );
-  const fallback = (
-    <main className="subpage">
-      {structuredData}
-      <section className="product-detail">
-        <div>
-          <span className="eyebrow">Product category</span>
-          <h1>{t(product.name, locale)}</h1>
-          <p>{t(product.summary, locale)}</p>
-          <div className="chips">
-            {product.specs.map((spec) => (
-              <span key={spec}>{spec}</span>
-            ))}
-          </div>
-        </div>
-        {product.imageUrl ? (
-          <figure className="product-detail-media">
-            <img src={product.imageUrl} alt={t(product.name, locale)} />
-          </figure>
-        ) : null}
-        <div className="workflow-panel">
-          <h3>Applications</h3>
-          <ul className="detail-list">
-            {t(product.applications, locale).map((item) => (
-              <li key={item}>{item}</li>
-            ))}
-          </ul>
-        </div>
-      </section>
-      <section className="section rfq-section" id="rfq">
-        <div>
-          <span className="eyebrow">Request category quote</span>
-          <h2>Send quantity, requirements, packaging, and destination.</h2>
-          <p>{state.siteSettings.title} will review the category details and respond with a practical quotation.</p>
-        </div>
-        <RfqForm locale={locale} />
-      </section>
-    </main>
-  );
+  const fallback = (<>{structuredData}<YuvaProduct product={product} locale={locale}/></>);
 
   return (
     <PuckPageRenderer

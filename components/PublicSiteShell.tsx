@@ -233,7 +233,7 @@ export function PublicFooterShell({
   const handleLinkClick: LinkClickHandler | undefined = preventNavigation
     ? (event) => event.preventDefault()
     : undefined;
-  const footerTagline = tagline ? t(tagline, locale) : "Carbide end mills, drill bits, OEM tooling, and export-ready packing for global buyers.";
+  const footerTagline = tagline ? t(tagline, locale) : "Color cosmetics manufacturing in China and Indonesia.";
   const footerCopyright = (copyright ? t(copyright, locale) : "Copyright © {year} {brand}. All rights reserved.")
     .replaceAll("{year}", String(new Date().getFullYear()))
     .replaceAll("{brand}", brandName);

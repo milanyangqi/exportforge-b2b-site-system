@@ -8,12 +8,12 @@ const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), ".."
 const templateKey = process.argv.slice(2).find((arg) => !arg.startsWith("--"));
 const libraryRoot = path.resolve(
   repoRoot,
-  process.env.TEMPLATE_LIBRARY_DIR || "../WebsiteTemplates"
+  process.env.TEMPLATE_LIBRARY_DIR || "../模板库"
 );
 
 function usage() {
   console.error("Usage: npm run template:apply -- <templateKey>");
-  console.error("Set TEMPLATE_LIBRARY_DIR to override the default ../WebsiteTemplates path.");
+  console.error("Set TEMPLATE_LIBRARY_DIR to override the default ../模板库 path.");
 }
 
 function resolveTemplateDir(key) {
@@ -120,6 +120,10 @@ if (paths.activeTemplate) {
 
 if (paths.styles) {
   await copyFileFromTemplate(templateDir, paths.styles, "styles/active-template.css");
+}
+
+for (const file of manifest.additionalFiles ?? []) {
+  await copyFileFromTemplate(templateDir, file.source, file.target);
 }
 
 await updateContentVersion(manifest.contentVersion);

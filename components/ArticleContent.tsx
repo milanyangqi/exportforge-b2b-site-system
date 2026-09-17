@@ -45,6 +45,12 @@ function parseArticleBlocks(body: string): ArticleBlock[] {
       continue;
     }
 
+    if (/^#{1,6}\s/.test(line)) {
+      flushText();
+      textBuffer.push(line);
+      flushText();
+      continue;
+    }
     textBuffer.push(line);
   }
 

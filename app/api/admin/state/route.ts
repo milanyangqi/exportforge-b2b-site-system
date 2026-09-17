@@ -41,6 +41,15 @@ export async function PUT(request: Request) {
   const state = (await request.json()) as AdminState;
   const existingState = await readAdminState();
   const currentUser = existingState.users.find((user) => user.email.toLowerCase() === sessionEmail.toLowerCase());
+  if (!currentUser?.active) return NextResponse.json({error:"Forbidden"},{status:403});
+  const tabs = new Set(currentUser.allowedTabs ?? existingState.rolePermissions?.[currentUser.role]?.allowedTabs ?? []);
+  const changes = (key: keyof AdminState) => JSON.stringify(state[key]) !== JSON.stringify(existingState[key]);
+  if (currentUser.role !== "super-admin") {
+    const userShape = (users: AdminState["users"]) => users.map(({passwordHash: _hash,...user}) => user);
+    if (JSON.stringify(userShape(state.users)) !== JSON.stringify(userShape(existingState.users)) || changes("rolePermissions")) return NextResponse.json({error:"Forbidden"},{status:403});
+    const moduleTabs = {products:"products",pages:"pages",articles:"articles",leads:"leads",contactChannels:"contacts",uploadedFiles:"files"} as const;
+    for (const [key,tab] of Object.entries(moduleTabs)) if(changes(key as keyof AdminState) && !tabs.has(tab)) return NextResponse.json({error:"Forbidden"},{status:403});
+  }
   const frontendSettingsChanged =
     JSON.stringify(state.navigation ?? []) !== JSON.stringify(existingState.navigation ?? [])
     || JSON.stringify(state.enabledLocales ?? []) !== JSON.stringify(existingState.enabledLocales ?? [])

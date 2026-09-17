@@ -1,3 +1,4 @@
+import { YuvaProducts } from "@/components/YuvaPages";
 import { ProductGrid } from "@/components/ProductGrid";
 import { PuckPageRenderer } from "@/components/PuckPageRenderer";
 import { readAdminState } from "@/lib/server/admin-store";
@@ -52,19 +53,7 @@ export default async function ProductsPage({ params }: { params: Promise<{ local
       }}
     />
   );
-  const fallback = (
-    <main className="subpage products-subpage">
-      {structuredData}
-      <section className="section">
-        <div className="section-head">
-          <span className="eyebrow">{state.siteSettings.title} products</span>
-          <h1>{pageTitle}</h1>
-          <p>{pageDescription}</p>
-        </div>
-        <ProductGrid locale={locale} products={state.products} />
-      </section>
-    </main>
-  );
+  const fallback = (<>{structuredData}<YuvaProducts state={state} locale={locale}/></>);
 
   return (
     <PuckPageRenderer

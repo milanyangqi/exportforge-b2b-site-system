@@ -27,7 +27,7 @@ export async function POST(request: Request) {
   const to = payload.to?.trim() || state.siteSettings.adminEmail || sessionEmail;
   const result = await sendMailWithSettings(state.siteSettings, {
     to,
-    subject: `KeyproTools 邮件发送测试 ${new Date().toLocaleString("zh-CN")}`,
+    subject: `Yuvacosmetics 邮件发送测试 ${new Date().toLocaleString("zh-CN")}`,
     body: "这是一封来自后台邮件设置的测试邮件。如果你收到它，说明当前发信方式可以正常工作。"
   });
 

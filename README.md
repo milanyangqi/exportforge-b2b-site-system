@@ -1,167 +1,23 @@
-# Export B2B Independent Site System
+# Yuvacosmetics 官网
 
-多语言 B2B 外贸独立站系统骨架，支持产品展示、询盘、社交联系浮窗、角色权限、主题切换、AI 内容生成预留，以及托管/自部署。
+Project-024 第二轮 B「沉浸式大牌」实现。基于 Website 的 Next.js 15 / React 19 / OpenNext CMS，使用独立 Git 分支和 Cloudflare Worker，不覆盖旧站。
 
-## Quick Start
+## 开发
 
-```bash
-npm install
-npm run dev
-```
+Node.js >=22，`npm ci` 后复制 `.env.example` 为受保护且不提交的 `.env.local`，配置独立签名密钥与 scrypt 密码哈希。`npm run dev -- --port 3024`。
 
-访问 `http://localhost:3000/en`。
+## 模板
 
-## Admin
+当前入口：`components/templates/ActiveTemplate.tsx`、`styles/active-template.css`、`data/current-template-content.json`、`public/assets/current-template/`。模板库在本项目 `02_源代码/模板库/yuva-cinema`，使用 `npm run template:apply -- yuva-cinema` 导入。内页排版模块为 `components/YuvaPages.tsx`，不改变 CMS 数据接口。
 
-后台地址：
+## 发布
 
-- `http://localhost:3000/zh/admin`
-- `http://localhost:3000/en/admin`
+停止同目录开发服务器，依次执行 `npm run typecheck`、`npm run build`，提交并成功推送 `codex/yuvacosmetics-024` 后，运行 `npm run cf:build`。检查 `.open-next` 不包含 `.codegraph`，核对 Wrangler 独立绑定后发布。不要推送旧生产 main。
 
-默认开发账号：
+Worker：`yuvacosmetics-024`。持久化仅使用独立 `EXPORTFORGE_KV` 绑定；内容、询盘和媒体存储在 KV。后台 `/admin` 重定向至 `/zh/admin`。生产密钥 `AUTH_SECRET`、`INITIAL_ADMIN_PASSWORD_HASH` 通过 Cloudflare secrets 配置。没有共享旧站数据库、用户或密钥。
 
-- Email: `admin@example.com`
-- Password: `change-me`
+## 内容维护
 
-生产环境请在 `.env` 修改：
+英文、中文内容可用，其他语言保留系统的语言管理及英文回退能力，不代表已经人工翻译。文章和页面共用 `AdminMarkdownEditor`。未配置邮件服务或 AI 服务，相关功能需要管理员自行配置后才能调用。
 
-- `INITIAL_ADMIN_EMAIL`
-- `INITIAL_ADMIN_PASSWORD`
-- `AUTH_SECRET`
-- `AUTH_COOKIE_SECURE`，HTTP 自部署保持 `false`；放到 HTTPS 反向代理后可改为 `true`
-
-后台当前已具备真实登录、HTTP-only session、受保护 API、产品分类管理、文章发布、回收站、询盘管理、联系渠道配置、用户角色、前台导航与可显示语言设置、主题切换、AI 内容设置。数据在本地开发时保存到 `.data/admin-state.json`，部署到 Cloudflare Workers/OpenNext 后自动使用 `EXPORTFORGE_KV` 持久化。
-
-运营联动：
-
-- 后台产品分类保存后，同步到首页、产品列表和产品详情页。
-- 后台文章设置为 `已发布` 后进入文章列表，移至回收站后不再显示到前台。
-- 后台文章同时勾选 `同步首页` 后进入首页文章区。
-- 后台前台设置可控制 Header 导航项和语言选择器显示哪些语言。
-- 后台主题切换保存后，前台会读取当前主题颜色。
-- 后台 AI 内容中心可生成文章草稿，人工审核后再发布。
-
-## Template Library Workflow
-
-生产项目采用“只保留当前启用模板”的结构。未启用模板不要长期放在本仓库的生产包里，应放在独立模板库目录或仓库中。
-
-默认本机模板库目录：
-
-```bash
-/Users/zhang/Documents/Codex_project/WebsiteTemplates
-```
-
-当前项目固定读取这些生产模板入口：
-
-- `components/templates/ActiveTemplate.tsx`
-- `styles/active-template.css`
-- `data/current-template-content.json`
-- `public/assets/current-template/`
-
-从模板库导入模板：
-
-```bash
-npm run template:apply -- <templateKey>
-```
-
-也可以指定模板库位置：
-
-```bash
-TEMPLATE_LIBRARY_DIR=/path/to/WebsiteTemplates npm run template:apply -- <templateKey>
-```
-
-模板库中每个模板目录需包含 `manifest.json`，并至少提供内容 seed 和素材目录。示例结构：
-
-```text
-WebsiteTemplates/
-  keyprotools/
-    manifest.json
-    seed.json
-    assets/
-    ActiveTemplate.tsx
-    active-template.css
-```
-
-新站建议流程：
-
-```bash
-git switch main
-git switch -c client-template-preview
-npm run template:apply -- keyprotools
-npm run typecheck
-npm run build
-```
-
-确认无误后再提交该分支。只有确定要上线时，才合并到 `main` 或按发布流程部署。
-
-## Self-host
-
-Docker 自部署只需要 Web 服务。后台数据、上传文件会持久化到宿主机的 `.data/` 目录，不依赖 Postgres。
-
-```bash
-docker compose up -d --build
-```
-
-不配置 `.env` 也可以直接启动。生产部署前建议复制并修改 `.env`：
-
-```bash
-cp .env.example .env
-```
-
-- `NEXT_PUBLIC_SITE_URL`
-- `APP_PORT`，宿主机端口，默认 `3000`
-- `NPM_CONFIG_REGISTRY`，Docker 构建拉包源，默认 `https://registry.npmmirror.com`
-- `INITIAL_ADMIN_EMAIL`
-- `INITIAL_ADMIN_PASSWORD`
-- `AUTH_SECRET`
-
-部署后访问：
-
-- `http://localhost:3000/zh`
-- `http://localhost:3000/zh/admin`
-
-查看运行状态：
-
-```bash
-docker compose ps
-docker compose logs -f web
-```
-
-## Cloudflare Workers
-
-本项目已配置 OpenNext Cloudflare 部署：
-
-```bash
-npm run cf:build
-npm run cf:deploy
-```
-
-线上后台数据使用 `wrangler.jsonc` 中的 `EXPORTFORGE_KV` 绑定。生产环境请通过 Wrangler Secret 设置：
-
-- `INITIAL_ADMIN_EMAIL`
-- `AUTH_SECRET`
-- `INITIAL_ADMIN_PASSWORD`
-
-后台入口仍为 `/zh/admin` 或 `/en/admin`。
-
-## Verification Notes
-
-`npm run typecheck` 会读取 `tsconfig.json` 中的 `.next/types/**/*.ts`。如果刚清理过 `.next`，或第一次在当前工作区运行校验，直接执行 `npm run typecheck` 可能会报 `.next/types/... not found`。
-
-推荐顺序：
-
-```bash
-npm run build
-npm run typecheck
-```
-
-`npm run build` 会先生成 Next.js 的 `.next/types`，之后再运行 `npm run typecheck` 就不会因为缺少生成类型而失败。
-
-## Included
-
-- 多语言路由：`en`、`zh`、`th`、`vi`、`id`、`ms`、`fil`、`my`、`km`、`lo`、`ar`、`es`、`fr`、`de`、`it`、`pt`、`hi`、`ru`、`ja`、`ko`、`ur`
-- 阿拉伯语、乌尔都语 RTL 布局支持
-- 后台演示页：`/en/admin`
-- 询盘 API：`POST /api/leads`
-- 主题配置、RBAC 权限配置、AI 生成草稿配置均已类型化
-- `config/`、`data/`、`lib/` 分层，方便二次开发与行业模板扩展
+素材均为 AI 生成概念示意。工厂图并非实景，产品图并非已确认规格。不得据此添加认证、产能、客户背书或真实联系方式。正式资料可通过媒体库和页面编辑替换。

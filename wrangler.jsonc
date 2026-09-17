@@ -1,9 +1,11 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "exportforge-b2b-site-system",
+  "name": "yuvacosmetics-024",
   "main": ".open-next/worker.js",
   "compatibility_date": "2026-05-23",
-  "compatibility_flags": ["nodejs_compat"],
+  "compatibility_flags": [
+    "nodejs_compat"
+  ],
   "assets": {
     "directory": ".open-next/assets",
     "binding": "ASSETS"
@@ -11,17 +13,27 @@
   "services": [
     {
       "binding": "WORKER_SELF_REFERENCE",
-      "service": "exportforge-b2b-site-system"
+      "service": "yuvacosmetics-024"
     }
   ],
   "kv_namespaces": [
     {
       "binding": "EXPORTFORGE_KV",
-      "id": "dec332f8417141759ed4c6ffc1838bc3"
+      "id": "aff525e11b804b22a3342840e226c5b0"
     }
   ],
   "vars": {
-    "NEXT_PUBLIC_SITE_URL": "https://exportforge-b2b-site-system.workers.dev",
-    "INITIAL_ADMIN_EMAIL": "admin@example.com"
-  }
+    "NEXT_PUBLIC_SITE_URL": "https://yuvacosmetics.com",
+    "INITIAL_ADMIN_EMAIL": "437991663@qq.com"
+  },
+  "routes": [
+    {
+      "pattern": "yuvacosmetics.com",
+      "custom_domain": true
+    },
+    {
+      "pattern": "www.yuvacosmetics.com",
+      "custom_domain": true
+    }
+  ]
 }
