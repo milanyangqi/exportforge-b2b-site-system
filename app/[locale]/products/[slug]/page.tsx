@@ -1,4 +1,5 @@
-import { YuvaProduct } from "@/components/YuvaPages";
+import {isCollection,isPublishedProduct} from "@/lib/catalog";
+import { YuvaProducts, YuvaProduct } from "@/components/YuvaPages";
 /* eslint-disable @next/next/no-img-element */
 import { notFound } from "next/navigation";
 import { PuckPageRenderer } from "@/components/PuckPageRenderer";
@@ -17,7 +18,7 @@ export async function generateMetadata({
 }) {
   const { locale, slug } = await params;
   const state = await readAdminState();
-  const product = state.products.find((item) => item.slug === slug);
+  const product = state.products.find((item) => item.slug === slug && isPublishedProduct(item));
 
   if (!product) return {};
 
@@ -46,11 +47,12 @@ export default async function ProductCategoryPage({
 }) {
   const { locale, slug } = await params;
   const state = await readAdminState();
-  const product = state.products.find((item) => item.slug === slug);
+  const product = state.products.find((item) => item.slug === slug && isPublishedProduct(item));
 
   if (!product) {
     notFound();
   }
+  if (isCollection(product)) return <YuvaProducts state={state} locale={locale} initialCategory={product.slug}/>;
   const structuredData = (
     <>
       <script

@@ -24,7 +24,7 @@ function text(key: keyof typeof labels, locale: LocaleCode) {
   return labels[key][locale as "en"] ?? labels[key].en;
 }
 
-export function RfqForm({ locale }: { locale: LocaleCode }) {
+export function RfqForm({ locale, productName = "" }: { locale: LocaleCode; productName?: string }) {
   const [status, setStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
 
   async function submit(event: React.FormEvent<HTMLFormElement>) {
@@ -85,7 +85,7 @@ export function RfqForm({ locale }: { locale: LocaleCode }) {
       </label>
       <label>
         {text("productType", locale)}
-        <input name="productType" required placeholder="Lipstick, eyeshadow, foundation..." />
+        <input name="productType" defaultValue={productName} required placeholder="Lipstick, eyeshadow, foundation..." />
       </label>
       <label>
         {text("quantity", locale)}

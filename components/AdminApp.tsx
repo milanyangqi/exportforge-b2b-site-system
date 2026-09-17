@@ -1,4 +1,5 @@
 "use client";
+import {catalogTypes} from "@/lib/catalog";
 
 import { Fragment, type CSSProperties, type DragEvent, type KeyboardEvent, type MouseEvent, useEffect, useMemo, useRef, useState } from "react";
 import Image from "next/image";
@@ -124,6 +125,17 @@ type VisualEditableImageOptions = {
   onCommit: (value: string) => void;
 };
 type ProductFormState = {
+  kind: "collection" | "product";
+  status: "draft" | "published" | "trash";
+  categories: string[];
+  productType: string;
+  model: string;
+  imageUrl: string;
+  thumbnailUrl: string;
+  galleryText: string;
+  shadesText: string;
+  featuredOnHome: boolean;
+
   zh: string;
   en: string;
   slug: string;
@@ -227,7 +239,7 @@ const imapHostOptions = [
 
 const tabs: { key: Tab; label: string; icon: typeof Gauge }[] = [
   { key: "overview", label: "仪表盘", icon: Gauge },
-  { key: "products", label: "分类", icon: FolderTree },
+  { key: "products", label: "产品与分类", icon: FolderTree },
   { key: "pages", label: "页面", icon: FileText },
   { key: "articles", label: "文章", icon: FileText },
   { key: "files", label: "媒体库", icon: Library },
@@ -246,7 +258,7 @@ const tabs: { key: Tab; label: string; icon: typeof Gauge }[] = [
 const tabKeys = new Set<Tab>([...tabs.map((item) => item.key), "account"]);
 const adminPageAccessOptions: { key: Tab; label: string }[] = [
   { key: "overview", label: "仪表盘" },
-  { key: "products", label: "分类" },
+  { key: "products", label: "产品与分类" },
   { key: "pages", label: "页面" },
   { key: "articles", label: "文章" },
   { key: "files", label: "媒体库" },
@@ -832,6 +844,7 @@ const hiddenAdminStatusMessages = new Set([
 ]);
 
 const emptyProductForm: ProductFormState = {
+  kind:"product",status:"draft",categories:[],productType:"",model:"",imageUrl:"",thumbnailUrl:"",galleryText:"",shadesText:"",featuredOnHome:false,
   zh: "",
   en: "",
   slug: "",
@@ -992,6 +1005,7 @@ function normalizeArticleStatus(value: string): Article["status"] {
 
 function productToForm(product: ProductCategory): ProductFormState {
   return {
+    kind:product.kind??"collection",status:product.status??"published",categories:product.categorySlugs??[],productType:product.productType??"",model:product.model??"",imageUrl:product.imageUrl??"",thumbnailUrl:product.thumbnailUrl??"",galleryText:(product.gallery??[]).map(x=>x.url).join("\n"),shadesText:(product.shades??[]).map(x=>`${x.label} | ${x.url}`).join("\n"),featuredOnHome:product.featuredOnHome??false,
     zh: product.name.zh ?? "",
     en: product.name.en,
     slug: product.slug,
@@ -2967,11 +2981,18 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
       || visibleSummary
       || existingProduct?.summary.en
       || "Describe this category for overseas buyers.";
+    const imageLines=productForm.galleryText.split("\n").map(s=>s.trim()).filter(Boolean);
+    const shadeLines=productForm.shadesText.split("\n").map(s=>s.trim()).filter(Boolean);
+    const validUrl=(s:string)=>{try{const u=new URL(s,window.location.origin);return u.protocol==="https:"||u.origin===window.location.origin}catch{return false}};
+    if(imageLines.length>7||imageLines.some(s=>!validUrl(s))||shadeLines.some(s=>!s.includes("|")||!validUrl(s.slice(s.indexOf("|")+1).trim()))){setStatus("请使用有效图片地址；画廊最多7张，色号格式为名称 | 图片地址。");return;}
+    if(productForm.kind==="product"&&productForm.status==="published"&&(!productForm.categories.length||!productForm.imageUrl||!validUrl(productForm.imageUrl))){setStatus("发布产品需要分类和有效主图地址。");return;}
     const nextProduct: ProductCategory = {
+      kind:productForm.kind,status:productForm.status,categorySlugs:productForm.categories,productType:productForm.productType,model:productForm.model.trim(),imageUrl:productForm.imageUrl.trim(),thumbnailUrl:productForm.thumbnailUrl.trim(),featuredOnHome:productForm.featuredOnHome,
+      gallery:imageLines.map(url=>({url})),shades:shadeLines.map(line=>({label:line.slice(0,line.indexOf("|")).trim(),url:line.slice(line.indexOf("|")+1).trim()})),
       id,
       slug,
-      name: mergeLocalizedText(existingProduct?.name, locale, visibleName, fallbackName),
-      summary: mergeLocalizedText(existingProduct?.summary, locale, visibleSummary, fallbackSummary),
+      name: { ...mergeLocalizedText(existingProduct?.name, locale, visibleName, fallbackName), en: fallbackName },
+      summary: { ...mergeLocalizedText(existingProduct?.summary, locale, visibleSummary, fallbackSummary), en: fallbackSummary },
       parentId: productForm.parentId || undefined,
       applications: existingProduct?.applications ?? { en: ["Export catalog"], zh: ["外贸目录"] },
       specs: existingProduct?.specs ?? [],
@@ -6301,7 +6322,7 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
             <>
               <div className="wp-taxonomy-screen">
                 <aside className="wp-taxonomy-form">
-                  <h2>{editingProductId ? "编辑分类" : "添加分类"}</h2>
+                  <h2>{editingProductId ? "编辑产品／分类" : "添加产品／分类"}</h2>
                   <label>名称
                     <input
                       value={productForm.zh}
@@ -6332,6 +6353,19 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
                     <textarea value={productForm.summaryZh} onChange={(event) => setProductForm({ ...productForm, summaryZh: event.target.value })} />
                     <small>部分主题会在分类卡片或产品页显示描述。</small>
                   </label>
+                  <label>英文名称<input value={productForm.en} onChange={e=>setProductForm({...productForm,en:e.target.value})}/></label>
+                  <label>英文描述<textarea value={productForm.summaryEn} onChange={e=>setProductForm({...productForm,summaryEn:e.target.value})}/></label>
+                  <label>条目类型<select value={productForm.kind} onChange={e=>setProductForm({...productForm,kind:e.target.value as ProductFormState["kind"]})}><option value="collection">分类入口</option><option value="product">独立产品</option></select></label>
+                  <label>发布状态<select value={productForm.status} onChange={e=>setProductForm({...productForm,status:e.target.value as ProductFormState["status"]})}><option value="draft">草稿（前台不显示）</option><option value="published">已发布</option><option value="trash">隐藏</option></select></label>
+                  <fieldset><legend>所属系列（可多选）</legend>{[["lips","唇妆"],["eyes","眼妆"],["face","面部彩妆"]].map(([key,label])=><label className="checkline" key={key}><input type="checkbox" checked={productForm.categories.includes(key)} onChange={e=>setProductForm({...productForm,categories:e.target.checked?[...productForm.categories,key]:productForm.categories.filter(x=>x!==key)})}/>{label}</label>)}</fieldset>
+                  <label>产品子类<select value={productForm.productType} onChange={e=>setProductForm({...productForm,productType:e.target.value})}><option value="">请选择</option>{Object.entries(catalogTypes).map(([key,value])=><option key={key} value={key}>{value.zh}</option>)}</select></label>
+                  <label>型号（无正式型号可留空）<input value={productForm.model} onChange={e=>setProductForm({...productForm,model:e.target.value})}/></label>
+                  <label>主图 URL<input value={productForm.imageUrl} onChange={e=>setProductForm({...productForm,imageUrl:e.target.value})}/></label>
+                  <label>列表缩略图 URL<input value={productForm.thumbnailUrl} onChange={e=>setProductForm({...productForm,thumbnailUrl:e.target.value})}/></label>
+                  <label>画廊图片（每行一个 URL，主图加最多6张补充图）<textarea rows={5} value={productForm.galleryText} onChange={e=>setProductForm({...productForm,galleryText:e.target.value})}/></label>
+                  <label>色号参考图（每行：名称 | 图片 URL）<textarea rows={5} value={productForm.shadesText} onChange={e=>setProductForm({...productForm,shadesText:e.target.value})}/></label>
+                  <small>可在媒体库上传并复制图片地址；请勿用目录序号冒充正式产品型号或色号。</small>
+                  <label className="checkline"><input type="checkbox" checked={productForm.featuredOnHome} onChange={e=>setProductForm({...productForm,featuredOnHome:e.target.checked})}/>首页精选</label>
                   <label>SEO 标题
                     <input value={productForm.seoTitleZh} onChange={(event) => setProductForm({ ...productForm, seoTitleZh: event.target.value })} />
                     <small>留空时自动使用分类名称；正式上线前建议按语种补齐。</small>
@@ -6350,7 +6384,7 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
                   </label>
                   <label className="checkline"><input type="checkbox" checked={productForm.seoIndexable} onChange={(event) => setProductForm({ ...productForm, seoIndexable: event.target.checked })} />允许进入 sitemap / 被索引</label>
                   <div className="wp-taxonomy-actions">
-                    <button type="button" onClick={submitProductForm}>{editingProductId ? "更新分类" : "添加新分类"}</button>
+                    <button type="button" onClick={submitProductForm}>{editingProductId ? "更新产品／分类" : "添加产品／分类"}</button>
                     {editingProductId ? <button type="button" onClick={resetProductForm}>取消编辑</button> : null}
                   </div>
                 </aside>
@@ -6362,7 +6396,7 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
                       <option value="delete">删除</option>
                     </select>
                     <button type="button" onClick={applyProductBulkAction}>应用</button>
-                    <input placeholder="搜索分类" value={productQuery} onChange={(event) => setProductQuery(event.target.value)} />
+                    <input placeholder="搜索产品或分类" value={productQuery} onChange={(event) => setProductQuery(event.target.value)} />
                   </div>
                   <div className="wp-article-table taxonomy-table" role="table" aria-label="产品分类列表">
                     <div className="wp-taxonomy-row header" role="row">

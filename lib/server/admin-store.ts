@@ -752,16 +752,17 @@ function normalizeAdminState(parsed: AdminState): AdminState {
 }
 
 export async function readAdminState(): Promise<AdminState> {
-  try {
-    const kv = await getCloudflareKv();
-    const raw = kv ? await kv.get(stateKey) : await readLocalStateFile();
-    if (!raw) throw new Error("Missing admin state");
-    const parsed = JSON.parse(raw) as AdminState;
-    return normalizeAdminState(parsed);
-  } catch {
-    const fallback = createDefaultAdminState();
-    await writeAdminState(fallback);
-    return fallback;
+  const kv = await getCloudflareKv();
+  if (kv) {
+    // A transient KV miss or decoding error must never overwrite an existing catalog.
+    const raw = await kv.get(stateKey);
+    if (!raw) throw new Error("CMS state unavailable; retry after storage propagation");
+    return normalizeAdminState(JSON.parse(raw) as AdminState);
+  }
+  try { return normalizeAdminState(JSON.parse(await readLocalStateFile()) as AdminState); }
+  catch (error) {
+    if ((error as {code?:string}).code !== "ENOENT") throw error;
+    const fallback=createDefaultAdminState();await writeAdminState(fallback);return fallback;
   }
 }
 

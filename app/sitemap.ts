@@ -1,3 +1,4 @@
+import {isPublishedProduct} from "@/lib/catalog";
 import type { MetadataRoute } from "next";
 import { readAdminState } from "@/lib/server/admin-store";
 import {
@@ -59,7 +60,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   }, {});
   addLocalizedRoutes(productsPaths, 0.85, "weekly", state.updatedAt);
 
-  state.products.forEach((product) => {
+  state.products.filter(isPublishedProduct).forEach((product) => {
     const pathsByLocale = state.enabledLocales.reduce<Partial<Record<LocaleCode, string>>>((paths, locale) => {
       if (product.seo?.indexable !== false && productContentComplete(product, locale)) {
         paths[locale] = localePath(locale, `/products/${product.slug}`);

@@ -1,3 +1,4 @@
+import {isPublishedProduct} from "@/lib/catalog";
 import type { ReactNode } from "react";
 import { PuckVisualBlock } from "@/components/PuckVisualBlocks";
 import { findPageLayout } from "@/lib/puck-layouts";
@@ -26,6 +27,7 @@ export function PuckPageRenderer({
   currentPage,
   className
 }: PuckPageRendererProps) {
+  state = {...state, products: state.products.filter(isPublishedProduct)};
   const layout = findPageLayout(state, layoutKey);
 
   if (!layout) return <>{fallback}</>;

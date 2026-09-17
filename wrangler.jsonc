@@ -35,5 +35,11 @@
       "pattern": "www.yuvacosmetics.com",
       "custom_domain": true
     }
+  ],
+  "r2_buckets": [
+    {
+      "binding": "YUVA_MEDIA",
+      "bucket_name": "yuvacosmetics-024-media"
+    }
   ]
 }

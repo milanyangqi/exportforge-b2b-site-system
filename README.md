@@ -21,3 +21,12 @@ Worker：`yuvacosmetics-024`。持久化仅使用独立 `EXPORTFORGE_KV` 绑定�
 英文、中文内容可用，其他语言保留系统的语言管理及英文回退能力，不代表已经人工翻译。文章和页面共用 `AdminMarkdownEditor`。未配置邮件服务或 AI 服务，相关功能需要管理员自行配置后才能调用。
 
 素材均为 AI 生成概念示意。工厂图并非实景，产品图并非已确认规格。不得据此添加认证、产能、客户背书或真实联系方式。正式资料可通过媒体库和页面编辑替换。
+
+## 公司产品图库（2026-09-17）
+
+- 产品照片位于独立 R2 桶 `yuvacosmetics-024-media`，公开图片域名 `media.yuvacosmetics.com`；绑定名 `YUVA_MEDIA`。原图及导入清单仅在 Project-024 项目目录归档，不进入此公开仓库。
+- 产品数据沿用 CMS 的 `products`，以 `kind` 区分类目入口与产品，`status` 控制发布；`categorySlugs` 支持跨系列，`productType` 为子类，`model` 仅记录明确型号，`gallery` 与 `shades` 保存 R2 链接。
+- `/products/lips`、`eyes`、`face` 是分类入口；独立产品位于 `/products/<slug>`。草稿不公开，也不进入 sitemap。首页展示三个系列和最多六款精选。
+- 后台产品表单支持以上字段。画廊每行一个 URL；色号参考格式为“名称 | URL”。媒体库上传走 R2，历史 KV 文件地址继续可读；产品正在引用的 R2 图片不能直接删除。
+- 模板源仍位于相邻模板库 `../模板库/yuva-cinema`，模板改动须通过 `template:apply` 应用。KV 临时读取失败不得用默认数据覆盖现有目录。
+- 目录验收：`node scripts/verify-catalog.mjs <站点URL> <项目内导入产品JSON路径> <验收输出路径>`。测试包含全产品页面、分类入口、草稿隐藏、sitemap 和匿名上传保护。

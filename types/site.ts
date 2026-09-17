@@ -100,6 +100,16 @@ export type SeoSettings = {
 };
 
 export type ProductCategory = {
+  kind?: "collection" | "product";
+  status?: "draft" | "published" | "trash";
+  categorySlugs?: string[];
+  productType?: string;
+  model?: string;
+  thumbnailUrl?: string;
+  gallery?: {url: string; alt?: Translation}[];
+  shades?: {url: string; label: string}[];
+  featuredOnHome?: boolean;
+  importBatch?: string;
   id?: string;
   slug: string;
   name: Translation;
@@ -150,6 +160,8 @@ export type SiteNavigationItem = {
 };
 
 export type UploadedFile = {
+  storageProvider?: "r2" | "kv";
+  importBatch?: string;
   id: string;
   name: string;
   mimeType: string;

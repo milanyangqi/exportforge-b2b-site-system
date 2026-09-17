@@ -1,3 +1,4 @@
+import {getMediaBucket,mediaPublicUrl} from "@/lib/server/r2-media";
 import { Buffer } from "node:buffer";
 import { NextResponse } from "next/server";
 import { getAdminSessionEmail } from "@/lib/server/auth";
@@ -17,6 +18,9 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+  const state = await readAdminState();
+  const user = state.users.find(u=>u.email.toLowerCase()===sessionEmail.toLowerCase());
+  if(!user?.active || (user.role!=="super-admin" && !(user.allowedTabs??state.rolePermissions?.[user.role]?.allowedTabs??[]).includes("files"))) return NextResponse.json({error:"Forbidden"},{status:403});
   const formData = await request.formData();
   const file = formData.get("file");
 
@@ -34,7 +38,13 @@ export async function POST(request: Request) {
   const arrayBuffer = await file.arrayBuffer();
   const createdAt = new Date().toISOString();
 
-  await writeStoredFile({
+  if(!["image/jpeg","image/png","image/webp","image/gif","application/pdf","text/plain"].includes(mimeType)) return NextResponse.json({error:"仅支持 JPG、PNG、WebP、GIF、PDF 和 TXT 文件"},{status:415});
+  const bucket=await getMediaBucket();
+  const digest=Array.from(new Uint8Array(await crypto.subtle.digest("SHA-256",arrayBuffer)),b=>b.toString(16).padStart(2,"0")).join("");
+  const extension=({"image/jpeg":"jpg","image/png":"png","image/webp":"webp","image/gif":"gif","application/pdf":"pdf","text/plain":"txt"} as Record<string,string>)[mimeType];
+  const storageKey=`uploads/${digest.slice(0,24)}-${id}.${extension}`;
+  if(bucket) await bucket.put(storageKey,arrayBuffer,{httpMetadata:{contentType:mimeType,cacheControl:"public, max-age=31536000, immutable"}});
+  else await writeStoredFile({
     id,
     name,
     mimeType,
@@ -48,12 +58,12 @@ export async function POST(request: Request) {
     name,
     mimeType,
     size: file.size,
-    url: buildStoredFileUrl(id),
-    storageKey: id,
+    url: bucket?mediaPublicUrl(storageKey):buildStoredFileUrl(id),
+    storageKey: bucket?storageKey:id,
+    storageProvider: bucket?"r2":"kv",
     createdAt,
     enabled: true
   };
-  const state = await readAdminState();
   const savedState = await writeAdminState({
     ...state,
     uploadedFiles: [uploadedFile, ...state.uploadedFiles]
@@ -78,8 +88,14 @@ export async function DELETE(request: Request) {
     return NextResponse.json({ error: "Missing file id." }, { status: 400 });
   }
 
-  await deleteStoredFile(id);
-  const state = await readAdminState();
+  const state=await readAdminState();
+  const user=state.users.find(u=>u.email.toLowerCase()===sessionEmail.toLowerCase());
+  if(!user?.active || (user.role!=="super-admin" && !(user.allowedTabs??state.rolePermissions?.[user.role]?.allowedTabs??[]).includes("files"))) return NextResponse.json({error:"Forbidden"},{status:403});
+  const file=state.uploadedFiles.find(f=>f.id===id);
+  if(file?.storageProvider==="r2"&&file.storageKey){
+    if(state.products.some(p=>p.imageUrl===file.url||p.thumbnailUrl===file.url||p.gallery?.some(im=>im.url===file.url)||p.shades?.some(im=>im.url===file.url))) return NextResponse.json({error:"图片正在被产品引用，请先解除关联"},{status:409});
+    await (await getMediaBucket())?.delete(file.storageKey);
+  } else await deleteStoredFile(id);
   const savedState = await writeAdminState({
     ...state,
     uploadedFiles: state.uploadedFiles.filter((file) => file.id !== id)
