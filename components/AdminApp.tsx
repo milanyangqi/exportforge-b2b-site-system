@@ -2998,8 +2998,9 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
 
   function editProduct(product: ProductCategory) {
     setEditingProductId(product.id ?? product.slug);
+    const form = productToForm(product);
     setProductForm({
-      ...productToForm(product),
+      ...form,
       zh: pickLocalizedText(product.name, locale),
       summaryZh: pickLocalizedText(product.summary, locale),
       seoTitleZh: pickLocalizedText(product.seo?.title, locale),
