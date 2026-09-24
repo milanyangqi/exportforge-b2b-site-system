@@ -76,7 +76,7 @@ export default async function ContactPage({ params }: { params: Promise<{ locale
         </div>
         <div className="contact-rfq-panel" id="rfq">
           <span className="eyebrow">RFQ details</span>
-          <h2>Tell us what to quote.</h2>
+          <h2>{locale === "zh" ? "告诉我们您的香氛构想。" : "Tell us about your fragrance idea."}</h2>
           <RfqForm locale={locale} />
         </div>
       </section>

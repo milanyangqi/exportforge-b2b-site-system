@@ -685,7 +685,7 @@ function dataWithFooterDraftProps(data: VisualPageLayoutData | undefined, state:
       ...cloned.root,
       props: {
         ...rootProps,
-        footerTagline: localizedTemplateText(state.templateSettings.footerTagline, locale, "Carbide end mills, drill bits, OEM tooling, and export-ready packing for global buyers."),
+        footerTagline: localizedTemplateText(state.templateSettings.footerTagline, locale, "Botanical home fragrance collections for brand buyers."),
         footerCopyright: localizedTemplateText(state.templateSettings.footerCopyright, locale, "Copyright © {year} {brand}. All rights reserved."),
         footerCredit: localizedTemplateText(state.templateSettings.footerCredit, locale, "Built for precision tooling and B2B export orders.")
       } as VisualPageLayoutData["root"]["props"]
@@ -719,7 +719,7 @@ function customSectionDefaultProps(moduleType: CustomSectionModuleType = "media"
       {
         source: "/assets/current-template/hero-tooling-range.jpg",
         url: "",
-        alt: "KeyproTools tooling image",
+        alt: "CedarOrigin home fragrance image",
         caption: "",
         linkHref: ""
       }
@@ -2798,8 +2798,8 @@ function createConfig(
           metric3Label: field("text", "指标 3 说明")
         },
         defaultProps: {
-          eyebrow: "CNC cutting tools",
-          title: "Carbide end mills and drill bits ready for distributor programs.",
+          eyebrow: "Botanical home fragrance",
+          title: "Nature. Fragrance. A brighter tomorrow.",
           body: "Edit this hero directly in Puck.",
           backgroundMode: "single",
           mediaLibraryUrl: "",

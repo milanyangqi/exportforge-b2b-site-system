@@ -153,6 +153,12 @@ export function PublicHeaderShell({
           <NavigationTreeLink locale={locale} node={item} onLinkClick={handleLinkClick} key={item.id} />
         ))}
       </nav>
+      <details className="cedar-mobile-menu">
+        <summary aria-label={locale === "zh" ? "打开菜单" : "Open menu"}>{locale === "zh" ? "菜单" : "Menu"}</summary>
+        <nav aria-label="Mobile navigation">
+          {navigationTree.map((item) => <NavigationTreeLink locale={locale} node={item} onLinkClick={handleLinkClick} key={item.id} />)}
+        </nav>
+      </details>
       <div className="header-actions">
         <LanguageSwitcher locale={locale} enabledLocales={enabledLocales} preventNavigation={preventNavigation} />
         <a className="quote-link" href={ctaHref} onClick={handleLinkClick}>
@@ -198,6 +204,12 @@ export function HomeNavigationShell({
             <NavigationTreeLink locale={locale} node={item} onLinkClick={handleLinkClick} key={item.id} />
           ))}
         </nav>
+        <details className="cedar-mobile-menu">
+          <summary aria-label={locale === "zh" ? "打开菜单" : "Open menu"}>{locale === "zh" ? "菜单" : "Menu"}</summary>
+          <nav aria-label="Mobile navigation">
+            {navigationTree.map((item) => <NavigationTreeLink locale={locale} node={item} onLinkClick={handleLinkClick} key={item.id} />)}
+          </nav>
+        </details>
         <div className="template-home-header-actions">
           <LanguageSwitcher locale={locale} enabledLocales={enabledLocales} preventNavigation={preventNavigation} />
           <a className="template-home-nav-cta" href="#rfq" onClick={handleLinkClick}>
@@ -233,11 +245,11 @@ export function PublicFooterShell({
   const handleLinkClick: LinkClickHandler | undefined = preventNavigation
     ? (event) => event.preventDefault()
     : undefined;
-  const footerTagline = tagline ? t(tagline, locale) : "Carbide end mills, drill bits, OEM tooling, and export-ready packing for global buyers.";
+  const footerTagline = tagline ? t(tagline, locale) : "Botanical home fragrance collections for brand buyers.";
   const footerCopyright = (copyright ? t(copyright, locale) : "Copyright © {year} {brand}. All rights reserved.")
     .replaceAll("{year}", String(new Date().getFullYear()))
     .replaceAll("{brand}", brandName);
-  const footerCredit = credit ? t(credit, locale) : "Built for precision tooling and B2B export orders.";
+  const footerCredit = credit ? t(credit, locale) : "Home fragrance concepts for thoughtful brands.";
 
   return (
     <footer className="site-footer">

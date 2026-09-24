@@ -59,7 +59,7 @@ export const themes: Record<ThemeKey, SiteTheme> = {
     key: "consumer-goods",
     name: "Consumer Goods",
     description: "For packaging, lifestyle, home, gifts, and wholesale goods.",
-    colors: { ink: "#1d2930", muted: "#66767d", background: "#f6faf7", panel: "#ffffff", primary: "#27735f", accent: "#ed7d6f", line: "#d5e4dd" },
+    colors: { ink: "#26392e", muted: "#667266", background: "#f7f7f1", panel: "#fffdfa", primary: "#526d56", accent: "#607b61", line: "#dfe4d8" },
     radius: "10px",
     heroLayout: "catalog-first",
     contactDock: "bottom-sheet"

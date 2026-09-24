@@ -63,7 +63,7 @@ async function fetchSource(url: string) {
 
   const response = await fetch(parsedUrl.toString(), {
     headers: {
-      "User-Agent": "KeyproToolsContentCollector/1.0"
+      "User-Agent": "CedarOriginContentCollector/1.0"
     },
     signal: AbortSignal.timeout(12000)
   });
@@ -79,10 +79,10 @@ function buildPrompt(payload: CollectPayload, source: string) {
   const target = payload.target === "page" ? "page" : "article";
 
   return [
-    "You are rewriting collected source material for the KeyproTools B2B cutting tools website.",
+    "You are rewriting collected source material for the CedarOrigin B2B home fragrance website.",
     "Return strict JSON only with this shape:",
     "{\"slug\":\"...\",\"title\":{\"en\":\"...\",\"zh\":\"...\"},\"excerpt\":{\"en\":\"...\",\"zh\":\"...\"},\"body\":{\"en\":\"markdown...\",\"zh\":\"markdown...\"}}",
-    `Create a ${target} draft. Do not copy the source directly. Rewrite it into original, buyer-focused B2B content for carbide end mills, drill bits, OEM tooling, export packing, or machining buyers.`,
+    `Create a ${target} draft. Do not copy the source directly. Rewrite it into original, buyer-focused B2B content for reed diffusers, scented candles, room sprays, packaging or fragrance brand buyers.`,
     "Use Markdown headings, short paragraphs, practical RFQ details, and no fabricated company claims.",
     `Source material:\n${source.slice(0, 12000)}`
   ].join("\n\n");

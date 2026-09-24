@@ -273,30 +273,30 @@ const defaultLayoutSignatures: Partial<Record<SystemPageLayoutKey, string[]>> = 
 
 const legacyDefaultLayoutText: Partial<Record<SystemPageLayoutKey, string[]>> = {
   "products-index": [
-    "KeyproTools products",
-    "Carbide end mills, drill bits, and OEM tooling for metalworking buyers.",
-    "Browse the main tooling families"
+    "CedarOrigin products",
+    "Reed diffusers, scented candles and room sprays for brand buyers.",
+    "Browse the home fragrance collection"
   ],
   "product-detail": [
     "Send diameter, quantity, coating, material, packaging, and destination.",
-    "KeyproTools will match geometry",
-    "KeyproTools will review the category details"
+    "CedarOrigin will match geometry",
+    "CedarOrigin will review the category details"
   ],
   "articles-index": [
     "Technical library",
     "Buying guides and application notes for end mills",
-    "Read KeyproTools buying guides"
+    "Read CedarOrigin buying guides"
   ],
   "article-detail": [
-    "Turn this tooling note into a clear RFQ.",
-    "Share diameter, coating, workpiece material"
+    "Turn this fragrance idea into a clear brief.",
+    "Share fragrance, vessel and packaging details"
   ],
   "files-index": [
-    "KeyproTools product images and tooling resources",
+    "CedarOrigin product images and tooling resources",
     "End mill, drill bit, coating, packaging"
   ],
   contact: [
-    "Send your end mill, drill bit, or OEM tooling request to KeyproTools.",
+    "Send your home fragrance project brief to CedarOrigin.",
     "Share drawings, size lists, coating requirements"
   ]
 };

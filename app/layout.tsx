@@ -5,8 +5,8 @@ import "@/styles/public-site.css";
 import "@/styles/active-template.css";
 
 export const metadata: Metadata = {
-  title: "KeyproTools | Carbide End Mills, Drill Bits, and OEM Cutting Tools",
-  description: "KeyproTools supplies carbide end mills, drill bits, coatings, OEM laser marking, private-label packaging, and export-ready cutting tool programs.",
+  title: "CedarOrigin | Botanical Home Fragrance Collections",
+  description: "Explore CedarOrigin reed diffusers, scented candles, room sprays and home fragrance collection concepts.",
   robots: {
     index: process.env.NEXT_PUBLIC_SITE_INDEXABLE === "true",
     follow: process.env.NEXT_PUBLIC_SITE_INDEXABLE === "true"
