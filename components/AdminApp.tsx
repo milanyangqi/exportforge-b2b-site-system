@@ -2999,13 +2999,11 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
   function editProduct(product: ProductCategory) {
     setEditingProductId(product.id ?? product.slug);
     const form = productToForm(product);
-    setProductForm({
-      ...form,
-      zh: pickLocalizedText(product.name, locale),
-      summaryZh: pickLocalizedText(product.summary, locale),
-      seoTitleZh: pickLocalizedText(product.seo?.title, locale),
-      seoDescriptionZh: pickLocalizedText(product.seo?.description, locale)
-    });
+    form.zh = pickLocalizedText(product.name, locale);
+    form.summaryZh = pickLocalizedText(product.summary, locale);
+    form.seoTitleZh = pickLocalizedText(product.seo?.title, locale);
+    form.seoDescriptionZh = pickLocalizedText(product.seo?.description, locale);
+    setProductForm(form);
   }
 
   function startProductQuickEdit(product: ProductCategory) {
