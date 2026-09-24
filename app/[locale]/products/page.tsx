@@ -7,11 +7,11 @@ import type { LocaleCode } from "@/types/site";
 export const dynamic = "force-dynamic";
 
 function productsTitle(siteTitle: string) {
-  return `${siteTitle} products`;
+  return `${siteTitle} collections`;
 }
 
 function productsDescription(siteTitle: string) {
-  return `Browse current ${siteTitle} product categories, compare fit, and send RFQ details.`;
+  return `Explore ${siteTitle} crochet, knit and woven home textiles.`;
 }
 
 export async function generateMetadata({ params }: { params: Promise<{ locale: LocaleCode }> }) {
@@ -57,11 +57,11 @@ export default async function ProductsPage({ params }: { params: Promise<{ local
       {structuredData}
       <section className="section">
         <div className="section-head">
-          <span className="eyebrow">{state.siteSettings.title} products</span>
+          <span className="eyebrow">{locale === "zh" ? "作品系列" : "THE COLLECTIONS"}</span>
           <h1>{pageTitle}</h1>
           <p>{pageDescription}</p>
         </div>
-        <ProductGrid locale={locale} products={state.products} />
+        <ProductGrid flat locale={locale} products={state.products.filter((item) => item.kind === "collection" && item.status === "published")} />
       </section>
     </main>
   );

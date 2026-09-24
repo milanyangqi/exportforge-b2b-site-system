@@ -22,10 +22,10 @@ export function buildLeadMailDraft(state: Pick<AdminState, "siteSettings">, lead
   const body = template
     .replaceAll("{name}", lead.fullName || "there")
     .replaceAll("{company}", lead.company || "")
-    .replaceAll("{productType}", lead.productType || "your tooling request")
+    .replaceAll("{productType}", lead.productType || "your textile inquiry")
     .replaceAll("{quantity}", lead.quantity || "")
     .replaceAll("{email}", lead.email || "")
-    .replaceAll("{siteTitle}", state.siteSettings.title || "KeyproTools");
+    .replaceAll("{siteTitle}", state.siteSettings.title || "Rivermake");
 
   return {
     to: lead.email,

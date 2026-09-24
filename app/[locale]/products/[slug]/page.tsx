@@ -1,6 +1,7 @@
 /* eslint-disable @next/next/no-img-element */
 import { notFound } from "next/navigation";
 import { PuckPageRenderer } from "@/components/PuckPageRenderer";
+import { ProductGrid } from "@/components/ProductGrid";
 import { RfqForm } from "@/components/RfqForm";
 import { t } from "@/lib/i18n";
 import { readAdminState } from "@/lib/server/admin-store";
@@ -68,39 +69,28 @@ export default async function ProductCategoryPage({
       />
     </>
   );
+  const related = state.products.filter((item) => item.kind === "product" && item.status === "published" && item.categorySlugs?.includes(product.slug));
   const fallback = (
-    <main className="subpage">
+    <main className="subpage river-detail">
       {structuredData}
       <section className="product-detail">
         <div>
-          <span className="eyebrow">Product category</span>
+          <span className="eyebrow">{locale === "zh" ? "手工织物" : "HANDCRAFTED TEXTILES"}</span>
           <h1>{t(product.name, locale)}</h1>
           <p>{t(product.summary, locale)}</p>
-          <div className="chips">
-            {product.specs.map((spec) => (
-              <span key={spec}>{spec}</span>
-            ))}
-          </div>
         </div>
         {product.imageUrl ? (
           <figure className="product-detail-media">
             <img src={product.imageUrl} alt={t(product.name, locale)} />
           </figure>
         ) : null}
-        <div className="workflow-panel">
-          <h3>Applications</h3>
-          <ul className="detail-list">
-            {t(product.applications, locale).map((item) => (
-              <li key={item}>{item}</li>
-            ))}
-          </ul>
-        </div>
       </section>
+      {related.length > 0 ? <section className="section river-related"><div className="section-head"><span className="eyebrow">{locale === "zh" ? "探索作品" : "EXPLORE THE PIECES"}</span><h2>{locale === "zh" ? "系列中的更多细节" : "More from this collection"}</h2></div><ProductGrid flat locale={locale} products={related} /></section> : null}
       <section className="section rfq-section" id="rfq">
         <div>
-          <span className="eyebrow">Request category quote</span>
-          <h2>Send quantity, requirements, packaging, and destination.</h2>
-          <p>{state.siteSettings.title} will review the category details and respond with a practical quotation.</p>
+          <span className="eyebrow">{locale === "zh" ? "联系我们" : "GET IN TOUCH"}</span>
+          <h2>{locale === "zh" ? "告诉我们您感兴趣的作品。" : "Tell us what you have in mind."}</h2>
+          <p>{locale === "zh" ? "可说明希望了解的款式、材质、数量和目的地。" : "Share the piece, materials, quantity and destination you would like to discuss."}</p>
         </div>
         <RfqForm locale={locale} />
       </section>

@@ -16,7 +16,7 @@ type MetadataInput = {
   seo?: SeoSettings;
 };
 
-const defaultSiteUrl = "https://exportforge-b2b-site-system.437991663.workers.dev";
+const defaultSiteUrl = "https://rivermake-028.437991663.workers.dev";
 const fallbackLocale: LocaleCode = "en";
 
 export function normalizeSiteUrl(siteUrl?: string) {
@@ -96,7 +96,7 @@ export function buildLanguageAlternates(state: AdminState, pathsByLocale: Partia
 }
 
 export function buildPageMetadata(state: AdminState, input: MetadataInput): Metadata {
-  const brandName = state.siteSettings.title || "KeyproTools";
+  const brandName = state.siteSettings.title || "Rivermake";
   const seoTitle = localized(input.seo?.title, input.locale, "").trim();
   const seoDescription = localized(input.seo?.description, input.locale, "").trim();
   const title = compactTitle(seoTitle || input.title, brandName);

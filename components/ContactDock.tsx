@@ -15,6 +15,8 @@ export function ContactDock({ locale, channels }: { locale: LocaleCode; channels
   const activeQrChannel = enabledChannels.find((channel) => channel.id === activeQrId && channel.qrCodeUrl);
   const canOpenActiveLink = Boolean(activeQrChannel?.href && !activeQrChannel.href.startsWith("#"));
 
+  if (enabledChannels.length === 0) return null;
+
   function toggleDock() {
     setOpen((current) => {
       if (current) setActiveQrId(null);

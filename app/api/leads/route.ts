@@ -31,13 +31,6 @@ export async function POST(request: Request) {
   const state = await readAdminState();
   await writeAdminState({ ...state, leads: [lead, ...state.leads] });
 
-  return NextResponse.json({
-    ok: true,
-    lead,
-    integrations: {
-      persistence: "Connect this handler to Payload/PostgreSQL Lead collection.",
-      notification: "Send email via SMTP/Resend using LEAD_NOTIFY_EMAIL.",
-      crm: "Optional CRM adapter can be added without changing the form."
-    }
-  });
+  return NextResponse.json({ ok: true, id: lead.id }, { status: 201 });
+
 }

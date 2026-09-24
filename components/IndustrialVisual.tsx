@@ -2,13 +2,13 @@
 
 export function IndustrialVisual() {
   return (
-    <div className="industrial-visual" aria-label="KeyproTools cutting tools product visual">
+    <div className="industrial-visual" aria-label="Rivermake handcrafted textile visual">
       <div className="visual-grid">
         <div className="gauge">
           <span>0.002</span>
           <small>mm QA</small>
         </div>
-        <img className="visual-product-image" src="/assets/current-template/export-packaging.png" alt="KeyproTools end mills and drill bits prepared for export packing" />
+        <img className="visual-product-image" src="/assets/current-template/woven-basket.jpg" alt="Handcrafted crochet storage baskets" />
         <div className="tool-stack">
           <i />
           <i />
@@ -16,7 +16,7 @@ export function IndustrialVisual() {
           <i />
         </div>
         <div className="spec-plate">
-          <strong>KeyproTools</strong>
+          <strong>Rivermake</strong>
           <span>End Mills / Drill Bits / OEM</span>
         </div>
         <div className="routing-lines" />

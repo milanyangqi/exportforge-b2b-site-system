@@ -31,7 +31,8 @@ export type ThemeKey =
   | "clean-export"
   | "premium-brand"
   | "equipment"
-  | "consumer-goods";
+  | "consumer-goods"
+  | "botanical";
 
 export type RoleKey = "super-admin" | "admin" | "editor" | "sales" | "viewer";
 
@@ -100,6 +101,11 @@ export type SeoSettings = {
 };
 
 export type ProductCategory = {
+  kind?: "collection" | "product";
+  status?: "draft" | "published" | "trash";
+  categorySlugs?: string[];
+  thumbnailUrl?: string;
+  featuredOnHome?: boolean;
   id?: string;
   slug: string;
   name: Translation;

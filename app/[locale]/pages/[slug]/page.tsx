@@ -63,7 +63,7 @@ export default async function SitePageDetail({
     <main className="subpage">
       {structuredData}
       <article className="content-detail">
-        <span className="eyebrow">Page</span>
+        <span className="eyebrow">RIVERMAKE</span>
         <h1>{t(page.title, locale)}</h1>
         <p className="detail-excerpt">{t(page.excerpt, locale)}</p>
         <ArticleContent body={t(page.body, locale)} />

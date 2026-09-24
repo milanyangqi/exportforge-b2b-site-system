@@ -603,19 +603,19 @@ const contactTypeOptions: ContactChannelType[] = [
   "custom"
 ];
 const contactTypePresets: Record<ContactChannelType, { en: string; zh: string; value: string; href: string; color: string }> = {
-  phone: { en: "Phone", zh: "电话", value: "+86 188 0000 0000", href: "tel:+8618800000000", color: "#10b981" },
-  whatsapp: { en: "WhatsApp", zh: "WhatsApp", value: "+86 188 0000 0000", href: "https://wa.me/8618800000000", color: "#25d366" },
-  email: { en: "Email", zh: "邮箱", value: "sales@keyprotools.com", href: "mailto:sales@keyprotools.com", color: "#ff4f66" },
-  wechat: { en: "WeChat", zh: "微信", value: "KeyproTools", href: "#wechat", color: "#23c80d" },
-  zalo: { en: "Zalo", zh: "Zalo", value: "+84 900 000 000", href: "https://zalo.me/84900000000", color: "#0068ff" },
-  line: { en: "Line", zh: "Line", value: "@keyprotools", href: "https://line.me/R/ti/p/@keyprotools", color: "#06c755" },
-  facebook: { en: "Facebook", zh: "Facebook", value: "KeyproTools", href: "https://facebook.com/keyprotools", color: "#1877f2" },
-  instagram: { en: "Instagram", zh: "Instagram", value: "@keyprotools", href: "https://instagram.com/keyprotools", color: "#e4405f" },
-  tiktok: { en: "TikTok", zh: "TikTok", value: "@keyprotools", href: "https://www.tiktok.com/@keyprotools", color: "#111827" },
-  messenger: { en: "Messenger", zh: "Messenger", value: "KeyproTools", href: "https://m.me/keyprotools", color: "#0084ff" },
-  linkedin: { en: "LinkedIn", zh: "LinkedIn", value: "KeyproTools", href: "https://www.linkedin.com/company/keyprotools", color: "#0a66c2" },
-  skype: { en: "Skype", zh: "Skype", value: "live:keyprotools", href: "skype:live:keyprotools?chat", color: "#00aff0" },
-  rfq: { en: "RFQ", zh: "询盘", value: "Request quote", href: "#rfq", color: "#243b78" },
+  phone: { en: "Phone", zh: "电话", value: "", href: "", color: "#10b981" },
+  whatsapp: { en: "WhatsApp", zh: "WhatsApp", value: "", href: "", color: "#25d366" },
+  email: { en: "Email", zh: "邮箱", value: "", href: "", color: "#ff4f66" },
+  wechat: { en: "WeChat", zh: "微信", value: "", href: "", color: "#23c80d" },
+  zalo: { en: "Zalo", zh: "Zalo", value: "", href: "", color: "#0068ff" },
+  line: { en: "Line", zh: "Line", value: "", href: "", color: "#06c755" },
+  facebook: { en: "Facebook", zh: "Facebook", value: "", href: "", color: "#1877f2" },
+  instagram: { en: "Instagram", zh: "Instagram", value: "", href: "", color: "#e4405f" },
+  tiktok: { en: "TikTok", zh: "TikTok", value: "", href: "", color: "#111827" },
+  messenger: { en: "Messenger", zh: "Messenger", value: "", href: "", color: "#0084ff" },
+  linkedin: { en: "LinkedIn", zh: "LinkedIn", value: "", href: "", color: "#0a66c2" },
+  skype: { en: "Skype", zh: "Skype", value: "", href: "", color: "#00aff0" },
+  rfq: { en: "RFQ", zh: "询盘", value: "", href: "", color: "#243b78" },
   custom: { en: "Custom", zh: "自定义", value: "", href: "", color: "#0b5f7d" }
 };
 const frontendManagerRoles = new Set<RoleKey>(["super-admin", "admin"]);
@@ -2106,10 +2106,10 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
     const body = template
       .replaceAll("{name}", lead.fullName || "there")
       .replaceAll("{company}", lead.company || "")
-      .replaceAll("{productType}", lead.productType || "your tooling request")
+      .replaceAll("{productType}", lead.productType || "your textile inquiry")
       .replaceAll("{quantity}", lead.quantity || "")
       .replaceAll("{email}", lead.email || "")
-      .replaceAll("{siteTitle}", state?.siteSettings.title || "KeyproTools");
+      .replaceAll("{siteTitle}", state?.siteSettings.title || "Rivermake");
 
     return { leadId: lead.id, to: lead.email, subject, body };
   }
@@ -2634,7 +2634,7 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
       video: "粘贴 YouTube、Vimeo、Bilibili 或 MP4 视频链接。",
       cta: "引导访客提交询盘或查看产品目录。"
     };
-    const fallbackMediaUrl = type === "image" ? (heroImageFiles[0]?.url ?? "/assets/current-template/hero-tooling-range.jpg") : "";
+    const fallbackMediaUrl = type === "image" ? (heroImageFiles[0]?.url ?? "/assets/current-template/hero.jpg") : "";
     const fallbackImageItem: SiteTemplateImageItem | undefined = type === "image" ? {
       id: `custom-image-${Date.now()}`,
       url: fallbackMediaUrl,
@@ -4302,7 +4302,7 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
   if (!state) {
     return (
       <main className="real-admin">
-        <div className="admin-topbar"><strong>KeyproTools Admin</strong><span>{status}</span></div>
+        <div className="admin-topbar"><strong>Rivermake Admin</strong><span>{status}</span></div>
       </main>
     );
   }
@@ -4986,7 +4986,7 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
   const visualArticles = state.articles
     .filter((article) => article.status === "published" && article.featuredOnHome)
     .slice(0, templateSettings.homeArticleCount);
-  const visualHeroImage = activeVisualSlide?.imageUrl || "/assets/current-template/hero-tooling-range.jpg";
+  const visualHeroImage = activeVisualSlide?.imageUrl || "/assets/current-template/hero.jpg";
   const visualHeroImageStyle = { "--visual-hero-image": `url(${visualHeroImage})` } as CSSProperties;
   const visualText = (blockKey: string, fallback: string) => pickLocalizedText(templateSettings.textBlocks[blockKey], locale) || fallback;
   const visualFactoryCards = [1, 2, 3].map((index) => ({
@@ -5066,7 +5066,7 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
   }
 
   function renderVisualImageTarget(options: VisualEditableImageOptions) {
-    const imageValue = options.value || "/assets/current-template/hero-tooling-range.jpg";
+    const imageValue = options.value || "/assets/current-template/hero.jpg";
 
     return (
       <div
@@ -5436,7 +5436,7 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
 	                <span className="visual-front-brand-mark"><ShieldCheck size={20} /></span>
 	                {renderVisualTextTarget({
 	                  editorKey: "site-title-navigation",
-	                  value: state.siteSettings.title || "KeyproTools",
+	                  value: state.siteSettings.title || "Rivermake",
 	                  element: "strong",
 	                  onCommit: (value) => updateSiteSettings({ title: value })
 	                })}
@@ -5772,7 +5772,7 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
               })}
               {renderVisualTextTarget({
                 editorKey: "text-rfqTitle",
-                value: visualText("rfqTitle", "把刀具清单发给 KeyproTools"),
+                value: visualText("rfqTitle", "把您的编织作品需求发给 Rivermake"),
                 element: "h3",
                 multiline: true,
                 onCommit: (value) => updateTemplateTextBlock("rfqTitle", locale, value)
@@ -7545,7 +7545,7 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
                       </label>
                       <div className="mail-template-preview">
                         <strong>预览</strong>
-                        <pre>{(state.siteSettings.mailReplyTemplate || "").replaceAll("{name}", "Alex").replaceAll("{company}", "ABC Tools").replaceAll("{productType}", "carbide end mills").replaceAll("{quantity}", "500 pcs").replaceAll("{email}", "buyer@example.com").replaceAll("{siteTitle}", state.siteSettings.title || "KeyproTools")}</pre>
+                        <pre>{(state.siteSettings.mailReplyTemplate || "").replaceAll("{name}", "Alex").replaceAll("{company}", "Example Studio").replaceAll("{productType}", "crochet textiles").replaceAll("{quantity}", "500 pcs").replaceAll("{email}", "buyer@example.com").replaceAll("{siteTitle}", state.siteSettings.title || "Rivermake")}</pre>
                       </div>
                       <div className="mail-account-actions">
                         <button disabled={!canManageFrontendSettings || mailActionRunning || mailProvider === "mailto"} type="button" onClick={sendTestMail}>发送测试邮件</button>
@@ -8552,7 +8552,7 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
                 <section className="account-security-card">
                   <h2>账号与密码</h2>
                   <div className="account-info-list">
-                    <div><span>后台名称</span><strong>KeyproTools Admin</strong></div>
+                    <div><span>后台名称</span><strong>Rivermake Admin</strong></div>
                     <div><span>登录邮箱</span><strong>{currentEmail}</strong></div>
                     <div><span>当前角色</span><strong>{roleLabels[currentUser?.role ?? "admin"]}</strong></div>
                     <div><span>账号状态</span><strong>{currentUser?.active ? "启用" : "停用"}</strong></div>
@@ -8727,7 +8727,7 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
                         <div className="ai-guided-form">
                           <label>内容主题
                             <input
-                              placeholder={aiContentForm.target === "article" ? "例如：carbide end mills for stainless steel" : "例如：custom tooling service"}
+                              placeholder={aiContentForm.target === "article" ? "例如：钩织家居系列" : "例如：手工织物系列"}
                               value={aiContentForm.topic}
                               onChange={(event) => {
                                 setAiContentForm({ ...aiContentForm, topic: event.target.value });

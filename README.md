@@ -1,4 +1,8 @@
-# Export B2B Independent Site System
+# Rivermake 05｜植物乡居官网模板
+
+本分支 `codex/rivermake-028` 是 Rivermake 手工编织官网的独立生产模板。英文为主、中文为辅。模板包源文件位于项目目录 `02_源代码/模板库/rivermake-botanical-cottage/`；本分支的固定模板入口可直接构建与部署。Cloudflare Worker 名称为 `rivermake-028`，数据使用独立 KV `rivermake-028-state`。
+
+以下是底层 CMS 的通用说明。
 
 多语言 B2B 外贸独立站系统骨架，支持产品展示、询盘、社交联系浮窗、角色权限、主题切换、AI 内容生成预留，以及托管/自部署。
 
@@ -18,12 +22,9 @@ npm run dev
 - `http://localhost:3000/zh/admin`
 - `http://localhost:3000/en/admin`
 
-默认开发账号：
+管理员登录需要配置 `INITIAL_ADMIN_EMAIL`、`INITIAL_ADMIN_PASSWORD` 和 `AUTH_SECRET`。本模板没有默认密码；生产密码通过 Cloudflare Secret 提供，不写入仓库。
 
-- Email: `admin@example.com`
-- Password: `change-me`
-
-生产环境请在 `.env` 修改：
+本地开发可在 `.env` 配置：
 
 - `INITIAL_ADMIN_EMAIL`
 - `INITIAL_ADMIN_PASSWORD`
@@ -102,7 +103,7 @@ Docker 自部署只需要 Web 服务。后台数据、上传文件会持久化�
 docker compose up -d --build
 ```
 
-不配置 `.env` 也可以直接启动。生产部署前建议复制并修改 `.env`：
+生产环境需要配置管理员凭据与签名密钥。自部署前可复制并修改 `.env`：
 
 ```bash
 cp .env.example .env

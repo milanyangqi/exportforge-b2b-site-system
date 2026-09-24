@@ -19,6 +19,15 @@ export type SiteTheme = {
 };
 
 export const themes: Record<ThemeKey, SiteTheme> = {
+  botanical: {
+    key: "botanical",
+    name: "Botanical Cottage",
+    description: "Warm botanical palette for handcrafted textiles and home goods.",
+    colors: { ink: "#333b2d", muted: "#687166", background: "#faf8f2", panel: "#ffffff", primary: "#526448", accent: "#9aac84", line: "#deded2" },
+    radius: "4px",
+    heroLayout: "clean-split",
+    contactDock: "right-rail"
+  },
   industrial: {
     key: "industrial",
     name: "Industrial",
@@ -66,4 +75,4 @@ export const themes: Record<ThemeKey, SiteTheme> = {
   }
 };
 
-export const activeTheme = themes.industrial;
+export const activeTheme = themes.botanical;

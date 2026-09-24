@@ -1,7 +1,97 @@
-/*
- * Current production template styles.
- *
- * Keep this file scoped to the active template only. Additional template
- * packages should live in the external template library and be copied here
- * through `npm run template:apply -- <templateKey>`.
- */
+@import url("https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Libre+Baskerville:wght@400;700&display=swap");
+:root { --river-cream:#faf8f2; --river-ink:#333b2d; --river-green:#526448; --river-sage:#dce4d4; --river-line:#deded2; }
+body { background:var(--river-cream); }
+.river-site { color:var(--river-ink); background:var(--river-cream); font-family:"DM Sans",sans-serif; }
+.river-site h1,.river-site h2,.river-site h3 { font-family:"Libre Baskerville",Georgia,serif; font-weight:400; letter-spacing:-.035em; }
+.river-site img { display:block; width:100%; object-fit:cover; }
+.river-kicker { display:block; color:var(--river-green); font-size:.72rem; font-weight:700; letter-spacing:.19em; text-transform:uppercase; }
+.river-hero { min-height:680px; position:relative; isolation:isolate; overflow:hidden; }
+.river-hero-photo,.river-hero-shade { position:absolute; inset:0; width:100%; height:100%; }
+.river-hero-photo { object-position:60% center; z-index:-2; }
+.river-hero-shade { z-index:-1; background:linear-gradient(90deg,rgba(250,248,242,.93) 0%,rgba(250,248,242,.79) 30%,rgba(250,248,242,.15) 68%,transparent 100%); }
+.river-hero-copy { width:min(600px,48vw); padding:145px 0 130px; margin-left:max(6vw,calc((100vw - 1440px)/2)); }
+.river-hero h1 { font-size:clamp(3.2rem,5.2vw,6.4rem); line-height:1.13; margin:24px 0; }
+.river-hero p { color:#475044; font-size:1.07rem; line-height:1.8; max-width:480px; margin-bottom:34px; }
+.river-button { display:inline-flex; align-items:center; justify-content:space-between; gap:45px; min-height:52px; padding:13px 23px; color:#fff; background:var(--river-green); text-decoration:none; font-weight:600; border-radius:2px; }
+.river-button:hover { background:#3d4b35; color:#fff; }
+.river-hero-side { position:absolute; right:25px; bottom:35px; writing-mode:vertical-rl; font-size:.65rem; letter-spacing:.25em; color:#fff; }
+.river-section { max-width:1440px; margin:auto; padding:105px 5vw; }
+.river-section-top { display:flex; align-items:center; justify-content:space-between; border-top:1px solid var(--river-line); padding-top:22px; }
+.river-flower { font-size:2rem; color:#8ea887; }
+.river-section-heading { display:flex; justify-content:space-between; align-items:flex-end; gap:60px; margin:20px 0 38px; }
+.river-section-heading h2 { font-size:clamp(2.1rem,3vw,3.8rem); line-height:1.25; max-width:680px; margin:0; }
+.river-section-heading p { max-width:350px; color:#6b7367; line-height:1.7; margin:0; }
+.river-collection-grid { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:16px; }
+.river-collection-card { color:inherit; text-decoration:none; overflow:hidden; }
+.river-collection-card img { aspect-ratio:3/3.7; }
+.river-collection-card div { display:flex; justify-content:space-between; align-items:center; padding:20px 4px; border-bottom:1px solid var(--river-line); gap:10px; }
+.river-collection-card h3 { font-size:1.08rem; margin:0; }
+.river-collection-card span,.river-featured-card span { color:var(--river-green); }
+.river-featured-title { padding-top:85px; }
+.river-featured-title a,.river-notes a { color:var(--river-green); font-weight:700; text-decoration:none; white-space:nowrap; }
+.river-featured-grid { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:16px; }
+.river-featured-card { color:inherit; text-decoration:none; }
+.river-featured-card img { aspect-ratio:1/1.12; }
+.river-featured-card h3 { font-size:1rem; margin:16px 0 8px; }
+.river-featured-card span { font-size:.8rem; font-weight:700; }
+.river-story-band { display:grid; grid-template-columns:1fr 1fr; background:#e5e9df; min-height:570px; }
+.river-story-copy { align-self:center; padding:80px max(7vw,calc((100vw - 1440px)/2)); }
+.river-story-copy h2,.river-notes h2,.river-gallery h2,.river-contact h2 { font-size:clamp(2.3rem,3.3vw,4.4rem); line-height:1.24; margin:24px 0; }
+.river-story-copy p,.river-gallery p,.river-contact p { color:#5e695c; line-height:1.85; max-width:530px; }
+.river-story-band>img { height:100%; min-height:570px; }
+.river-text-link { display:inline-block; margin-top:25px; color:var(--river-green); text-decoration:none; border-bottom:1px solid currentColor; padding-bottom:8px; font-weight:700; }
+.river-notes { display:grid; grid-template-columns:1fr 3fr; gap:60px; padding-top:130px; padding-bottom:130px; }
+.river-notes>div { max-width:850px; }
+.river-notes p { max-width:620px; color:#687166; line-height:1.8; }
+.river-gallery { display:grid; grid-template-columns:.8fr 1.2fr; align-items:center; gap:8vw; padding-top:20px; padding-bottom:120px; }
+.river-gallery img { aspect-ratio:1.45; }
+.river-contact { display:grid; grid-template-columns:.8fr 1.2fr; gap:6vw; padding:90px max(5vw,calc((100vw - 1440px)/2)); background:#eef1e9; }
+.river-contact>div { align-self:center; }
+.river-contact form { background:#fff; border:1px solid var(--river-line); padding:28px; }
+.river-site .button.primary,.river-site button[type=submit] { background:var(--river-green); }
+.subpage,.products-subpage { background:var(--river-cream); }
+.subpage h1,.subpage h2,.products-subpage h1 { font-family:"Libre Baskerville",Georgia,serif; color:var(--river-ink); }
+.subpage .product-card,.products-subpage .product-card { border-color:var(--river-line); background:#fff; }
+.subpage .product-card-media img,.products-subpage .product-card-media img { object-fit:cover; }
+@media(max-width:1000px) { .river-hero-copy { width:60vw; padding:110px 0; } .river-collection-grid,.river-featured-grid { grid-template-columns:repeat(2,minmax(0,1fr)); } .river-story-copy { padding:55px 6vw; } }
+@media(max-width:700px) { .river-hero { min-height:680px; } .river-hero-photo { object-position:64% center; } .river-hero-shade { background:linear-gradient(0deg,rgba(250,248,242,.96) 0%,rgba(250,248,242,.8) 45%,rgba(250,248,242,.1) 100%); } .river-hero-copy { width:auto; margin:0; padding:330px 7vw 55px; } .river-hero h1 { font-size:2.7rem; } .river-hero-side { display:none; } .river-section { padding:70px 5vw; } .river-section-heading { display:block; } .river-section-heading p { margin-top:18px; } .river-collection-grid,.river-featured-grid { gap:12px; } .river-collection-card h3 { font-size:.82rem; } .river-featured-title { padding-top:50px; } .river-featured-title a { display:block; margin-top:18px; } .river-story-band,.river-notes,.river-gallery,.river-contact { grid-template-columns:1fr; } .river-story-copy { padding:65px 7vw; } .river-story-band>img { height:340px; min-height:0; } .river-notes { gap:15px; } .river-gallery { gap:30px; } .river-contact { padding:70px 6vw; } }
+@media(max-width:390px) { .river-collection-grid,.river-featured-grid { grid-template-columns:1fr; } }
+
+.site-header,.template-home-nav-inner { border:0; border-bottom:1px solid var(--river-line); border-radius:0; box-shadow:none; background:var(--river-cream); width:100%; max-width:none; margin:0; padding-left:max(5vw,calc((100vw - 1440px)/2)); padding-right:max(5vw,calc((100vw - 1440px)/2)); }
+.template-home-navigation { padding:0; }
+.site-header .brand,.template-home-brand { font-family:"Libre Baskerville",Georgia,serif; font-weight:400; font-size:1.3rem; color:var(--river-ink); }
+.site-header .brand-mark,.template-home-brand-mark { background:var(--river-green); border-radius:50%; width:36px; height:36px; }
+.site-header .nav-links,.template-home-nav-links { font-weight:600; color:var(--river-ink); }
+.site-header .quote-link,.template-home-nav-cta { background:var(--river-green); border-radius:2px; box-shadow:none; color:#fff; }
+.site-footer { background:#e7ebe2; color:var(--river-ink); }
+.site-footer a { color:var(--river-ink); }
+
+.river-detail .product-detail { display:grid; grid-template-columns:1fr 1.2fr; align-items:center; gap:5vw; max-width:1400px; margin:auto; padding:85px 5vw; }
+.river-detail .product-detail h1 { font-family:"Libre Baskerville",Georgia,serif; font-size:clamp(2.6rem,4vw,5rem); line-height:1.2; }
+.river-detail .product-detail p { color:#657063; font-size:1.08rem; line-height:1.8; }
+.river-detail .product-detail-media { margin:0; }
+.river-detail .product-detail-media img { aspect-ratio:1.22; object-fit:cover; }
+.river-related { max-width:1400px; margin:auto; }
+.river-related .product-tree-grid { grid-template-columns:repeat(4,minmax(0,1fr)); }
+.products-subpage .section-head h1 { font-family:"Libre Baskerville",Georgia,serif; }
+.products-subpage .product-tree-grid-flat { grid-template-columns:repeat(4,minmax(0,1fr)); }
+@media(max-width:900px) { .products-subpage .product-tree-grid-flat,.river-related .product-tree-grid { grid-template-columns:repeat(2,minmax(0,1fr)); } }
+@media(max-width:700px) { .river-detail .product-detail { grid-template-columns:1fr; padding:60px 5vw; } .products-subpage .product-tree-grid-flat,.river-related .product-tree-grid { grid-template-columns:1fr; } }
+
+@media(max-width:980px) {
+  .site-header,.template-home-nav-inner { width:100%; padding-left:5vw; padding-right:5vw; }
+  .site-header .nav-links,.template-home-nav-links { display:none; }
+  .template-home-brand { flex:0 0 auto; }
+  .template-home-brand span:last-child { overflow:visible; text-overflow:clip; }
+}
+@media(max-width:700px) {
+  .template-home-nav-inner { min-width:0; gap:8px; }
+  .template-home-brand { flex:0 1 auto; min-width:0; font-size:1.1rem; }
+  .template-home-brand span:last-child { width:auto; min-width:0; }
+  .template-home-header-actions { margin-left:auto; min-width:0; }
+  .template-home-nav-cta { display:none; }
+  .template-home-header-actions .language-select select { width:112px; }
+  .river-site,.river-hero { width:100%; max-width:100%; min-width:0; overflow-x:hidden; }
+  .river-hero-copy { box-sizing:border-box; width:100%; max-width:100%; }
+  .river-hero-copy p { width:100%; max-width:100%; overflow-wrap:break-word; }
+}

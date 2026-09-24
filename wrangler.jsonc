@@ -1,9 +1,11 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "exportforge-b2b-site-system",
+  "name": "rivermake-028",
   "main": ".open-next/worker.js",
-  "compatibility_date": "2026-05-23",
-  "compatibility_flags": ["nodejs_compat"],
+  "compatibility_date": "2026-09-24",
+  "compatibility_flags": [
+    "nodejs_compat"
+  ],
   "assets": {
     "directory": ".open-next/assets",
     "binding": "ASSETS"
@@ -11,17 +13,18 @@
   "services": [
     {
       "binding": "WORKER_SELF_REFERENCE",
-      "service": "exportforge-b2b-site-system"
+      "service": "rivermake-028"
     }
   ],
   "kv_namespaces": [
     {
       "binding": "EXPORTFORGE_KV",
-      "id": "dec332f8417141759ed4c6ffc1838bc3"
+      "id": "db883585d62c47559fd1472441efa5a1"
     }
   ],
   "vars": {
-    "NEXT_PUBLIC_SITE_URL": "https://exportforge-b2b-site-system.workers.dev",
-    "INITIAL_ADMIN_EMAIL": "admin@example.com"
+    "NEXT_PUBLIC_SITE_URL": "https://rivermake-028.437991663.workers.dev",
+    "NEXT_PUBLIC_SITE_INDEXABLE": "false",
+    "INITIAL_ADMIN_EMAIL": "437991663@qq.com"
   }
 }

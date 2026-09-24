@@ -12,7 +12,7 @@ function contactTitle(siteTitle: string) {
 }
 
 function contactDescription(siteTitle: string) {
-  return `Send your request to ${siteTitle} and the team will follow up with details.`;
+  return `Tell ${siteTitle} about the pieces and ideas you have in mind.`;
 }
 
 export async function generateMetadata({ params }: { params: Promise<{ locale: LocaleCode }> }) {
@@ -75,8 +75,8 @@ export default async function ContactPage({ params }: { params: Promise<{ locale
           <PublicContactList channels={state.contactChannels} locale={locale} />
         </div>
         <div className="contact-rfq-panel" id="rfq">
-          <span className="eyebrow">RFQ details</span>
-          <h2>Tell us what to quote.</h2>
+          <span className="eyebrow">{locale === "zh" ? "联系" : "GET IN TOUCH"}</span>
+          <h2>{locale === "zh" ? "告诉我们您的想法。" : "Tell us what you have in mind."}</h2>
           <RfqForm locale={locale} />
         </div>
       </section>

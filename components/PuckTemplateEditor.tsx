@@ -685,9 +685,9 @@ function dataWithFooterDraftProps(data: VisualPageLayoutData | undefined, state:
       ...cloned.root,
       props: {
         ...rootProps,
-        footerTagline: localizedTemplateText(state.templateSettings.footerTagline, locale, "Carbide end mills, drill bits, OEM tooling, and export-ready packing for global buyers."),
+        footerTagline: localizedTemplateText(state.templateSettings.footerTagline, locale, "Handcrafted textiles inspired by gardens and everyday home."),
         footerCopyright: localizedTemplateText(state.templateSettings.footerCopyright, locale, "Copyright © {year} {brand}. All rights reserved."),
-        footerCredit: localizedTemplateText(state.templateSettings.footerCredit, locale, "Built for precision tooling and B2B export orders.")
+        footerCredit: localizedTemplateText(state.templateSettings.footerCredit, locale, "Made with a love of texture.")
       } as VisualPageLayoutData["root"]["props"]
     }
   };
@@ -712,14 +712,14 @@ function customSectionDefaultProps(moduleType: CustomSectionModuleType = "media"
     eyebrow: "Custom section",
     title: moduleLabel,
     body: "在右侧属性面板编辑标题、正文、图片、视频、按钮和布局。",
-    mediaLibraryUrl: "/assets/current-template/hero-tooling-range.jpg",
-    mediaUrl: "/assets/current-template/hero-tooling-range.jpg",
+    mediaLibraryUrl: "/assets/current-template/hero.jpg",
+    mediaUrl: "/assets/current-template/hero.jpg",
     imageMode: moduleType === "text" || moduleType === "cta" ? "none" : "single",
     imageItems: [
       {
-        source: "/assets/current-template/hero-tooling-range.jpg",
+        source: "/assets/current-template/hero.jpg",
         url: "",
-        alt: "KeyproTools tooling image",
+        alt: "Rivermake textile image",
         caption: "",
         linkHref: ""
       }
@@ -2798,8 +2798,8 @@ function createConfig(
           metric3Label: field("text", "指标 3 说明")
         },
         defaultProps: {
-          eyebrow: "CNC cutting tools",
-          title: "Carbide end mills and drill bits ready for distributor programs.",
+          eyebrow: "Handcrafted textiles",
+          title: "Handmade for a softer home.",
           body: "Edit this hero directly in Puck.",
           backgroundMode: "single",
           mediaLibraryUrl: "",
@@ -3211,7 +3211,7 @@ function createConfig(
           title: "Factory capability",
           body: "",
           cards: [],
-          card1Title: "OEM tooling",
+          card1Title: "Handworked textiles",
           card1Body: "",
           card2Title: "Coating",
           card2Body: "",
@@ -3365,13 +3365,13 @@ function createConfig(
       ContainerImageElement: {
         label: "容器图片",
         fields: containerImageFields(imageMediaItems),
-        defaultProps: { imageUrl: "/assets/current-template/hero-tooling-range.jpg", externalImageUrl: "", imageItems: [], displayMode: "single", transitionEffect: "fade", intervalSeconds: 5, overlay: "none", hoverEffect: "none", captionPlacement: "below", alt: "Container image", caption: "", href: "", openInNewTab: false, imageRatio: "wide", imageFit: "cover", align: "left", verticalAlign: "start", padding: "normal", minHeight: "auto", background: "transparent", customBackground: "", textColor: "", accentColor: "", borderStyle: "line", radius: "medium", shadow: "none", isHidden: false, adminLabel: "" },
+        defaultProps: { imageUrl: "/assets/current-template/hero.jpg", externalImageUrl: "", imageItems: [], displayMode: "single", transitionEffect: "fade", intervalSeconds: 5, overlay: "none", hoverEffect: "none", captionPlacement: "below", alt: "Container image", caption: "", href: "", openInNewTab: false, imageRatio: "wide", imageFit: "cover", align: "left", verticalAlign: "start", padding: "normal", minHeight: "auto", background: "transparent", customBackground: "", textColor: "", accentColor: "", borderStyle: "line", radius: "medium", shadow: "none", isHidden: false, adminLabel: "" },
         render: render("ContainerImageElement")
       },
       ContainerImageTextElement: {
         label: "容器图文",
         fields: containerImageTextFields(imageMediaItems),
-        defaultProps: { imageUrl: "/assets/current-template/hero-tooling-range.jpg", externalImageUrl: "", imageItems: [], displayMode: "single", transitionEffect: "fade", intervalSeconds: 5, overlay: "none", hoverEffect: "none", captionPlacement: "below", imagePlacement: "top", imageRatio: "wide", imageFit: "cover", eyebrow: "", title: "图文内容", body: "选择这个元素后，可在右侧修改图片、标题、正文和链接。", textSize: "normal", href: "", openInNewTab: false, buttonLabel: "", buttonStyle: "text", align: "left", verticalAlign: "start", padding: "normal", minHeight: "auto", background: "transparent", customBackground: "", textColor: "", accentColor: "", borderStyle: "line", radius: "medium", shadow: "none", isHidden: false, adminLabel: "" },
+        defaultProps: { imageUrl: "/assets/current-template/hero.jpg", externalImageUrl: "", imageItems: [], displayMode: "single", transitionEffect: "fade", intervalSeconds: 5, overlay: "none", hoverEffect: "none", captionPlacement: "below", imagePlacement: "top", imageRatio: "wide", imageFit: "cover", eyebrow: "", title: "图文内容", body: "选择这个元素后，可在右侧修改图片、标题、正文和链接。", textSize: "normal", href: "", openInNewTab: false, buttonLabel: "", buttonStyle: "text", align: "left", verticalAlign: "start", padding: "normal", minHeight: "auto", background: "transparent", customBackground: "", textColor: "", accentColor: "", borderStyle: "line", radius: "medium", shadow: "none", isHidden: false, adminLabel: "" },
         render: render("ContainerImageTextElement")
       },
       ContainerVideoElement: {

@@ -11,12 +11,12 @@ const labels = {
   email: { en: "Email", zh: "邮箱", ar: "البريد الإلكتروني" },
   whatsapp: { en: "WhatsApp / Phone", zh: "WhatsApp / 电话", ar: "واتساب / الهاتف" },
   destination: { en: "Country / Market", zh: "国家 / 市场", ar: "الدولة / السوق" },
-  workpieceMaterial: { en: "Workpiece material", zh: "工件材料", ar: "مادة الشغل" },
+  workpieceMaterial: { en: "Material / fibre", zh: "材料 / 纱线", ar: "مادة الشغل" },
   message: { en: "Message", zh: "需求说明", ar: "الرسالة" },
   submit: { en: "Submit RFQ", zh: "提交询盘", ar: "إرسال الطلب" },
   sending: { en: "Sending RFQ...", zh: "正在提交询盘...", ar: "جار إرسال الطلب..." },
   quantityPlaceholder: { en: "Enter quantity, e.g. 2,000 pcs / 20 boxes", zh: "请输入数量，例如 2,000 件 / 20 箱", ar: "أدخل الكمية، مثل 2,000 قطعة / 20 صندوق" },
-  success: { en: "RFQ submitted. KeyproTools sales will review your tooling details and follow up shortly.", zh: "询盘已提交，KeyproTools 销售团队会查看刀具需求并尽快跟进。", ar: "تم إرسال الطلب. سيراجع فريق KeyproTools التفاصيل ويتابع معك قريبًا." },
+  success: { en: "Your inquiry has been submitted.", zh: "询盘已提交。", ar: "تم إرسال الطلب. سيراجع فريق Rivermake التفاصيل ويتابع معك قريبًا." },
   error: { en: "RFQ was not submitted. Please check required fields and try again.", zh: "询盘未提交成功，请检查必填信息后重试。", ar: "لم يتم إرسال الطلب. يرجى التحقق من الحقول المطلوبة والمحاولة مرة أخرى." }
 };
 
@@ -85,7 +85,7 @@ export function RfqForm({ locale }: { locale: LocaleCode }) {
       </label>
       <label>
         {text("productType", locale)}
-        <input name="productType" required placeholder="End mill, drill bit, custom tooling" />
+        <input name="productType" required placeholder="Crochet throw, woven basket, knit cushion" />
       </label>
       <label>
         {text("quantity", locale)}
@@ -93,15 +93,15 @@ export function RfqForm({ locale }: { locale: LocaleCode }) {
       </label>
       <label>
         {text("destination", locale)}
-        <input name="destination" placeholder="Vietnam, UAE, Germany..." />
+        <input name="destination" placeholder="United States, United Kingdom, France..." />
       </label>
       <label>
         {text("workpieceMaterial", locale)}
-        <input name="workpieceMaterial" placeholder="Steel, stainless steel, aluminum..." />
+        <input name="workpieceMaterial" placeholder="Cotton, wool, recycled yarn..." />
       </label>
       <label className="wide">
         {text("message", locale)}
-        <textarea name="message" placeholder="Diameter, flute length, coating, material, packing, target price..." />
+        <textarea name="message" placeholder="Tell us about pieces, colours, materials, quantity and destination..." />
       </label>
       {status === "success" ? (
         <p className="rfq-status success" role="status" aria-live="polite">{text("success", locale)}</p>

@@ -6,7 +6,9 @@ const cookieName = "exportforge_admin_session";
 const sessionMaxAge = 60 * 60 * 8;
 
 function getSecret() {
-  return process.env.AUTH_SECRET ?? "dev-exportforge-secret-change-me";
+  const secret = process.env.AUTH_SECRET;
+  if (!secret) throw new Error("AUTH_SECRET is required");
+  return secret;
 }
 
 function shouldUseSecureCookie() {
@@ -49,8 +51,8 @@ export function verifyPasswordHash(password: string, passwordHash?: string) {
 
 export function verifyAdminCredentials(email: string, password: string) {
   const adminEmail = process.env.INITIAL_ADMIN_EMAIL ?? "admin@example.com";
-  const adminPassword = process.env.INITIAL_ADMIN_PASSWORD ?? "change-me";
-  return email.trim().toLowerCase() === adminEmail.toLowerCase() && password === adminPassword;
+  const adminPassword = process.env.INITIAL_ADMIN_PASSWORD;
+  return Boolean(adminPassword) && email.trim().toLowerCase() === adminEmail.toLowerCase() && password === adminPassword;
 }
 
 export function verifyAdminUserPassword(user: AdminUser, password: string) {

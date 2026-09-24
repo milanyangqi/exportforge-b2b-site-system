@@ -38,13 +38,13 @@ function stripMarkdown(value: string) {
 }
 
 function buildImagePrompt(payload: ImagePayload) {
-  const title = payload.title?.trim() || "B2B cutting tools article";
+  const title = payload.title?.trim() || "handcrafted home textiles article";
   const excerpt = payload.excerpt?.trim() || "";
   const body = stripMarkdown(payload.body ?? "").slice(0, 1800);
 
   return [
-    "Create a professional square hero image for a B2B technical article on a cutting-tools website named KeyproTools.",
-    "Style: realistic industrial product photography, clean CNC workshop lighting, carbide end mills and drill bits, export-ready, no text, no logos, no watermarks.",
+    "Create a professional square hero image for a B2B technical article on a handcrafted textiles website named Rivermake.",
+    "Style: realistic editorial textile photography, natural cottage light, crochet and woven textures, no text, no logos, no watermarks.",
     `Article title: ${title}`,
     excerpt ? `Article excerpt: ${excerpt}` : "",
     body ? `Article body context: ${body}` : "",

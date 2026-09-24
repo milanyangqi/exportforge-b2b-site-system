@@ -1,4 +1,4 @@
-import { articles, contactChannels, defaultEnabledLocales, defaultNavigation, productCategories, siteSettings, uploadedFiles } from "@/data/site";
+import { articles, contactChannels, defaultEnabledLocales, defaultNavigation, productCategories, sitePages, siteSettings, uploadedFiles } from "@/data/site";
 import { isLocale } from "@/config/locales";
 import { encryptMailSecret } from "@/lib/server/mail-secrets";
 import { normalizePageLayouts } from "@/lib/puck-layouts";
@@ -27,7 +27,7 @@ type CloudflareContext = {
 
 const stateKey = "admin-state";
 const uploadKeyPrefix = "upload:";
-const currentTemplateContentVersion = "current-template-keyprotools-v1";
+const currentTemplateContentVersion = "rivermake-botanical-cottage-v1";
 const adminTabKeys = new Set(["overview", "products", "pages", "articles", "files", "leads", "mail", "contacts", "navigation", "users", "collect", "templates", "settings", "languages", "themes", "ai"]);
 const settingsSectionKeys = new Set(["general", "writing", "reading", "seo", "media", "permalinks", "privacy", "ai", "translation", "backup"]);
 const defaultRolePermissions: Record<RoleKey, AdminRolePermissions> = {
@@ -62,36 +62,16 @@ const currentTemplateAssetPath = "/assets/current-template/";
 const homeTemplateKeys = new Set<HomeTemplateKey>(["industrial-showcase", "catalog-focus", "rfq-focus"]);
 const homeSectionKeys: HomeSectionKey[] = ["navigation", "hero", "products", "factory", "markets", "articles", "rfq"];
 const defaultHeroSlides: SiteHeroSlide[] = [
-  {
-    id: "hero-tooling-range",
-    imageUrl: "/assets/current-template/hero-tooling-range.jpg",
-    alt: { en: "Carbide end mills and drill bits hero poster", zh: "硬质合金铣刀与钻头首页海报" },
-    enabled: true,
-    order: 10
-  },
-  {
-    id: "hero-cnc-factory",
-    imageUrl: "/assets/current-template/hero-cnc-factory.jpg",
-    alt: { en: "CNC factory tooling production hero poster", zh: "CNC 工厂刀具生产首页海报" },
-    enabled: true,
-    order: 20
-  },
-  {
-    id: "hero-export-packing",
-    imageUrl: "/assets/current-template/hero-export-packing.jpg",
-    alt: { en: "Export packing and OEM tooling hero poster", zh: "出口包装与 OEM 刀具首页海报" },
-    enabled: true,
-    order: 30
-  }
+  { id: "river-hero", imageUrl: "/assets/current-template/hero.jpg", alt: { en: "Botanical cottage with handcrafted textiles", zh: "植物乡居风格手工织物" }, enabled: true, order: 10 }
 ];
 
 const defaultSiteSettings: SiteSettings = {
   title: siteSettings.brand,
-  tagline: "Carbide end mills, drill bits, OEM tooling, and export-ready packing.",
+  tagline: "Handcrafted textiles inspired by gardens and everyday home.",
   contentVersion: currentTemplateContentVersion,
   siteIconUrl: "",
-  fontFamily: "\"Manrope\", \"PingFang SC\", \"Microsoft YaHei\", sans-serif",
-  siteUrl: process.env.NEXT_PUBLIC_SITE_URL ?? "https://exportforge-b2b-site-system.437991663.workers.dev",
+  fontFamily: "\"DM Sans\", \"PingFang SC\", sans-serif",
+  siteUrl: process.env.NEXT_PUBLIC_SITE_URL ?? "https://rivermake-028.437991663.workers.dev",
   adminEmail: process.env.INITIAL_ADMIN_EMAIL ?? "admin@example.com",
   mailFromEmail: "",
   mailFromName: "",
@@ -116,7 +96,7 @@ const defaultSiteSettings: SiteSettings = {
   mailApiBaseUrl: "https://api.resend.com/emails",
   mailApiKey: "",
   mailApiKeyConfigured: false,
-  mailReplyTemplate: "Hello {name},\n\nThank you for your RFQ about {productType}. We have received your inquiry and will follow up with tooling details, quotation, and lead time soon.\n\nBest regards,\n{siteTitle}",
+  mailReplyTemplate: "Hello {name},\n\nThank you for your inquiry about {productType}. We have received your message and will follow up after reviewing the details.\n\nBest regards,\n{siteTitle}",
   allowRegistration: false,
   defaultUserRole: "viewer",
   siteLanguage: "zh",
@@ -138,59 +118,23 @@ const defaultSiteSettings: SiteSettings = {
   productUrlBase: "products",
   articleUrlBase: "articles",
   fileUrlBase: "files",
-  privacyPageUrl: "/privacy",
+  privacyPageUrl: "",
   cookieNoticeEnabled: false,
-  privacySummary: "We use submitted RFQ details only for tooling quotation, sales follow-up, and service improvement."
+  privacySummary: "We use submitted inquiry details to respond to your request."
 };
 
 const defaultTemplateTextBlocks: Record<string, Translation> = {
-  productsEyebrow: { en: "Product catalog", zh: "PRODUCT CATALOG" },
-  productsTitle: { en: "End mills, drill bits, and OEM tooling built for repeat purchasing.", zh: "硬质合金刀具目录" },
-  productsBody: {
-    en: "Browse core categories for CNC shops, hardware distributors, maintenance suppliers, and private-label tool programs.",
-    zh: "覆盖经销商备货、工厂加工与定制刀具需求。"
-  },
-  factoryEyebrow: { en: "Factory capability", zh: "工厂能力" },
-  factoryTitle: { en: "Geometry, coating, inspection, and packing are aligned before every export order.", zh: "从几何、涂层到包装的供应能力" },
-  factoryCard1Title: { en: "Tool geometry", zh: "OEM 图纸定制" },
-  factoryCard1Body: { en: "Square, ball nose, corner radius, long-neck, micro, step, and coolant-through options.", zh: "适合经销商长期备货、样品确认与批量订单。" },
-  factoryCard2Title: { en: "Coating choice", zh: "涂层与刃口处理" },
-  factoryCard2Body: { en: "AlTiN, TiSiN, DLC, bright finish, and buyer-specific series positioning.", zh: "适合经销商长期备货、样品确认与批量订单。" },
-  factoryCard3Title: { en: "Export packing", zh: "私标包装交付" },
-  factoryCard3Body: { en: "Plastic tubes, foam trays, barcode labels, carton marks, and distributor-ready assortments.", zh: "适合经销商长期备货、样品确认与批量订单。" },
-  marketsEyebrow: { en: "Global supply", zh: "出口市场" },
-  marketsTitle: { en: "Buyer-ready communication for distributors across major tooling markets.", zh: "多语言市场与 RFQ 清单" },
-  marketsBody: {
-    en: "KeyproTools supports multilingual product pages, quick RFQ details, and export documentation for buyers comparing end mills, drill bits, and OEM assortments.",
-    zh: "支持多语言产品页、快速 RFQ 信息和出口文件，适合铣刀、钻头与 OEM 组合采购。"
-  },
-  marketsChecklistTitle: { en: "RFQ checklist", zh: "RFQ 清单" },
-  marketsChecklist1: { en: "Tool type, diameter, flute length, overall length, and shank.", zh: "刀具类型、直径、刃长、总长和柄径。" },
-  marketsChecklist2: { en: "Workpiece material, hardness, coating, and cutting condition.", zh: "工件材料、硬度、涂层和切削条件。" },
-  marketsChecklist3: { en: "Quantity, packaging, laser marking, destination, and delivery target.", zh: "数量、包装、激光打标、目的地和交付目标。" },
-  marketsNote: { en: siteSettings.aiDraftPolicy, zh: siteSettings.aiDraftPolicy },
-  articlesEyebrow: { en: "Technical articles", zh: "技术文章" },
-  articlesTitle: { en: "Selection guides for buyers comparing tool geometry, coating, and packaging.", zh: "技术文章" },
-  rfqEyebrow: { en: "Request a quote", zh: "询盘表单" },
-  rfqTitle: { en: "Share your tool list and export requirements.", zh: "把刀具清单发给 KeyproTools" },
-  rfqBody: {
-    en: "Send product type, size range, quantity, coating, destination, and packing needs. The sales team will turn it into a clear quotation.",
-    zh: "规格、数量、涂层、包装和交期信息会在前台询盘表单中收集。"
-  },
-  rfqGuidanceTitle: { en: "For a faster reply, include:", zh: "为了更快回复，请包含：" },
-  rfqGuidance1: { en: "Tool diameter, flute length, shank size, and tolerance.", zh: "刀具直径、刃长、柄径和公差。" },
-  rfqGuidance2: { en: "Workpiece material, coating preference, and application details.", zh: "工件材料、涂层偏好和应用细节。" },
-  rfqGuidance3: { en: "Packaging, private label, target quantity, and delivery market.", zh: "包装、私标、目标数量和交付市场。" },
-  rfqNote: {
-    en: "KeyproTools usually reviews RFQ details by product family so the quotation can match stock, OEM marking, and export packing requirements.",
-    zh: "KeyproTools 会按产品系列审核 RFQ 信息，让报价匹配库存、OEM 打标和出口包装要求。"
-  },
-  heroMetric1Value: { en: "0.2-25mm", zh: "6 条产品线" },
-  heroMetric1Label: { en: "End mill diameter range", zh: "产品目录" },
-  heroMetric2Value: { en: "HSS / M35 / Carbide", zh: "OEM 定制" },
-  heroMetric2Label: { en: "Drill bit supply", zh: "图纸与私标" },
-  heroMetric3Value: { en: "OEM", zh: "出口包装" },
-  heroMetric3Label: { en: "Laser marking and packing", zh: "经销商备货" }
+  productsEyebrow: { en: "Collections", zh: "作品系列" },
+  productsTitle: { en: "Handworked textures for everyday living.", zh: "融入日常的手作纹理。" },
+  productsBody: { en: "Explore crochet, knit and woven home textiles.", zh: "探索钩织、针织与手工织物。" },
+  factoryEyebrow: { en: "The making", zh: "制作过程" },
+  factoryTitle: { en: "The beauty is in the details.", zh: "美感藏在细节里。" },
+  marketsEyebrow: { en: "Our story", zh: "品牌故事" },
+  marketsTitle: { en: "Inspired by gardens. Made for home.", zh: "取色于花园，融入日常居所。" },
+  articlesEyebrow: { en: "Journal", zh: "灵感笔记" },
+  articlesTitle: { en: "Notes on texture and home.", zh: "关于织物与家居的笔记。" },
+  rfqEyebrow: { en: "Contact", zh: "联系" },
+  rfqTitle: { en: "Tell us what you have in mind.", zh: "告诉我们您的想法。" }
 };
 
 function normalizeCurrentTemplateAssetUrl(value?: string) {
@@ -206,52 +150,24 @@ function normalizeCurrentTemplateAssetTranslation(value?: Partial<Translation>) 
 
 const defaultTemplateSettings: SiteTemplateSettings = {
   homeTemplate: "industrial-showcase",
-  heroKicker: { en: "CNC cutting tools for global buyers", zh: "面向全球买家的 CNC 刀具供应" },
-  heroTitle: { en: "Carbide end mills and drill bits ready for distributor programs.", zh: "面向经销商长期备货的硬质合金铣刀与钻头。" },
-  heroBody: {
-    en: "KeyproTools supplies end mills, drill bits, custom tooling, coating options, private-label packing, and export-ready QC support for hardware and machining buyers.",
-    zh: "KeyproTools 提供铣刀、钻头、定制刀具、涂层方案、私标包装和出口质检支持，服务五金工具与机加工采购商。"
-  },
-  primaryCtaLabel: { en: "Request Quote", zh: "获取报价" },
-  secondaryCtaLabel: { en: "Products", zh: "产品目录" },
-  heroCarouselEnabled: true,
-  heroCarouselAutoplay: true,
+  heroKicker: { en: "RIVERMAKE / HANDCRAFTED TEXTILES", zh: "RIVERMAKE / 手工织物" },
+  heroTitle: { en: "Handmade for a softer home.", zh: "让手作，温柔融入家。" },
+  heroBody: { en: "Thoughtful crochet, knit and woven pieces inspired by gardens and the simple beauty of everyday life.", zh: "以花园与日常生活为灵感，探索钩织、针织与手工织物的柔软之美。" },
+  primaryCtaLabel: { en: "Get in touch", zh: "联系我们" },
+  secondaryCtaLabel: { en: "Explore collections", zh: "探索系列" },
+  heroCarouselEnabled: false,
+  heroCarouselAutoplay: false,
   heroCarouselIntervalSeconds: 7,
   heroSlides: defaultHeroSlides,
   showHeroVisual: true,
-  showHeroMetrics: true,
-  footerTagline: {
-    en: "Carbide end mills, drill bits, OEM tooling, and export-ready packing for global buyers.",
-    zh: "硬质合金铣刀、钻头、OEM 刀具和面向全球买家的出口包装。"
-  },
-  footerCopyright: {
-    en: "Copyright © {year} {brand}. All rights reserved.",
-    zh: "Copyright © {year} {brand}. All rights reserved."
-  },
-  footerCredit: {
-    en: "Built for precision tooling and B2B export orders.",
-    zh: "为精密刀具和 B2B 出口订单打造。"
-  },
-  homeProductCount: 6,
-  homeArticleCount: 6,
-  visibleSections: {
-    navigation: true,
-    hero: true,
-    products: true,
-    factory: true,
-    markets: true,
-    articles: true,
-    rfq: true
-  },
-  sectionOrder: {
-    navigation: 10,
-    hero: 20,
-    products: 30,
-    factory: 40,
-    markets: 50,
-    articles: 60,
-    rfq: 70
-  },
+  showHeroMetrics: false,
+  footerTagline: { en: "Handcrafted textiles inspired by gardens and everyday home.", zh: "取色于花园，融入日常居所的手工织物。" },
+  footerCopyright: { en: "Copyright © {year} {brand}. All rights reserved.", zh: "Copyright © {year} {brand}. All rights reserved." },
+  footerCredit: { en: "Made with a love of texture.", zh: "喜爱织物的每一处纹理。" },
+  homeProductCount: 4,
+  homeArticleCount: 0,
+  visibleSections: { navigation: true, hero: true, products: true, factory: true, markets: true, articles: true, rfq: true },
+  sectionOrder: { navigation: 10, hero: 20, products: 30, factory: 40, markets: 50, articles: 60, rfq: 70 },
   textBlocks: defaultTemplateTextBlocks,
   customBlocks: []
 };
@@ -268,12 +184,12 @@ export function createDefaultAdminState(): AdminState {
   const now = new Date().toISOString();
   const state: AdminState = {
     products: productCategories,
-    pages: [],
+    pages: sitePages,
     articles,
     leads: [],
     contactChannels,
     uploadedFiles,
-    activeTheme: "industrial",
+    activeTheme: "botanical",
     enabledLocales: defaultEnabledLocales,
     navigation: defaultNavigation,
     siteSettings: defaultSiteSettings,
@@ -316,9 +232,9 @@ export function createDefaultAdminState(): AdminState {
       voiceBaseUrl: process.env.AI_VOICE_BASE_URL ?? "https://api.openai.com/v1",
       voiceApiKey: process.env.AI_VOICE_API_KEY ?? "",
       defaultLocale: "en",
-      brandVoice: "Clear, technical, buyer-focused cutting tool copy for KeyproTools.",
-      targetMarkets: ["Europe", "North America", "Southeast Asia", "MENA"],
-      requiredKeywords: ["carbide end mills", "drill bits", "OEM tooling", "quality inspection"],
+      brandVoice: "Warm, clear, tactile copy for Rivermake handcrafted textiles.",
+      targetMarkets: ["Europe", "North America"],
+      requiredKeywords: ["crochet", "knit", "woven textiles", "handmade home"],
       blockedWords: [],
       enabled: Boolean(process.env.AI_API_KEY)
     },
@@ -651,29 +567,7 @@ function mergeContactChannels(existingChannels = contactChannels) {
 }
 
 function normalizeActiveTemplateContactChannels(existingChannels = contactChannels) {
-  return mergeContactChannels(existingChannels).map((channel) => {
-    if (channel.id === "email" && (channel.value === "sales@example.com" || channel.href === "mailto:sales@example.com")) {
-      return { ...channel, value: "sales@keyprotools.com", href: "mailto:sales@keyprotools.com" };
-    }
-
-    if (channel.id === "wechat" && channel.value === "ExportFactory") {
-      return { ...channel, value: "KeyproTools" };
-    }
-
-    if (channel.value === "ExportForge") {
-      return { ...channel, value: "KeyproTools", href: channel.href.replace(/exportforge/gi, "keyprotools") };
-    }
-
-    if (channel.value.toLowerCase().includes("exportforge") || channel.href.toLowerCase().includes("exportforge")) {
-      return {
-        ...channel,
-        value: channel.value.replace(/exportforge/gi, "keyprotools"),
-        href: channel.href.replace(/exportforge/gi, "keyprotools")
-      };
-    }
-
-    return channel;
-  });
+  return mergeContactChannels(existingChannels);
 }
 
 function normalizeEnabledLocales(locales?: LocaleCode[]) {
@@ -818,6 +712,7 @@ function normalizeAdminState(parsed: AdminState): AdminState {
   const refreshActiveTemplateContent = shouldRefreshActiveTemplateContent(parsed);
   const productsSource = refreshActiveTemplateContent ? productCategories : (parsed.products ?? productCategories);
   const articlesSource = refreshActiveTemplateContent ? articles : mergeSeedArticles(parsed.articles ?? articles);
+  const pagesSource = refreshActiveTemplateContent ? sitePages : (parsed.pages ?? sitePages);
   const navigationSource = refreshActiveTemplateContent ? defaultNavigation : parsed.navigation;
   const uploadedFilesSource = refreshActiveTemplateContent ? mergeActiveTemplateMedia(parsed.uploadedFiles) : mergeActiveTemplateMedia(parsed.uploadedFiles ?? uploadedFiles);
   const siteSettingsSource = refreshActiveTemplateContent
@@ -838,7 +733,7 @@ function normalizeAdminState(parsed: AdminState): AdminState {
       id: product.id ?? `product-${index}-${product.slug}`,
       imageUrl: normalizeCurrentTemplateAssetUrl(product.imageUrl)
     })),
-    pages: normalizePages(parsed.pages, parsed.updatedAt),
+    pages: normalizePages(pagesSource, parsed.updatedAt),
     articles: articlesSource.map((article) => ({
       ...article,
       id: article.id ?? `article-${article.slug}`,
