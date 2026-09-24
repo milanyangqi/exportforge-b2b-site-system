@@ -1,4 +1,4 @@
-import { YuvaStory } from "@/components/YuvaPages";
+import { LoftyStory } from "@/components/LoftyPages";
 import { notFound } from "next/navigation";
 import { ArticleContent } from "@/components/ArticleContent";
 import { PuckPageRenderer } from "@/components/PuckPageRenderer";
@@ -60,7 +60,7 @@ export default async function SitePageDetail({
       }}
     />
   );
-  const fallback = (<>{structuredData}<YuvaStory page={page} locale={locale}/></>);
+  const fallback = (<>{structuredData}<LoftyStory page={page} locale={locale}/></>);
 
   return (
     <PuckPageRenderer

@@ -2120,10 +2120,10 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
     const body = template
       .replaceAll("{name}", lead.fullName || "there")
       .replaceAll("{company}", lead.company || "")
-      .replaceAll("{productType}", lead.productType || "your tooling request")
+      .replaceAll("{productType}", lead.productType || "your accessory request")
       .replaceAll("{quantity}", lead.quantity || "")
       .replaceAll("{email}", lead.email || "")
-      .replaceAll("{siteTitle}", state?.siteSettings.title || "DawnOrigin");
+      .replaceAll("{siteTitle}", state?.siteSettings.title || "LoftyVista");
 
     return { leadId: lead.id, to: lead.email, subject, body };
   }
@@ -4323,7 +4323,7 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
   if (!state) {
     return (
       <main className="real-admin">
-        <div className="admin-topbar"><strong>DawnOrigin Admin</strong><span>{status}</span></div>
+        <div className="admin-topbar"><strong>LoftyVista Admin</strong><span>{status}</span></div>
       </main>
     );
   }
@@ -5457,7 +5457,7 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
 	                <span className="visual-front-brand-mark"><ShieldCheck size={20} /></span>
 	                {renderVisualTextTarget({
 	                  editorKey: "site-title-navigation",
-	                  value: state.siteSettings.title || "DawnOrigin",
+	                  value: state.siteSettings.title || "LoftyVista",
 	                  element: "strong",
 	                  onCommit: (value) => updateSiteSettings({ title: value })
 	                })}
@@ -5793,7 +5793,7 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
               })}
               {renderVisualTextTarget({
                 editorKey: "text-rfqTitle",
-                value: visualText("rfqTitle", "把美妆工具需求发给 DawnOrigin"),
+                value: visualText("rfqTitle", "把美妆工具需求发给 LoftyVista"),
                 element: "h3",
                 multiline: true,
                 onCommit: (value) => updateTemplateTextBlock("rfqTitle", locale, value)
@@ -6336,7 +6336,7 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
                   </label>
                   <label>别名
                     <input value={productForm.slug} onChange={(event) => setProductForm({ ...productForm, slug: slugify(event.target.value) })} />
-                    <small>用于 URL，例如 lips。</small>
+                    <small>用于 URL，例如 pearl-bow。</small>
                   </label>
                   <label>父级分类
                     <select value={productForm.parentId} onChange={(event) => setProductForm({ ...productForm, parentId: event.target.value })}>
@@ -6347,7 +6347,7 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
                           <option key={product.id ?? product.slug} value={product.id ?? product.slug}>{pickLocalizedText(product.name, locale) || product.slug}</option>
                         ))}
                     </select>
-                    <small>可用于目录分层，例如“彩妆”下面再放“化妆刷”。</small>
+                    <small>可用于目录分层，例如“发夹与抓夹”下面再放“珍珠边夹”。</small>
                   </label>
                   <label>描述
                     <textarea value={productForm.summaryZh} onChange={(event) => setProductForm({ ...productForm, summaryZh: event.target.value })} />
@@ -6357,7 +6357,7 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
                   <label>英文描述<textarea value={productForm.summaryEn} onChange={e=>setProductForm({...productForm,summaryEn:e.target.value})}/></label>
                   <label>条目类型<select value={productForm.kind} onChange={e=>setProductForm({...productForm,kind:e.target.value as ProductFormState["kind"]})}><option value="collection">分类入口</option><option value="product">独立产品</option></select></label>
                   <label>发布状态<select value={productForm.status} onChange={e=>setProductForm({...productForm,status:e.target.value as ProductFormState["status"]})}><option value="draft">草稿（前台不显示）</option><option value="published">已发布</option><option value="trash">隐藏</option></select></label>
-                  <fieldset><legend>所属系列（可多选）</legend>{[["brushes","化妆刷"],["sponges-puffs","美妆蛋与粉扑"],["lash-tools","睫毛工具"]].map(([key,label])=><label className="checkline" key={key}><input type="checkbox" checked={productForm.categories.includes(key)} onChange={e=>setProductForm({...productForm,categories:e.target.checked?[...productForm.categories,key]:productForm.categories.filter(x=>x!==key)})}/>{label}</label>)}</fieldset>
+                  <fieldset><legend>所属系列（可多选）</legend>{[["bows","蝴蝶结"],["clips","发夹与抓夹"],["pins-ties","发簪与发圈"]].map(([key,label])=><label className="checkline" key={key}><input type="checkbox" checked={productForm.categories.includes(key)} onChange={e=>setProductForm({...productForm,categories:e.target.checked?[...productForm.categories,key]:productForm.categories.filter(x=>x!==key)})}/>{label}</label>)}</fieldset>
                   <label>产品子类<select value={productForm.productType} onChange={e=>setProductForm({...productForm,productType:e.target.value})}><option value="">请选择</option>{Object.entries(catalogTypes).map(([key,value])=><option key={key} value={key}>{value.zh}</option>)}</select></label>
                   <label>型号（无正式型号可留空）<input value={productForm.model} onChange={e=>setProductForm({...productForm,model:e.target.value})}/></label>
                   <label>主图 URL<input value={productForm.imageUrl} onChange={e=>setProductForm({...productForm,imageUrl:e.target.value})}/></label>
@@ -7579,7 +7579,7 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
                       </label>
                       <div className="mail-template-preview">
                         <strong>预览</strong>
-                        <pre>{(state.siteSettings.mailReplyTemplate || "").replaceAll("{name}", "Alex").replaceAll("{company}", "Beauty Brand").replaceAll("{productType}", "beauty tools").replaceAll("{quantity}", "500 pcs").replaceAll("{email}", "buyer@example.com").replaceAll("{siteTitle}", state.siteSettings.title || "DawnOrigin")}</pre>
+                        <pre>{(state.siteSettings.mailReplyTemplate || "").replaceAll("{name}", "Alex").replaceAll("{company}", "Beauty Brand").replaceAll("{productType}", "hair accessories").replaceAll("{quantity}", "500 pcs").replaceAll("{email}", "buyer@example.com").replaceAll("{siteTitle}", state.siteSettings.title || "LoftyVista")}</pre>
                       </div>
                       <div className="mail-account-actions">
                         <button disabled={!canManageFrontendSettings || mailActionRunning || mailProvider === "mailto"} type="button" onClick={sendTestMail}>发送测试邮件</button>
@@ -8586,7 +8586,7 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
                 <section className="account-security-card">
                   <h2>账号与密码</h2>
                   <div className="account-info-list">
-                    <div><span>后台名称</span><strong>DawnOrigin Admin</strong></div>
+                    <div><span>后台名称</span><strong>LoftyVista Admin</strong></div>
                     <div><span>登录邮箱</span><strong>{currentEmail}</strong></div>
                     <div><span>当前角色</span><strong>{roleLabels[currentUser?.role ?? "admin"]}</strong></div>
                     <div><span>账号状态</span><strong>{currentUser?.active ? "启用" : "停用"}</strong></div>
@@ -8761,7 +8761,7 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
                         <div className="ai-guided-form">
                           <label>内容主题
                             <input
-                              placeholder={aiContentForm.target === "article" ? "例如：custom makeup brush collections" : "例如：custom beauty tools development"}
+                              placeholder={aiContentForm.target === "article" ? "例如：custom hair accessory collections" : "例如：custom hair accessories development"}
                               value={aiContentForm.topic}
                               onChange={(event) => {
                                 setAiContentForm({ ...aiContentForm, topic: event.target.value });

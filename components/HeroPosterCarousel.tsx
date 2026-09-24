@@ -1,7 +1,7 @@
 import type { CSSProperties } from "react";
 import type { SiteHeroSlide } from "@/types/site";
 
-const fallbackHeroSlides: SiteHeroSlide[] = [{id:"dawn-hero",imageUrl:"/assets/current-template/hero.jpg",alt:{en:"Beauty tools"},enabled:true,order:10}];
+const fallbackHeroSlides: SiteHeroSlide[] = [{id:"lofty-hero",imageUrl:"/assets/current-template/hero.jpg",alt:{en:"Hair accessories"},enabled:true,order:10}];
 
 export function HeroPosterCarousel({
   enabled = true,

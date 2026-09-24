@@ -273,31 +273,31 @@ const defaultLayoutSignatures: Partial<Record<SystemPageLayoutKey, string[]>> = 
 
 const legacyDefaultLayoutText: Partial<Record<SystemPageLayoutKey, string[]>> = {
   "products-index": [
-    "DawnOrigin products",
-    "Makeup brushes, sponges, lash tools, and gift sets for beauty buyers.",
-    "Browse the main tooling families"
+    "LoftyVista products",
+    "Bows, clips, claws, pins and scrunchies for collection planning.",
+    "Browse hair accessory collections"
   ],
   "product-detail": [
-    "Send diameter, quantity, coating, material, packaging, and destination.",
-    "DawnOrigin will match tool details",
-    "DawnOrigin will review the category details"
+    "Send style, quantity, material, packaging, and destination.",
+    "Discuss accessory details with LoftyVista",
+    "Confirm product specifications before ordering"
   ],
   "articles-index": [
     "Technical library",
-    "Beauty tool guides and collection ideas",
-    "Read DawnOrigin buying guides"
+    "Hair accessory guides and collection ideas",
+    "Read LoftyVista buying guides"
   ],
   "article-detail": [
-    "Turn this tooling note into a clear RFQ.",
-    "Share diameter, coating, workpiece material"
+    "Turn this collection idea into a clear RFQ.",
+    "Share style, materials and packaging preferences"
   ],
   "files-index": [
-    "DawnOrigin product images and beauty tool resources",
-    "Tool type, materials, finish, packaging"
+    "LoftyVista hair accessory concept images",
+    "Style, materials, finish, packaging"
   ],
   contact: [
-    "Send your makeup brush, sponge, lash tool, or OEM request to DawnOrigin.",
-    "Share drawings, size lists, coating requirements"
+    "Send your hair accessory or OEM request to LoftyVista.",
+    "Share style references and material preferences"
   ]
 };
 

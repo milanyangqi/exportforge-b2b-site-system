@@ -150,7 +150,7 @@ function buildPrompt(settings: AiSettings, payload: GeneratePayload) {
   return [
     "Return strict JSON only with this shape:",
     "{\"slug\":\"...\",\"title\":{\"en\":\"...\",\"zh\":\"...\"},\"excerpt\":{\"en\":\"...\",\"zh\":\"...\"},\"body\":{\"en\":\"markdown...\",\"zh\":\"markdown...\"}}",
-    `Create a complete ${target} draft for a B2B export website named DawnOrigin.`,
+    `Create a complete ${target} draft for a B2B export website named LoftyVista.`,
     `Purpose: ${purpose}`,
     `Topic: ${topic}`,
     selectedTitle ? `Use this exact user-approved title as the main content direction: ${selectedTitle}` : "Create a suitable title if no user-approved title is provided.",

@@ -1,4 +1,4 @@
-import { YuvaProducts } from "@/components/YuvaPages";
+import { LoftyProducts } from "@/components/LoftyPages";
 import { ProductGrid } from "@/components/ProductGrid";
 import { PuckPageRenderer } from "@/components/PuckPageRenderer";
 import { readAdminState } from "@/lib/server/admin-store";
@@ -53,7 +53,7 @@ export default async function ProductsPage({ params }: { params: Promise<{ local
       }}
     />
   );
-  const fallback = (<>{structuredData}<YuvaProducts state={state} locale={locale}/></>);
+  const fallback = (<>{structuredData}<LoftyProducts state={state} locale={locale}/></>);
 
   return (
     <PuckPageRenderer

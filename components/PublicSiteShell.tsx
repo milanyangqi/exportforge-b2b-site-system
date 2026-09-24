@@ -233,11 +233,11 @@ export function PublicFooterShell({
   const handleLinkClick: LinkClickHandler | undefined = preventNavigation
     ? (event) => event.preventDefault()
     : undefined;
-  const footerTagline = tagline ? t(tagline, locale) : "Beauty tools for modern brands.";
+  const footerTagline = tagline ? t(tagline, locale) : "Hair accessories for modern brands.";
   const footerCopyright = (copyright ? t(copyright, locale) : "Copyright © {year} {brand}. All rights reserved.")
     .replaceAll("{year}", String(new Date().getFullYear()))
     .replaceAll("{brand}", brandName);
-  const footerCredit = credit ? t(credit, locale) : "Beauty tool concepts · Details subject to confirmation.";
+  const footerCredit = credit ? t(credit, locale) : "Hair accessories for considered collections.";
 
   return (
     <footer className="site-footer">

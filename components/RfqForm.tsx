@@ -15,8 +15,8 @@ const labels = {
   message: { en: "Message", zh: "需求说明", ar: "الرسالة" },
   submit: { en: "Submit RFQ", zh: "提交询盘", ar: "إرسال الطلب" },
   sending: { en: "Sending RFQ...", zh: "正在提交询盘...", ar: "جار إرسال الطلب..." },
-  quantityPlaceholder: { en: "Enter quantity, e.g. 2,000 pcs / 20 boxes", zh: "请输入数量，例如 2,000 件 / 20 箱", ar: "أدخل الكمية، مثل 2,000 قطعة / 20 صندوق" },
-  success: { en: "Inquiry received. Please retain your reference; the operator will follow up when contact details are verified.", zh: "询盘已提交。请保留记录，运营方核实联系方式后再跟进。", ar: "تم إرسال الطلب. سيراجع فريق DawnOrigin التفاصيل ويتابع معك قريبًا." },
+  quantityPlaceholder: { en: "Enter quantity, e.g. 2,000 pcs / 20 cartons", zh: "请输入数量，例如 2,000 件 / 20 箱", ar: "أدخل الكمية، مثل 2,000 قطعة / 20 صندوق" },
+  success: { en: "Inquiry received. Our team will review your requirements and follow up.", zh: "询盘已提交，我们会核对需求并跟进。", ar: "تم إرسال الطلب. سيراجع الفريق التفاصيل ويتابع معك قريبًا." },
   error: { en: "RFQ was not submitted. Please check required fields and try again.", zh: "询盘未提交成功，请检查必填信息后重试。", ar: "لم يتم إرسال الطلب. يرجى التحقق من الحقول المطلوبة والمحاولة مرة أخرى." }
 };
 
@@ -85,7 +85,7 @@ export function RfqForm({ locale, productName = "" }: { locale: LocaleCode; prod
       </label>
       <label>
         {text("productType", locale)}
-        <input name="productType" defaultValue={productName} required placeholder="Makeup brushes, sponges, lash tools..." />
+        <input name="productType" defaultValue={productName} required placeholder="Hair bows, clips, scrunchies..." />
       </label>
       <label>
         {text("quantity", locale)}
@@ -97,11 +97,11 @@ export function RfqForm({ locale, productName = "" }: { locale: LocaleCode; prod
       </label>
       <label>
         {text("workpieceMaterial", locale)}
-        <input name="workpieceMaterial" placeholder="Pastel handle, rose-gold finish..." />
+        <input name="workpieceMaterial" placeholder="Ivory satin, pearl detail..." />
       </label>
       <label className="wide">
         {text("message", locale)}
-        <textarea name="message" placeholder="Tool shape, material, finish, packaging..." />
+        <textarea name="message" placeholder="Style, material, fastening, packaging..." />
       </label>
       {status === "success" ? (
         <p className="rfq-status success" role="status" aria-live="polite">{text("success", locale)}</p>

@@ -19,7 +19,7 @@ export const ui = {
   navContact: { en: "Contact", zh: "联系", vi: "Liên hệ", th: "ติดต่อ", id: "Kontak", ar: "تواصل", es: "Contacto", fr: "Contact", de: "Kontakt", it: "Contatto", pt: "Contato", hi: "संपर्क", ru: "Контакты", ja: "お問い合わせ", ko: "문의", ur: "رابطہ" },
   navAdmin: { en: "Admin", zh: "后台", vi: "Quản trị", th: "ผู้ดูแล", id: "Admin", ar: "الإدارة", es: "Admin", fr: "Admin", de: "Admin", it: "Admin", pt: "Admin", hi: "Admin", ru: "Admin", ja: "Admin", ko: "Admin", ur: "Admin" },
   quote: { en: "Request Quote", zh: "获取报价", vi: "Yêu cầu báo giá", th: "ขอใบเสนอราคา", id: "Minta Penawaran", ar: "طلب عرض سعر", es: "Solicitar cotización", fr: "Demander un devis", de: "Angebot anfragen", it: "Richiedi preventivo", pt: "Solicitar orçamento", hi: "कोटेशन मांगें", ru: "Запросить цену", ja: "見積依頼", ko: "견적 요청", ur: "قیمت معلوم کریں" },
-  heroKicker: {en:"Makeup manufacturing for a more colorful world.",zh:"为更多色彩而制造。"},
+  heroKicker: {en:"Hair accessories for expressive collections.",zh:"为更有表达力的系列打造发饰。"},
   heroTitle: {en:"A world of color.",zh:"色彩，自成世界。"},
-  heroBody: {en:"Beauty tools for modern brands.",zh:"为品牌构想打造美妆工具。"}
+  heroBody: {en:"Hair accessories for modern brands.",zh:"为品牌构想打造美妆工具。"}
 } satisfies Record<string, Translation>;

@@ -96,7 +96,7 @@ export function buildLanguageAlternates(state: AdminState, pathsByLocale: Partia
 }
 
 export function buildPageMetadata(state: AdminState, input: MetadataInput): Metadata {
-  const brandName = state.siteSettings.title || "DawnOrigin";
+  const brandName = state.siteSettings.title || "LoftyVista";
   const seoTitle = localized(input.seo?.title, input.locale, "").trim();
   const seoDescription = localized(input.seo?.description, input.locale, "").trim();
   const title = compactTitle(seoTitle || input.title, brandName);

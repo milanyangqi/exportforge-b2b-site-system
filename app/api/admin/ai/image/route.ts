@@ -43,8 +43,8 @@ function buildImagePrompt(payload: ImagePayload) {
   const body = stripMarkdown(payload.body ?? "").slice(0, 1800);
 
   return [
-    "Create a professional square hero image for a B2B technical article on a color-cosmetics website named DawnOrigin.",
-    "Style: realistic industrial product photography, soft studio lighting, beauty tools and gift sets, no text, no logos, no watermarks.",
+    "Create a professional square hero image for a B2B technical article on a hair accessories website named LoftyVista.",
+    "Style: realistic industrial product photography, soft studio lighting, hair bows, clips, pins and scrunchies, no text, no logos, no watermarks.",
     `Article title: ${title}`,
     excerpt ? `Article excerpt: ${excerpt}` : "",
     body ? `Article body context: ${body}` : "",

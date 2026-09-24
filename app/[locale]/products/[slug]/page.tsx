@@ -1,5 +1,5 @@
 import {isCollection,isPublishedProduct} from "@/lib/catalog";
-import { YuvaProducts, YuvaProduct } from "@/components/YuvaPages";
+import { LoftyProducts, LoftyProduct } from "@/components/LoftyPages";
 /* eslint-disable @next/next/no-img-element */
 import { notFound } from "next/navigation";
 import { PuckPageRenderer } from "@/components/PuckPageRenderer";
@@ -52,7 +52,7 @@ export default async function ProductCategoryPage({
   if (!product) {
     notFound();
   }
-  if (isCollection(product)) return <YuvaProducts state={state} locale={locale} initialCategory={product.slug}/>;
+  if (isCollection(product)) return <LoftyProducts state={state} locale={locale} initialCategory={product.slug}/>;
   const structuredData = (
     <>
       <script
@@ -71,7 +71,7 @@ export default async function ProductCategoryPage({
       />
     </>
   );
-  const fallback = (<>{structuredData}<YuvaProduct product={product} locale={locale}/></>);
+  const fallback = (<>{structuredData}<LoftyProduct product={product} locale={locale}/></>);
 
   return (
     <PuckPageRenderer

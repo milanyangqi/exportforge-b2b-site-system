@@ -685,9 +685,9 @@ function dataWithFooterDraftProps(data: VisualPageLayoutData | undefined, state:
       ...cloned.root,
       props: {
         ...rootProps,
-        footerTagline: localizedTemplateText(state.templateSettings.footerTagline, locale, "Beauty tools for modern brands."),
+        footerTagline: localizedTemplateText(state.templateSettings.footerTagline, locale, "Hair accessories for modern brands."),
         footerCopyright: localizedTemplateText(state.templateSettings.footerCopyright, locale, "Copyright © {year} {brand}. All rights reserved."),
-        footerCredit: localizedTemplateText(state.templateSettings.footerCredit, locale, "Built for precision tooling and B2B export orders.")
+        footerCredit: localizedTemplateText(state.templateSettings.footerCredit, locale, "Hair accessories for considered collections.")
       } as VisualPageLayoutData["root"]["props"]
     }
   };
@@ -719,7 +719,7 @@ function customSectionDefaultProps(moduleType: CustomSectionModuleType = "media"
       {
         source: "/assets/current-template/hero.jpg",
         url: "",
-        alt: "DawnOrigin concept image",
+        alt: "LoftyVista concept image",
         caption: "",
         linkHref: ""
       }
@@ -3211,9 +3211,9 @@ function createConfig(
           title: "Factory capability",
           body: "",
           cards: [],
-          card1Title: "OEM tooling",
+          card1Title: "OEM accessories",
           card1Body: "",
-          card2Title: "Coating",
+          card2Title: "Materials",
           card2Body: "",
           card3Title: "Private label",
           card3Body: "",

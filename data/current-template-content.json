@@ -63,80 +63,107 @@
   ],
   "uploadedFiles": [
     {
-      "id": "dawn-hero",
-      "name": "柔粉轻奢首屏",
+      "id": "lofty-hero",
+      "name": "hero",
       "mimeType": "image/jpeg",
-      "size": 308005,
+      "size": 134969,
       "url": "/assets/current-template/hero.jpg",
-      "createdAt": "2026-09-24T05:00:00Z",
+      "createdAt": "2026-09-24T00:00:00Z",
       "enabled": true
     },
     {
-      "id": "dawn-brushes",
-      "name": "化妆刷",
+      "id": "lofty-pearl-bow",
+      "name": "pearl bow",
       "mimeType": "image/jpeg",
-      "size": 401851,
-      "url": "/assets/current-template/brushes.jpg",
-      "createdAt": "2026-09-24T05:00:00Z",
+      "size": 30752,
+      "url": "/assets/current-template/pearl-bow.jpg",
+      "createdAt": "2026-09-24T00:00:00Z",
       "enabled": true
     },
     {
-      "id": "dawn-sponges",
-      "name": "美妆蛋与粉扑",
+      "id": "lofty-pearl-barrette",
+      "name": "pearl barrette",
       "mimeType": "image/jpeg",
-      "size": 344407,
-      "url": "/assets/current-template/sponges.jpg",
-      "createdAt": "2026-09-24T05:00:00Z",
+      "size": 21797,
+      "url": "/assets/current-template/pearl-barrette.jpg",
+      "createdAt": "2026-09-24T00:00:00Z",
       "enabled": true
     },
     {
-      "id": "dawn-lash-tools",
-      "name": "睫毛工具",
+      "id": "lofty-acetate-claw",
+      "name": "acetate claw",
       "mimeType": "image/jpeg",
-      "size": 430156,
-      "url": "/assets/current-template/lash-tools.jpg",
-      "createdAt": "2026-09-24T05:00:00Z",
+      "size": 36490,
+      "url": "/assets/current-template/acetate-claw.jpg",
+      "createdAt": "2026-09-24T00:00:00Z",
       "enabled": true
     },
     {
-      "id": "dawn-gift-set",
-      "name": "礼盒套装",
+      "id": "lofty-silk-scrunchie",
+      "name": "silk scrunchie",
       "mimeType": "image/jpeg",
-      "size": 444158,
-      "url": "/assets/current-template/gift-set.jpg",
-      "createdAt": "2026-09-24T05:00:00Z",
+      "size": 41396,
+      "url": "/assets/current-template/silk-scrunchie.jpg",
+      "createdAt": "2026-09-24T00:00:00Z",
       "enabled": true
     },
     {
-      "id": "dawn-factory",
-      "name": "工厂图片",
+      "id": "lofty-black-bow",
+      "name": "black bow",
       "mimeType": "image/jpeg",
-      "size": 365904,
+      "size": 48915,
+      "url": "/assets/current-template/black-bow.jpg",
+      "createdAt": "2026-09-24T00:00:00Z",
+      "enabled": true
+    },
+    {
+      "id": "lofty-floral-pins",
+      "name": "floral pins",
+      "mimeType": "image/jpeg",
+      "size": 32304,
+      "url": "/assets/current-template/floral-pins.jpg",
+      "createdAt": "2026-09-24T00:00:00Z",
+      "enabled": true
+    },
+    {
+      "id": "lofty-oem",
+      "name": "oem",
+      "mimeType": "image/jpeg",
+      "size": 270873,
+      "url": "/assets/current-template/oem.jpg",
+      "createdAt": "2026-09-24T00:00:00Z",
+      "enabled": true
+    },
+    {
+      "id": "lofty-factory",
+      "name": "factory",
+      "mimeType": "image/jpeg",
+      "size": 148408,
       "url": "/assets/current-template/factory.jpg",
-      "createdAt": "2026-09-24T05:00:00Z",
+      "createdAt": "2026-09-24T00:00:00Z",
       "enabled": true
     },
     {
-      "id": "dawn-quality",
-      "name": "质检图片",
+      "id": "lofty-quality",
+      "name": "quality",
       "mimeType": "image/jpeg",
-      "size": 325737,
+      "size": 95969,
       "url": "/assets/current-template/quality.jpg",
-      "createdAt": "2026-09-24T05:00:00Z",
+      "createdAt": "2026-09-24T00:00:00Z",
       "enabled": true
     }
   ],
   "productCategories": [
     {
-      "id": "dawn-brushes",
-      "slug": "brushes",
+      "id": "lofty-bows",
+      "slug": "bows",
       "name": {
-        "en": "Makeup Brushes",
-        "zh": "化妆刷"
+        "en": "Hair Bows",
+        "zh": "蝴蝶结发饰"
       },
       "summary": {
-        "en": "Brush shapes and finishes for your collection.",
-        "zh": "可围绕刷型与外观沟通您的系列需求。"
+        "en": "Satin, silk-look and embellished bow directions for collection planning.",
+        "zh": "缎带、仿真丝与装饰蝴蝶结系列，可用于沟通选款方向。"
       },
       "applications": {
         "en": [],
@@ -146,8 +173,8 @@
       "themeFit": [
         "industrial"
       ],
-      "imageUrl": "/assets/current-template/brushes.jpg",
-      "thumbnailUrl": "/assets/current-template/brushes.jpg",
+      "imageUrl": "/assets/current-template/pearl-bow.jpg",
+      "thumbnailUrl": "/assets/current-template/pearl-bow.jpg",
       "kind": "collection",
       "status": "published",
       "categorySlugs": [],
@@ -157,15 +184,15 @@
       "shades": []
     },
     {
-      "id": "dawn-sponges-puffs",
-      "slug": "sponges-puffs",
+      "id": "lofty-clips",
+      "slug": "clips",
       "name": {
-        "en": "Sponges & Puffs",
-        "zh": "美妆蛋与粉扑"
+        "en": "Hair Clips & Claws",
+        "zh": "发夹与抓夹"
       },
       "summary": {
-        "en": "Soft application tools for a considered routine.",
-        "zh": "柔软的上妆工具，适合系列搭配。"
+        "en": "Barrettes, claw clips and decorative clips across different looks.",
+        "zh": "涵盖边夹、抓夹与装饰发夹，便于组合系列。"
       },
       "applications": {
         "en": [],
@@ -175,8 +202,8 @@
       "themeFit": [
         "industrial"
       ],
-      "imageUrl": "/assets/current-template/sponges.jpg",
-      "thumbnailUrl": "/assets/current-template/sponges.jpg",
+      "imageUrl": "/assets/current-template/acetate-claw.jpg",
+      "thumbnailUrl": "/assets/current-template/acetate-claw.jpg",
       "kind": "collection",
       "status": "published",
       "categorySlugs": [],
@@ -186,15 +213,15 @@
       "shades": []
     },
     {
-      "id": "dawn-lash-tools",
-      "slug": "lash-tools",
+      "id": "lofty-pins-ties",
+      "slug": "pins-ties",
       "name": {
-        "en": "Lash Tools",
-        "zh": "睫毛工具"
+        "en": "Pins & Hair Ties",
+        "zh": "发簪与发圈"
       },
       "summary": {
-        "en": "Curlers, tweezers and finishing tools.",
-        "zh": "睫毛夹、镊子及细节工具。"
+        "en": "Pearl pins and soft hair ties for coordinated collections.",
+        "zh": "珍珠发簪与柔软发圈，可搭配成系列。"
       },
       "applications": {
         "en": [],
@@ -204,8 +231,8 @@
       "themeFit": [
         "industrial"
       ],
-      "imageUrl": "/assets/current-template/lash-tools.jpg",
-      "thumbnailUrl": "/assets/current-template/lash-tools.jpg",
+      "imageUrl": "/assets/current-template/floral-pins.jpg",
+      "thumbnailUrl": "/assets/current-template/floral-pins.jpg",
       "kind": "collection",
       "status": "published",
       "categorySlugs": [],
@@ -215,15 +242,15 @@
       "shades": []
     },
     {
-      "id": "dawn-gift-sets",
-      "slug": "gift-sets",
+      "id": "lofty-pearl-satin-bow",
+      "slug": "pearl-satin-bow",
       "name": {
-        "en": "Gift Sets",
-        "zh": "礼盒套装"
+        "en": "Pearl Satin Bow",
+        "zh": "珍珠缎带蝴蝶结"
       },
       "summary": {
-        "en": "Coordinated tools and presentation ideas.",
-        "zh": "成套工具及礼盒搭配构想。"
+        "en": "An ivory bow with pearl detail. Discuss fabric, attachment and packaging for your range.",
+        "zh": "象牙白蝴蝶结搭配珍珠细节，可沟通面料、固定方式与包装。"
       },
       "applications": {
         "en": [],
@@ -233,57 +260,28 @@
       "themeFit": [
         "industrial"
       ],
-      "imageUrl": "/assets/current-template/gift-set.jpg",
-      "thumbnailUrl": "/assets/current-template/gift-set.jpg",
-      "kind": "collection",
-      "status": "published",
-      "categorySlugs": [],
-      "productType": "",
-      "featuredOnHome": false,
-      "gallery": [],
-      "shades": []
-    },
-    {
-      "id": "dawn-pastel-brush-set",
-      "slug": "pastel-brush-set",
-      "name": {
-        "en": "Pastel Makeup Brush Set",
-        "zh": "柔粉化妆刷套装"
-      },
-      "summary": {
-        "en": "A coordinated brush set with pastel handles and rose-gold details.",
-        "zh": "柔粉刷柄与玫瑰金细节的化妆刷套装。"
-      },
-      "applications": {
-        "en": [],
-        "zh": []
-      },
-      "specs": [],
-      "themeFit": [
-        "industrial"
-      ],
-      "imageUrl": "/assets/current-template/brushes.jpg",
-      "thumbnailUrl": "/assets/current-template/brushes.jpg",
+      "imageUrl": "/assets/current-template/pearl-bow.jpg",
+      "thumbnailUrl": "/assets/current-template/pearl-bow.jpg",
       "kind": "product",
       "status": "published",
       "categorySlugs": [
-        "brushes"
+        "bows"
       ],
-      "productType": "makeup-brush",
+      "productType": "hair-bow",
       "featuredOnHome": true,
       "gallery": [],
       "shades": []
     },
     {
-      "id": "dawn-blending-sponge-set",
-      "slug": "blending-sponge-set",
+      "id": "lofty-pearl-curve-barrette",
+      "slug": "pearl-curve-barrette",
       "name": {
-        "en": "Blending Sponge & Puff Set",
-        "zh": "美妆蛋与粉扑套装"
+        "en": "Pearl Curve Barrette",
+        "zh": "弧形珍珠边夹"
       },
       "summary": {
-        "en": "Soft blending sponges and puffs in a coordinated palette.",
-        "zh": "柔软的美妆蛋与粉扑组合。"
+        "en": "A curved gold-tone barrette with graduated pearl detail.",
+        "zh": "金色调弧形边夹搭配渐变珍珠细节。"
       },
       "applications": {
         "en": [],
@@ -293,28 +291,28 @@
       "themeFit": [
         "industrial"
       ],
-      "imageUrl": "/assets/current-template/sponges.jpg",
-      "thumbnailUrl": "/assets/current-template/sponges.jpg",
+      "imageUrl": "/assets/current-template/pearl-barrette.jpg",
+      "thumbnailUrl": "/assets/current-template/pearl-barrette.jpg",
       "kind": "product",
       "status": "published",
       "categorySlugs": [
-        "sponges-puffs"
+        "clips"
       ],
-      "productType": "sponge-puff",
+      "productType": "hair-clip",
       "featuredOnHome": true,
       "gallery": [],
       "shades": []
     },
     {
-      "id": "dawn-rose-gold-lash-tools",
-      "slug": "rose-gold-lash-tools",
+      "id": "lofty-tortoiseshell-claw",
+      "slug": "tortoiseshell-claw",
       "name": {
-        "en": "Rose Gold Lash Tool Set",
-        "zh": "玫瑰金睫毛工具套装"
+        "en": "Tortoiseshell Claw Clip",
+        "zh": "玳瑁纹抓夹"
       },
       "summary": {
-        "en": "A rose-gold lash curler and precision tool pairing.",
-        "zh": "玫瑰金睫毛夹与精细工具组合。"
+        "en": "A warm acetate-look claw clip for everyday collections.",
+        "zh": "暖色玳瑁纹抓夹系列。"
       },
       "applications": {
         "en": [],
@@ -324,28 +322,28 @@
       "themeFit": [
         "industrial"
       ],
-      "imageUrl": "/assets/current-template/lash-tools.jpg",
-      "thumbnailUrl": "/assets/current-template/lash-tools.jpg",
+      "imageUrl": "/assets/current-template/acetate-claw.jpg",
+      "thumbnailUrl": "/assets/current-template/acetate-claw.jpg",
       "kind": "product",
       "status": "published",
       "categorySlugs": [
-        "lash-tools"
+        "clips"
       ],
-      "productType": "lash-tool",
+      "productType": "claw-clip",
       "featuredOnHome": true,
       "gallery": [],
       "shades": []
     },
     {
-      "id": "dawn-signature-gift-set",
-      "slug": "signature-gift-set",
+      "id": "lofty-champagne-scrunchie",
+      "slug": "champagne-scrunchie",
       "name": {
-        "en": "Signature Beauty Tool Gift Set",
-        "zh": "美妆工具礼盒套装"
+        "en": "Champagne Scrunchie",
+        "zh": "香槟色发圈"
       },
       "summary": {
-        "en": "Beauty tools arranged as a signature gift collection.",
-        "zh": "以美妆工具搭配呈现的礼盒系列。"
+        "en": "A soft champagne-tone scrunchie for coordinated hair sets.",
+        "zh": "柔和香槟色发圈，可用于系列搭配。"
       },
       "applications": {
         "en": [],
@@ -355,14 +353,76 @@
       "themeFit": [
         "industrial"
       ],
-      "imageUrl": "/assets/current-template/gift-set.jpg",
-      "thumbnailUrl": "/assets/current-template/gift-set.jpg",
+      "imageUrl": "/assets/current-template/silk-scrunchie.jpg",
+      "thumbnailUrl": "/assets/current-template/silk-scrunchie.jpg",
       "kind": "product",
       "status": "published",
       "categorySlugs": [
-        "gift-sets"
+        "pins-ties"
       ],
-      "productType": "gift-set",
+      "productType": "scrunchie",
+      "featuredOnHome": true,
+      "gallery": [],
+      "shades": []
+    },
+    {
+      "id": "lofty-black-satin-bow",
+      "slug": "black-satin-bow",
+      "name": {
+        "en": "Black Satin Bow",
+        "zh": "黑色缎带蝴蝶结"
+      },
+      "summary": {
+        "en": "A classic black bow direction shown in use on dark hair.",
+        "zh": "经典黑色蝴蝶结的佩戴效果。"
+      },
+      "applications": {
+        "en": [],
+        "zh": []
+      },
+      "specs": [],
+      "themeFit": [
+        "industrial"
+      ],
+      "imageUrl": "/assets/current-template/black-bow.jpg",
+      "thumbnailUrl": "/assets/current-template/black-bow.jpg",
+      "kind": "product",
+      "status": "published",
+      "categorySlugs": [
+        "bows"
+      ],
+      "productType": "hair-bow",
+      "featuredOnHome": true,
+      "gallery": [],
+      "shades": []
+    },
+    {
+      "id": "lofty-pearl-flower-pins",
+      "slug": "pearl-flower-pins",
+      "name": {
+        "en": "Pearl Flower Hair Pins",
+        "zh": "珍珠花朵发簪"
+      },
+      "summary": {
+        "en": "A floral pearl pin for occasion and gift collections.",
+        "zh": "珍珠花朵发簪，适合礼赠系列构想。"
+      },
+      "applications": {
+        "en": [],
+        "zh": []
+      },
+      "specs": [],
+      "themeFit": [
+        "industrial"
+      ],
+      "imageUrl": "/assets/current-template/floral-pins.jpg",
+      "thumbnailUrl": "/assets/current-template/floral-pins.jpg",
+      "kind": "product",
+      "status": "published",
+      "categorySlugs": [
+        "pins-ties"
+      ],
+      "productType": "hair-pin",
       "featuredOnHome": true,
       "gallery": [],
       "shades": []
@@ -374,16 +434,16 @@
       "id": "dawn-page-oem-odm",
       "slug": "oem-odm",
       "title": {
-        "en": "Create your collection.",
-        "zh": "定制您的系列。"
+        "en": "Create a collection of your own.",
+        "zh": "打造属于您的发饰系列。"
       },
       "excerpt": {
-        "en": "A starting point for beauty tool design and presentation.",
-        "zh": "从工具设计到外观呈现，开启定制沟通。"
+        "en": "Explore design, materials and packaging as a starting point for your brief.",
+        "zh": "从设计、材质到包装，梳理您的系列需求。"
       },
       "body": {
-        "en": "## Tell us what you are creating\nShare the tool types, desired look, target market and packaging brief. We can discuss the options and confirm technical details before any production commitment.\n\n## A clear project path\nConcept → sample brief → material and finish confirmation → production plan. Each stage depends on confirmed specifications.",
-        "zh": "## 告诉我们您的构想\n请分享工具类型、目标外观、市场与包装需求。具体选项和技术细节会在生产承诺前逐项确认。\n\n## 清晰的项目路径\n概念 → 样品需求 → 材质与外观确认 → 生产计划。各阶段以实际确认的规格为准。"
+        "en": "## Start with the idea\nShare reference styles, intended customer, colors and desired finish.\n\n## Review a sample\nConfirm material, fastening, comfort and packaging details against an agreed sample.\n\n## Plan the order\nDiscuss quantities, timing and logistics directly before any production commitment.",
+        "zh": "## 从构想开始\n提供参考款式、目标客群、颜色和外观要求。\n\n## 确认样品\n依据双方确认的样品核对材质、固定方式、佩戴体验与包装。\n\n## 讨论订单\n在生产承诺前确认数量、时间和物流需求。"
       },
       "status": "published",
       "publishedAt": "2026-09-24T05:00:00Z"
@@ -392,16 +452,16 @@
       "id": "dawn-page-about",
       "slug": "about",
       "title": {
-        "en": "A partner for beauty ideas.",
-        "zh": "让美妆构想更清晰。"
+        "en": "Details that make a difference.",
+        "zh": "让细节成就更好的系列。"
       },
       "excerpt": {
-        "en": "Beauty tools and thoughtful details for your next collection.",
-        "zh": "以美妆工具与细节构成您的下一套系列。"
+        "en": "Hair accessories and thoughtful details for your next collection.",
+        "zh": "以发饰与细节构成您的下一套系列。"
       },
       "body": {
-        "en": "## Where beauty ideas begin\nExplore makeup brushes, sponges, lash tools and gift sets.\n\n## Work together\nTell us what your collection needs. Shape, feel, finish and presentation each deserve a clear brief.",
-        "zh": "## 美妆构想的起点\n探索化妆刷、美妆蛋、睫毛工具与礼盒系列。\n\n## 一起推进\n分享您的系列需求，从形状、手感、外观到包装，逐步形成清晰的方案。"
+        "en": "## Our direction\nLoftyVista focuses on bows, clips, claws, pins and hair ties, bringing a considered finishing touch to each collection.\n\n## Work together\nShare design references, material preferences and presentation needs. We will discuss a clear path from sample to order.",
+        "zh": "## 品牌方向\nLoftyVista 聚焦蝴蝶结、发夹、抓夹、发簪与发圈，以精心设计的细节完善品牌系列。\n\n## 合作方式\n欢迎沟通设计参考、材质偏好和呈现要求，共同明确从样品到订单的路径。"
       },
       "status": "published",
       "publishedAt": "2026-09-24T05:00:00Z"
@@ -410,16 +470,16 @@
       "id": "dawn-page-factories",
       "slug": "factories",
       "title": {
-        "en": "Inside the making.",
-        "zh": "走近制作流程。"
+        "en": "From concept to finish.",
+        "zh": "从构想到成品细节。"
       },
       "excerpt": {
-        "en": "Explore the steps behind a beauty tool collection.",
-        "zh": "了解美妆工具系列背后的制作环节。"
+        "en": "Explore the making process behind LoftyVista hair accessories.",
+        "zh": "了解 LoftyVista 发饰的制作流程。"
       },
       "body": {
-        "en": "## From components to finished tools\nA beauty tool project brings together material selection, component preparation, assembly, finishing and inspection.\n\n## Plan with clarity\nThe process and quality requirements are established for each product brief and sample.",
-        "zh": "## 从部件到成品\n美妆工具项目涉及材质选择、部件准备、组装、外观处理与检验。\n\n## 清晰规划\n具体工序和品质要求，按产品需求及样品逐项确定。"
+        "en": "## From materials to finishing\nOur factory brings together material selection, sample development, assembly, finishing and packing for hair accessories.\n\n## A clear production brief\nWe review style references, fastening, appearance and packaging requirements with buyers before production.",
+        "zh": "## 从选材到成品\n我们的工厂围绕发饰开展选材、打样、组装、修整与包装。\n\n## 明确生产需求\n生产前与采购方核对款式参考、固定方式、外观和包装要求。"
       },
       "status": "published",
       "publishedAt": "2026-09-24T05:00:00Z"
@@ -429,15 +489,15 @@
       "slug": "research",
       "title": {
         "en": "Care in every detail.",
-        "zh": "关注每一处细节。"
+        "zh": "认真对待每一处细节。"
       },
       "excerpt": {
-        "en": "Explore material, sample and inspection questions for beauty tools.",
-        "zh": "了解美妆工具的材质、打样及检验问题。"
+        "en": "Agree materials, samples and inspection criteria for each accessory type.",
+        "zh": "针对不同发饰，确认材质、样品与检验标准。"
       },
       "body": {
-        "en": "## Material and feel\nBrush fibers, handle finish, ferrules, sponge texture and tool geometry shape the experience of each tool.\n\n## Quality by design\nAgree samples, acceptance criteria and relevant documentation before production.",
-        "zh": "## 材质与手感\n刷毛、刷柄表面、金属口管、美妆蛋质地与工具结构，共同决定使用体验。\n\n## 从设计考虑品质\n生产前明确样品、验收标准与所需文件。"
+        "en": "## Material and feel\nWe focus on fabric hand feel, clip tension, edges, surface finish and comfort where accessories meet the hair.\n\n## Samples and inspection\nWe use approved samples and agreed acceptance points to guide quality checks for each order.",
+        "zh": "## 材质与佩戴体验\n关注面料手感、夹力、边缘、表面处理以及发饰接触头发时的舒适度。\n\n## 样品与检验\n依据确认样品和双方约定的验收项目检查订单品质。"
       },
       "status": "published",
       "publishedAt": "2026-09-24T05:00:00Z"
@@ -450,21 +510,21 @@
         "zh": "询盘隐私"
       },
       "excerpt": {
-        "en": "How inquiry information is used.",
+        "en": "How inquiry information is handled.",
         "zh": "询盘信息的使用说明。"
       },
       "body": {
-        "en": "## Inquiry data\nThe form collects the information you choose to submit so the team can respond to your project request.",
-        "zh": "## 询盘信息\n表单收集您主动提交的信息，用于回复项目需求。"
+        "en": "## Inquiry data\nThe form collects the name, company, email and project details you choose to provide. We use these details to respond to your inquiry and discuss your project.",
+        "zh": "## 询盘数据\n表单收集您主动提交的姓名、公司、邮箱和项目需求，用于回复询盘和沟通项目。"
       },
       "status": "published",
       "publishedAt": "2026-09-24T05:00:00Z"
     }
   ],
   "siteSettings": {
-    "brand": "DawnOrigin",
+    "brand": "LoftyVista",
     "activeTheme": "industrial",
     "markets": [],
-    "aiDraftPolicy": "Confirm all company facts, product specifications and manufacturing claims before publication."
+    "aiDraftPolicy": "Confirm company identity, product specifications and supplier claims before publication."
   }
 }

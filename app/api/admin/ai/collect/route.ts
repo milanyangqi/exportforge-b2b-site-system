@@ -63,7 +63,7 @@ async function fetchSource(url: string) {
 
   const response = await fetch(parsedUrl.toString(), {
     headers: {
-      "User-Agent": "DawnOriginContentCollector/1.0"
+      "User-Agent": "LoftyVistaContentCollector/1.0"
     },
     signal: AbortSignal.timeout(12000)
   });
@@ -79,10 +79,10 @@ function buildPrompt(payload: CollectPayload, source: string) {
   const target = payload.target === "page" ? "page" : "article";
 
   return [
-    "You are rewriting collected source material for the DawnOrigin B2B beauty tools website.",
+    "You are rewriting collected source material for the LoftyVista B2B hair accessories website.",
     "Return strict JSON only with this shape:",
     "{\"slug\":\"...\",\"title\":{\"en\":\"...\",\"zh\":\"...\"},\"excerpt\":{\"en\":\"...\",\"zh\":\"...\"},\"body\":{\"en\":\"markdown...\",\"zh\":\"markdown...\"}}",
-    `Create a ${target} draft. Do not copy the source directly. Rewrite it into original, buyer-focused B2B content for beauty tools, customization, packaging, and wholesale buyers.`,
+    `Create a ${target} draft. Do not copy the source directly. Rewrite it into original, buyer-focused B2B content for hair accessories, customization, packaging, and wholesale buyers.`,
     "Use Markdown headings, short paragraphs, practical RFQ details, and no fabricated company claims.",
     `Source material:\n${source.slice(0, 12000)}`
   ].join("\n\n");

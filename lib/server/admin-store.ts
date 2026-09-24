@@ -1,4 +1,4 @@
-import dawnSeed from "@/data/current-template-content.json";
+import loftySeed from "@/data/current-template-content.json";
 import { articles, contactChannels, defaultEnabledLocales, defaultNavigation, productCategories, siteSettings, uploadedFiles } from "@/data/site";
 import { isLocale } from "@/config/locales";
 import { encryptMailSecret } from "@/lib/server/mail-secrets";
@@ -28,7 +28,7 @@ type CloudflareContext = {
 
 const stateKey = "admin-state";
 const uploadKeyPrefix = "upload:";
-const currentTemplateContentVersion = "dawnorigin-soft-luxe-v1";
+const currentTemplateContentVersion = "loftyvista-pearl-atelier-v1";
 const adminTabKeys = new Set(["overview", "products", "pages", "articles", "files", "leads", "mail", "contacts", "navigation", "users", "collect", "templates", "settings", "languages", "themes", "ai"]);
 const settingsSectionKeys = new Set(["general", "writing", "reading", "seo", "media", "permalinks", "privacy", "ai", "translation", "backup"]);
 const defaultRolePermissions: Record<RoleKey, AdminRolePermissions> = {
@@ -62,16 +62,16 @@ const legacyTemplateAssetPath = "/assets/tools/";
 const currentTemplateAssetPath = "/assets/current-template/";
 const homeTemplateKeys = new Set<HomeTemplateKey>(["industrial-showcase", "catalog-focus", "rfq-focus"]);
 const homeSectionKeys: HomeSectionKey[] = ["navigation", "hero", "products", "factory", "markets", "articles", "rfq"];
-const defaultHeroSlides: SiteHeroSlide[] = [{id:"dawn-hero", imageUrl:"/assets/current-template/hero.jpg", alt:{en:"Beauty tools",zh:"美妆工具"},enabled:true,order:10}];
+const defaultHeroSlides: SiteHeroSlide[] = [{id:"lofty-hero", imageUrl:"/assets/current-template/hero.jpg", alt:{en:"Hair accessories",zh:"发饰"},enabled:true,order:10}];
 
 const defaultSiteSettings: SiteSettings = {
   title: siteSettings.brand,
-  tagline: "Beauty tools for modern brands.",
+  tagline: "Hair accessories for considered collections.",
   contentVersion: currentTemplateContentVersion,
   siteIconUrl: "",
   fontFamily: "\"Manrope\", \"PingFang SC\", \"Microsoft YaHei\", sans-serif",
-  siteUrl: process.env.NEXT_PUBLIC_SITE_URL ?? "https://dawnorigin-026.437991663.workers.dev",
-  adminEmail: process.env.INITIAL_ADMIN_EMAIL ?? "admin@dawnorigin.com",
+  siteUrl: process.env.NEXT_PUBLIC_SITE_URL ?? "https://loftyvista-027.437991663.workers.dev",
+  adminEmail: process.env.INITIAL_ADMIN_EMAIL ?? "admin@loftyvista.com",
   mailFromEmail: "",
   mailFromName: "",
   mailReplyToEmail: "",
@@ -119,7 +119,7 @@ const defaultSiteSettings: SiteSettings = {
   fileUrlBase: "files",
   privacyPageUrl: "/pages/privacy",
   cookieNoticeEnabled: false,
-  privacySummary: "Inquiry details are used for project communication; do not submit confidential designs before the operating entity is verified."
+  privacySummary: "Inquiry details are used to respond to your request and discuss your project."
 };
 
 const defaultTemplateTextBlocks: Record<string, Translation> = {};
@@ -137,9 +137,9 @@ function normalizeCurrentTemplateAssetTranslation(value?: Partial<Translation>) 
 
 const defaultTemplateSettings: SiteTemplateSettings = {
   homeTemplate: "industrial-showcase",
-  heroKicker: { en: "Beauty tools for brand ideas.", zh: "为品牌构想打造美妆工具。" },
-  heroTitle: { en: "Beauty empowers business.", zh: "让美妆工具，成就品牌。" },
-  heroBody: { en: "Explore makeup brushes, sponges, lash tools and gift sets. Share your next collection brief.", zh: "探索化妆刷、美妆蛋、睫毛工具与礼盒，分享您的系列构想。" },
+  heroKicker: { en: "Hair accessories for brand ideas.", zh: "为品牌构想打造发饰。" },
+  heroTitle: { en: "Small details. Greater possibilities.", zh: "小小细节，成就更多可能。" },
+  heroBody: { en: "Explore bows, clips, claws, pins and scrunchies. Share your collection brief.", zh: "探索蝴蝶结、发夹、抓夹、发簪与发圈，分享您的系列构想。" },
   primaryCtaLabel: { en: "Request Quote", zh: "获取报价" },
   secondaryCtaLabel: { en: "Products", zh: "产品目录" },
   heroCarouselEnabled: true,
@@ -147,13 +147,13 @@ const defaultTemplateSettings: SiteTemplateSettings = {
   heroCarouselIntervalSeconds: 7,
   heroSlides: defaultHeroSlides,
   showHeroVisual: true,
-  showHeroMetrics: true,
-  footerTagline: { en: "Thoughtful tools for new beauty ideas.", zh: "细节成就新的美妆构想。" },
+  showHeroMetrics: false,
+  footerTagline: { en: "Considered hair accessories for new brand ideas.", zh: "细节成就新的品牌构想。" },
   footerCopyright: {
     en: "Copyright © {year} {brand}. All rights reserved.",
     zh: "Copyright © {year} {brand}. All rights reserved."
   },
-  footerCredit: { en: "DawnOrigin · Beauty tools for new ideas.", zh: "DawnOrigin · 美妆工具的新构想。" },
+  footerCredit: { en: "LoftyVista · Beauty in the details.", zh: "LoftyVista · 让细节更美。" },
   homeProductCount: 6,
   homeArticleCount: 6,
   visibleSections: {
@@ -190,7 +190,7 @@ export function createDefaultAdminState(): AdminState {
   const now = new Date().toISOString();
   const state: AdminState = {
     products: productCategories,
-    pages: dawnSeed.pages as AdminState["pages"],
+    pages: loftySeed.pages as AdminState["pages"],
     articles,
     leads: [],
     contactChannels,
@@ -201,7 +201,7 @@ export function createDefaultAdminState(): AdminState {
     siteSettings: defaultSiteSettings,
     templateSettings: defaultTemplateSettings,
     pageLayouts: [],
-    users: [{id:"u-super-admin",name:"DawnOrigin Admin",email:process.env.INITIAL_ADMIN_EMAIL ?? "admin@dawnorigin.com",passwordHash:process.env.INITIAL_ADMIN_PASSWORD_HASH,role:"super-admin",active:true,aiCredits:0,articleImportEnabled:true,jobTitle:"Owner"}],
+    users: [{id:"u-super-admin",name:"LoftyVista Admin",email:process.env.INITIAL_ADMIN_EMAIL ?? "admin@loftyvista.com",passwordHash:process.env.INITIAL_ADMIN_PASSWORD_HASH,role:"super-admin",active:true,aiCredits:0,articleImportEnabled:true,jobTitle:"Owner"}],
     rolePermissions: defaultRolePermissions,
     aiSettings: {
       provider: process.env.AI_PROVIDER ?? "openai-compatible",
@@ -217,9 +217,9 @@ export function createDefaultAdminState(): AdminState {
       voiceBaseUrl: process.env.AI_VOICE_BASE_URL ?? "https://api.openai.com/v1",
       voiceApiKey: process.env.AI_VOICE_API_KEY ?? "",
       defaultLocale: "en",
-      brandVoice: "Clear, careful beauty tools copy for DawnOrigin.",
-      targetMarkets: ["Europe", "North America", "Southeast Asia", "MENA"],
-      requiredKeywords: ["beauty tools", "OEM", "brushes", "packaging"],
+      brandVoice: "Clear, careful hair accessories copy for LoftyVista.",
+      targetMarkets: [],
+      requiredKeywords: ["hair accessories", "bows", "clips", "OEM"],
       blockedWords: [],
       enabled: Boolean(process.env.AI_API_KEY)
     },

@@ -31,7 +31,7 @@ export async function POST(request: Request) {
   const baseDraft = lead ? buildLeadMailDraft(state, lead) : null;
   const draft = {
     to: payload.to?.trim() || baseDraft?.to || "",
-    subject: payload.subject?.trim() || baseDraft?.subject || "DawnOrigin message",
+    subject: payload.subject?.trim() || baseDraft?.subject || "LoftyVista message",
     body: payload.body?.trim() || baseDraft?.body || ""
   };
   const result = await sendMailWithSettings(state.siteSettings, draft, lead);

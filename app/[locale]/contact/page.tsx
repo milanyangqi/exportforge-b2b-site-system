@@ -1,4 +1,4 @@
-import { YuvaContact } from "@/components/YuvaPages";
+import { LoftyContact } from "@/components/LoftyPages";
 import { RfqForm } from "@/components/RfqForm";
 import { PublicContactList } from "@/components/PublicContactList";
 import { PuckPageRenderer } from "@/components/PuckPageRenderer";
@@ -65,7 +65,7 @@ export default async function ContactPage({ params }: { params: Promise<{ locale
       />
     </>
   );
-  const fallback = (<>{structuredData}<YuvaContact locale={locale}/></>);
+  const fallback = (<>{structuredData}<LoftyContact locale={locale}/></>);
 
   return (
     <PuckPageRenderer

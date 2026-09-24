@@ -1,6 +1,6 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "dawnorigin-026",
+  "name": "loftyvista-027",
   "main": ".open-next/worker.js",
   "compatibility_date": "2026-09-24",
   "compatibility_flags": [
@@ -13,18 +13,18 @@
   "services": [
     {
       "binding": "WORKER_SELF_REFERENCE",
-      "service": "dawnorigin-026"
+      "service": "loftyvista-027"
     }
   ],
   "kv_namespaces": [
     {
       "binding": "EXPORTFORGE_KV",
-      "id": "42400bc7a9bb4c878c029d467c6e8f72"
+      "id": "6c4f0fe1387d471484c48a0aa9cbf5a8"
     }
   ],
   "vars": {
-    "NEXT_PUBLIC_SITE_URL": "https://dawnorigin-026.437991663.workers.dev",
+    "NEXT_PUBLIC_SITE_URL": "https://loftyvista-027.437991663.workers.dev",
     "NEXT_PUBLIC_SITE_INDEXABLE": "false",
-    "INITIAL_ADMIN_EMAIL": "admin@dawnorigin.com"
+    "INITIAL_ADMIN_EMAIL": "admin@loftyvista.com"
   }
 }
