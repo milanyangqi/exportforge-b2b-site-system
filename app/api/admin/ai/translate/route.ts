@@ -267,7 +267,7 @@ function collectTranslationJobs(
 
 function buildPrompt(jobs: TranslationJob[]) {
   return [
-    "Translate the following B2B website content for Yuvacosmetics.",
+    "Translate the following B2B website content for DawnOrigin.",
     "Return strict JSON only in this shape: {\"translations\":{\"job-id\":\"translated text\"}}.",
     "Preserve Markdown syntax, URLs, model numbers, product names, units, and placeholders.",
     "For list items, return one translated item per line.",

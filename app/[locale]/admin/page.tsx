@@ -5,7 +5,7 @@ import { getAdminSessionEmail } from "@/lib/server/auth";
 import type { LocaleCode } from "@/types/site";
 
 export const metadata: Metadata = {
-  title: "Admin | Yuvacosmetics",
+  title: "Admin | DawnOrigin",
   robots: {
     index: false,
     follow: false

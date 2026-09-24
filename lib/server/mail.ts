@@ -25,7 +25,7 @@ export function buildLeadMailDraft(state: Pick<AdminState, "siteSettings">, lead
     .replaceAll("{productType}", lead.productType || "your tooling request")
     .replaceAll("{quantity}", lead.quantity || "")
     .replaceAll("{email}", lead.email || "")
-    .replaceAll("{siteTitle}", state.siteSettings.title || "Yuvacosmetics");
+    .replaceAll("{siteTitle}", state.siteSettings.title || "DawnOrigin");
 
   return {
     to: lead.email,

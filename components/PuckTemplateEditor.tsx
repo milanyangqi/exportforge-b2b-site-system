@@ -685,7 +685,7 @@ function dataWithFooterDraftProps(data: VisualPageLayoutData | undefined, state:
       ...cloned.root,
       props: {
         ...rootProps,
-        footerTagline: localizedTemplateText(state.templateSettings.footerTagline, locale, "Color cosmetics manufacturing in China and Indonesia."),
+        footerTagline: localizedTemplateText(state.templateSettings.footerTagline, locale, "Beauty tools for modern brands."),
         footerCopyright: localizedTemplateText(state.templateSettings.footerCopyright, locale, "Copyright © {year} {brand}. All rights reserved."),
         footerCredit: localizedTemplateText(state.templateSettings.footerCredit, locale, "Built for precision tooling and B2B export orders.")
       } as VisualPageLayoutData["root"]["props"]
@@ -712,14 +712,14 @@ function customSectionDefaultProps(moduleType: CustomSectionModuleType = "media"
     eyebrow: "Custom section",
     title: moduleLabel,
     body: "在右侧属性面板编辑标题、正文、图片、视频、按钮和布局。",
-    mediaLibraryUrl: "/assets/current-template/hero-tooling-range.jpg",
-    mediaUrl: "/assets/current-template/hero-tooling-range.jpg",
+    mediaLibraryUrl: "/assets/current-template/hero.jpg",
+    mediaUrl: "/assets/current-template/hero.jpg",
     imageMode: moduleType === "text" || moduleType === "cta" ? "none" : "single",
     imageItems: [
       {
-        source: "/assets/current-template/hero-tooling-range.jpg",
+        source: "/assets/current-template/hero.jpg",
         url: "",
-        alt: "Yuvacosmetics concept image",
+        alt: "DawnOrigin concept image",
         caption: "",
         linkHref: ""
       }
@@ -3365,13 +3365,13 @@ function createConfig(
       ContainerImageElement: {
         label: "容器图片",
         fields: containerImageFields(imageMediaItems),
-        defaultProps: { imageUrl: "/assets/current-template/hero-tooling-range.jpg", externalImageUrl: "", imageItems: [], displayMode: "single", transitionEffect: "fade", intervalSeconds: 5, overlay: "none", hoverEffect: "none", captionPlacement: "below", alt: "Container image", caption: "", href: "", openInNewTab: false, imageRatio: "wide", imageFit: "cover", align: "left", verticalAlign: "start", padding: "normal", minHeight: "auto", background: "transparent", customBackground: "", textColor: "", accentColor: "", borderStyle: "line", radius: "medium", shadow: "none", isHidden: false, adminLabel: "" },
+        defaultProps: { imageUrl: "/assets/current-template/hero.jpg", externalImageUrl: "", imageItems: [], displayMode: "single", transitionEffect: "fade", intervalSeconds: 5, overlay: "none", hoverEffect: "none", captionPlacement: "below", alt: "Container image", caption: "", href: "", openInNewTab: false, imageRatio: "wide", imageFit: "cover", align: "left", verticalAlign: "start", padding: "normal", minHeight: "auto", background: "transparent", customBackground: "", textColor: "", accentColor: "", borderStyle: "line", radius: "medium", shadow: "none", isHidden: false, adminLabel: "" },
         render: render("ContainerImageElement")
       },
       ContainerImageTextElement: {
         label: "容器图文",
         fields: containerImageTextFields(imageMediaItems),
-        defaultProps: { imageUrl: "/assets/current-template/hero-tooling-range.jpg", externalImageUrl: "", imageItems: [], displayMode: "single", transitionEffect: "fade", intervalSeconds: 5, overlay: "none", hoverEffect: "none", captionPlacement: "below", imagePlacement: "top", imageRatio: "wide", imageFit: "cover", eyebrow: "", title: "图文内容", body: "选择这个元素后，可在右侧修改图片、标题、正文和链接。", textSize: "normal", href: "", openInNewTab: false, buttonLabel: "", buttonStyle: "text", align: "left", verticalAlign: "start", padding: "normal", minHeight: "auto", background: "transparent", customBackground: "", textColor: "", accentColor: "", borderStyle: "line", radius: "medium", shadow: "none", isHidden: false, adminLabel: "" },
+        defaultProps: { imageUrl: "/assets/current-template/hero.jpg", externalImageUrl: "", imageItems: [], displayMode: "single", transitionEffect: "fade", intervalSeconds: 5, overlay: "none", hoverEffect: "none", captionPlacement: "below", imagePlacement: "top", imageRatio: "wide", imageFit: "cover", eyebrow: "", title: "图文内容", body: "选择这个元素后，可在右侧修改图片、标题、正文和链接。", textSize: "normal", href: "", openInNewTab: false, buttonLabel: "", buttonStyle: "text", align: "left", verticalAlign: "start", padding: "normal", minHeight: "auto", background: "transparent", customBackground: "", textColor: "", accentColor: "", borderStyle: "line", radius: "medium", shadow: "none", isHidden: false, adminLabel: "" },
         render: render("ContainerImageTextElement")
       },
       ContainerVideoElement: {

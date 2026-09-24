@@ -2,7 +2,7 @@ import { createHmac, randomBytes, scryptSync, timingSafeEqual } from "node:crypt
 import { cookies } from "next/headers";
 import type { AdminUser } from "@/types/site";
 
-const cookieName = "yuva_admin_session";
+const cookieName = "dawnorigin_admin_session";
 const sessionMaxAge = 60 * 60 * 8;
 
 function getSecret() {

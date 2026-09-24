@@ -273,30 +273,30 @@ const defaultLayoutSignatures: Partial<Record<SystemPageLayoutKey, string[]>> = 
 
 const legacyDefaultLayoutText: Partial<Record<SystemPageLayoutKey, string[]>> = {
   "products-index": [
-    "Yuvacosmetics products",
-    "Carbide end mills, drill bits, and OEM tooling for metalworking buyers.",
+    "DawnOrigin products",
+    "Makeup brushes, sponges, lash tools, and gift sets for beauty buyers.",
     "Browse the main tooling families"
   ],
   "product-detail": [
     "Send diameter, quantity, coating, material, packaging, and destination.",
-    "Yuvacosmetics will match geometry",
-    "Yuvacosmetics will review the category details"
+    "DawnOrigin will match tool details",
+    "DawnOrigin will review the category details"
   ],
   "articles-index": [
     "Technical library",
-    "Buying guides and application notes for end mills",
-    "Read Yuvacosmetics buying guides"
+    "Beauty tool guides and collection ideas",
+    "Read DawnOrigin buying guides"
   ],
   "article-detail": [
     "Turn this tooling note into a clear RFQ.",
     "Share diameter, coating, workpiece material"
   ],
   "files-index": [
-    "Yuvacosmetics product images and tooling resources",
-    "End mill, drill bit, coating, packaging"
+    "DawnOrigin product images and beauty tool resources",
+    "Tool type, materials, finish, packaging"
   ],
   contact: [
-    "Send your end mill, drill bit, or OEM tooling request to Yuvacosmetics.",
+    "Send your makeup brush, sponge, lash tool, or OEM request to DawnOrigin.",
     "Share drawings, size lists, coating requirements"
   ]
 };

@@ -5,8 +5,8 @@ import "@/styles/public-site.css";
 import "@/styles/active-template.css";
 
 export const metadata: Metadata = {
-  title: "Yuvacosmetics | Color Cosmetics Manufacturing",
-  description: "Color cosmetics manufacturing in China and Indonesia. Create your next makeup collection with Yuvacosmetics.",
+  title: "DawnOrigin | Beauty Tools & Custom Collections",
+  description: "Explore makeup brushes, sponges, lash tools and gift sets for your next collection.",
   robots: {
     index: process.env.NEXT_PUBLIC_SITE_INDEXABLE === "true",
     follow: process.env.NEXT_PUBLIC_SITE_INDEXABLE === "true"

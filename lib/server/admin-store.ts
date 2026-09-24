@@ -1,4 +1,4 @@
-import yuvaSeed from "@/data/current-template-content.json";
+import dawnSeed from "@/data/current-template-content.json";
 import { articles, contactChannels, defaultEnabledLocales, defaultNavigation, productCategories, siteSettings, uploadedFiles } from "@/data/site";
 import { isLocale } from "@/config/locales";
 import { encryptMailSecret } from "@/lib/server/mail-secrets";
@@ -28,7 +28,7 @@ type CloudflareContext = {
 
 const stateKey = "admin-state";
 const uploadKeyPrefix = "upload:";
-const currentTemplateContentVersion = "yuva-cinema-v1";
+const currentTemplateContentVersion = "dawnorigin-soft-luxe-v1";
 const adminTabKeys = new Set(["overview", "products", "pages", "articles", "files", "leads", "mail", "contacts", "navigation", "users", "collect", "templates", "settings", "languages", "themes", "ai"]);
 const settingsSectionKeys = new Set(["general", "writing", "reading", "seo", "media", "permalinks", "privacy", "ai", "translation", "backup"]);
 const defaultRolePermissions: Record<RoleKey, AdminRolePermissions> = {
@@ -62,16 +62,16 @@ const legacyTemplateAssetPath = "/assets/tools/";
 const currentTemplateAssetPath = "/assets/current-template/";
 const homeTemplateKeys = new Set<HomeTemplateKey>(["industrial-showcase", "catalog-focus", "rfq-focus"]);
 const homeSectionKeys: HomeSectionKey[] = ["navigation", "hero", "products", "factory", "markets", "articles", "rfq"];
-const defaultHeroSlides: SiteHeroSlide[] = [{id:"yuva-hero", imageUrl:"/assets/current-template/hero.webp", alt:{en:"Illustrative beauty campaign",zh:"彩妆概念大片"},enabled:true,order:10}];
+const defaultHeroSlides: SiteHeroSlide[] = [{id:"dawn-hero", imageUrl:"/assets/current-template/hero.jpg", alt:{en:"Beauty tools",zh:"美妆工具"},enabled:true,order:10}];
 
 const defaultSiteSettings: SiteSettings = {
   title: siteSettings.brand,
-  tagline: "Color cosmetics manufacturing in China and Indonesia.",
+  tagline: "Beauty tools for modern brands.",
   contentVersion: currentTemplateContentVersion,
   siteIconUrl: "",
   fontFamily: "\"Manrope\", \"PingFang SC\", \"Microsoft YaHei\", sans-serif",
-  siteUrl: process.env.NEXT_PUBLIC_SITE_URL ?? "https://yuvacosmetics.com",
-  adminEmail: process.env.INITIAL_ADMIN_EMAIL ?? "437991663@qq.com",
+  siteUrl: process.env.NEXT_PUBLIC_SITE_URL ?? "https://dawnorigin-026.437991663.workers.dev",
+  adminEmail: process.env.INITIAL_ADMIN_EMAIL ?? "admin@dawnorigin.com",
   mailFromEmail: "",
   mailFromName: "",
   mailReplyToEmail: "",
@@ -119,7 +119,7 @@ const defaultSiteSettings: SiteSettings = {
   fileUrlBase: "files",
   privacyPageUrl: "/pages/privacy",
   cookieNoticeEnabled: false,
-  privacySummary: "We use submitted RFQ details only for cosmetics quotation, sales follow-up, and service improvement."
+  privacySummary: "Inquiry details are used for project communication; do not submit confidential designs before the operating entity is verified."
 };
 
 const defaultTemplateTextBlocks: Record<string, Translation> = {};
@@ -137,9 +137,9 @@ function normalizeCurrentTemplateAssetTranslation(value?: Partial<Translation>) 
 
 const defaultTemplateSettings: SiteTemplateSettings = {
   homeTemplate: "industrial-showcase",
-  heroKicker: { en: "Makeup manufacturing for a more colorful world.", zh: "为更多色彩而制造。" },
-  heroTitle: { en: "A world of color.", zh: "色彩，自成世界。" },
-  heroBody: { en: "Your vision. Our manufacturing. Color cosmetics from China and Indonesia.", zh: "您的品牌构想，我们的制造协作。中国与印尼双地彩妆工厂。" },
+  heroKicker: { en: "Beauty tools for brand ideas.", zh: "为品牌构想打造美妆工具。" },
+  heroTitle: { en: "Beauty empowers business.", zh: "让美妆工具，成就品牌。" },
+  heroBody: { en: "Explore makeup brushes, sponges, lash tools and gift sets. Share your next collection brief.", zh: "探索化妆刷、美妆蛋、睫毛工具与礼盒，分享您的系列构想。" },
   primaryCtaLabel: { en: "Request Quote", zh: "获取报价" },
   secondaryCtaLabel: { en: "Products", zh: "产品目录" },
   heroCarouselEnabled: true,
@@ -148,12 +148,12 @@ const defaultTemplateSettings: SiteTemplateSettings = {
   heroSlides: defaultHeroSlides,
   showHeroVisual: true,
   showHeroMetrics: true,
-  footerTagline: { en: "Two manufacturing bases. A shared vision for beauty.", zh: "两地制造，共创美妆。" },
+  footerTagline: { en: "Thoughtful tools for new beauty ideas.", zh: "细节成就新的美妆构想。" },
   footerCopyright: {
     en: "Copyright © {year} {brand}. All rights reserved.",
     zh: "Copyright © {year} {brand}. All rights reserved."
   },
-  footerCredit: { en: "Illustrative concept imagery · Product specifications subject to confirmation.", zh: "图片为概念示意 · 产品规格以确认资料为准。" },
+  footerCredit: { en: "DawnOrigin · Beauty tools for new ideas.", zh: "DawnOrigin · 美妆工具的新构想。" },
   homeProductCount: 6,
   homeArticleCount: 6,
   visibleSections: {
@@ -190,7 +190,7 @@ export function createDefaultAdminState(): AdminState {
   const now = new Date().toISOString();
   const state: AdminState = {
     products: productCategories,
-    pages: yuvaSeed.pages as AdminState["pages"],
+    pages: dawnSeed.pages as AdminState["pages"],
     articles,
     leads: [],
     contactChannels,
@@ -201,7 +201,7 @@ export function createDefaultAdminState(): AdminState {
     siteSettings: defaultSiteSettings,
     templateSettings: defaultTemplateSettings,
     pageLayouts: [],
-    users: [{id:"u-super-admin",name:"Yuvacosmetics Admin",email:process.env.INITIAL_ADMIN_EMAIL ?? "437991663@qq.com",passwordHash:process.env.INITIAL_ADMIN_PASSWORD_HASH,role:"super-admin",active:true,aiCredits:0,articleImportEnabled:true,jobTitle:"Owner"}],
+    users: [{id:"u-super-admin",name:"DawnOrigin Admin",email:process.env.INITIAL_ADMIN_EMAIL ?? "admin@dawnorigin.com",passwordHash:process.env.INITIAL_ADMIN_PASSWORD_HASH,role:"super-admin",active:true,aiCredits:0,articleImportEnabled:true,jobTitle:"Owner"}],
     rolePermissions: defaultRolePermissions,
     aiSettings: {
       provider: process.env.AI_PROVIDER ?? "openai-compatible",
@@ -217,9 +217,9 @@ export function createDefaultAdminState(): AdminState {
       voiceBaseUrl: process.env.AI_VOICE_BASE_URL ?? "https://api.openai.com/v1",
       voiceApiKey: process.env.AI_VOICE_API_KEY ?? "",
       defaultLocale: "en",
-      brandVoice: "Clear, considered color cosmetics copy for Yuvacosmetics.",
+      brandVoice: "Clear, careful beauty tools copy for DawnOrigin.",
       targetMarkets: ["Europe", "North America", "Southeast Asia", "MENA"],
-      requiredKeywords: ["color cosmetics", "OEM", "shade", "packaging"],
+      requiredKeywords: ["beauty tools", "OEM", "brushes", "packaging"],
       blockedWords: [],
       enabled: Boolean(process.env.AI_API_KEY)
     },

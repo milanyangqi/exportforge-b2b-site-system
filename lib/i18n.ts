@@ -21,5 +21,5 @@ export const ui = {
   quote: { en: "Request Quote", zh: "获取报价", vi: "Yêu cầu báo giá", th: "ขอใบเสนอราคา", id: "Minta Penawaran", ar: "طلب عرض سعر", es: "Solicitar cotización", fr: "Demander un devis", de: "Angebot anfragen", it: "Richiedi preventivo", pt: "Solicitar orçamento", hi: "कोटेशन मांगें", ru: "Запросить цену", ja: "見積依頼", ko: "견적 요청", ur: "قیمت معلوم کریں" },
   heroKicker: {en:"Makeup manufacturing for a more colorful world.",zh:"为更多色彩而制造。"},
   heroTitle: {en:"A world of color.",zh:"色彩，自成世界。"},
-  heroBody: {en:"Color cosmetics manufacturing in China and Indonesia.",zh:"中国与印尼双地彩妆制造。"}
+  heroBody: {en:"Beauty tools for modern brands.",zh:"为品牌构想打造美妆工具。"}
 } satisfies Record<string, Translation>;

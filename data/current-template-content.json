@@ -1,373 +1,470 @@
 {
   "defaultNavigation": [
     {
-      "id": "nav-0",
+      "id": "nav-products",
       "label": {
         "en": "Products",
         "zh": "产品"
       },
       "href": "/products",
       "enabled": true,
-      "order": 0
+      "order": 10
     },
     {
-      "id": "nav-1",
+      "id": "nav-oem",
       "label": {
-        "en": "OEM/ODM",
+        "en": "OEM / ODM",
         "zh": "定制服务"
       },
       "href": "/pages/oem-odm",
       "enabled": true,
-      "order": 10
+      "order": 20
     },
     {
-      "id": "nav-2",
+      "id": "nav-about",
       "label": {
         "en": "About",
         "zh": "关于我们"
       },
       "href": "/pages/about",
       "enabled": true,
-      "order": 20
-    },
-    {
-      "id": "nav-3",
-      "label": {
-        "en": "Factories",
-        "zh": "双工厂"
-      },
-      "href": "/pages/factories",
-      "enabled": true,
       "order": 30
     },
     {
-      "id": "nav-4",
+      "id": "nav-factory",
       "label": {
-        "en": "R&D",
-        "zh": "研发品质"
+        "en": "Factory",
+        "zh": "工厂"
       },
-      "href": "/pages/research",
+      "href": "/pages/factories",
       "enabled": true,
       "order": 40
     },
     {
-      "id": "nav-5",
+      "id": "nav-quality",
+      "label": {
+        "en": "R&D / Quality",
+        "zh": "研发质检"
+      },
+      "href": "/pages/research",
+      "enabled": true,
+      "order": 50
+    },
+    {
+      "id": "nav-contact",
       "label": {
         "en": "Contact",
         "zh": "联系询盘"
       },
       "href": "/contact",
       "enabled": true,
-      "order": 50
+      "order": 60
     }
   ],
   "uploadedFiles": [
     {
-      "id": "yuva-hero",
-      "name": "概念示意素材 hero",
-      "mimeType": "image/webp",
-      "size": 0,
-      "url": "/assets/current-template/hero.webp",
-      "createdAt": "2026-09-17T07:00:00Z",
-      "description": {
-        "en": "AI-generated illustrative concept; not a photograph of actual premises or confirmed products.",
-        "zh": "AI 生成概念示意，非真实厂房或确认产品照片。"
-      },
+      "id": "dawn-hero",
+      "name": "柔粉轻奢首屏",
+      "mimeType": "image/jpeg",
+      "size": 308005,
+      "url": "/assets/current-template/hero.jpg",
+      "createdAt": "2026-09-24T05:00:00Z",
       "enabled": true
     },
     {
-      "id": "yuva-lipstick",
-      "name": "概念示意素材 lipstick",
-      "mimeType": "image/webp",
-      "size": 0,
-      "url": "/assets/current-template/lipstick.webp",
-      "createdAt": "2026-09-17T07:00:00Z",
-      "description": {
-        "en": "AI-generated illustrative concept; not a photograph of actual premises or confirmed products.",
-        "zh": "AI 生成概念示意，非真实厂房或确认产品照片。"
-      },
+      "id": "dawn-brushes",
+      "name": "化妆刷",
+      "mimeType": "image/jpeg",
+      "size": 401851,
+      "url": "/assets/current-template/brushes.jpg",
+      "createdAt": "2026-09-24T05:00:00Z",
       "enabled": true
     },
     {
-      "id": "yuva-palette",
-      "name": "概念示意素材 palette",
-      "mimeType": "image/webp",
-      "size": 0,
-      "url": "/assets/current-template/palette.webp",
-      "createdAt": "2026-09-17T07:00:00Z",
-      "description": {
-        "en": "AI-generated illustrative concept; not a photograph of actual premises or confirmed products.",
-        "zh": "AI 生成概念示意，非真实厂房或确认产品照片。"
-      },
+      "id": "dawn-sponges",
+      "name": "美妆蛋与粉扑",
+      "mimeType": "image/jpeg",
+      "size": 344407,
+      "url": "/assets/current-template/sponges.jpg",
+      "createdAt": "2026-09-24T05:00:00Z",
       "enabled": true
     },
     {
-      "id": "yuva-face",
-      "name": "概念示意素材 face",
-      "mimeType": "image/webp",
-      "size": 0,
-      "url": "/assets/current-template/face.webp",
-      "createdAt": "2026-09-17T07:00:00Z",
-      "description": {
-        "en": "AI-generated illustrative concept; not a photograph of actual premises or confirmed products.",
-        "zh": "AI 生成概念示意，非真实厂房或确认产品照片。"
-      },
+      "id": "dawn-lash-tools",
+      "name": "睫毛工具",
+      "mimeType": "image/jpeg",
+      "size": 430156,
+      "url": "/assets/current-template/lash-tools.jpg",
+      "createdAt": "2026-09-24T05:00:00Z",
       "enabled": true
     },
     {
-      "id": "yuva-pigment",
-      "name": "概念示意素材 pigment",
-      "mimeType": "image/webp",
-      "size": 0,
-      "url": "/assets/current-template/pigment.webp",
-      "createdAt": "2026-09-17T07:00:00Z",
-      "description": {
-        "en": "AI-generated illustrative concept; not a photograph of actual premises or confirmed products.",
-        "zh": "AI 生成概念示意，非真实厂房或确认产品照片。"
-      },
+      "id": "dawn-gift-set",
+      "name": "礼盒套装",
+      "mimeType": "image/jpeg",
+      "size": 444158,
+      "url": "/assets/current-template/gift-set.jpg",
+      "createdAt": "2026-09-24T05:00:00Z",
       "enabled": true
     },
     {
-      "id": "yuva-craft",
-      "name": "概念示意素材 craft",
-      "mimeType": "image/webp",
-      "size": 0,
-      "url": "/assets/current-template/craft.webp",
-      "createdAt": "2026-09-17T07:00:00Z",
-      "description": {
-        "en": "AI-generated illustrative concept; not a photograph of actual premises or confirmed products.",
-        "zh": "AI 生成概念示意，非真实厂房或确认产品照片。"
-      },
+      "id": "dawn-factory",
+      "name": "工厂图片",
+      "mimeType": "image/jpeg",
+      "size": 365904,
+      "url": "/assets/current-template/factory.jpg",
+      "createdAt": "2026-09-24T05:00:00Z",
       "enabled": true
     },
     {
-      "id": "yuva-china",
-      "name": "概念示意素材 china",
-      "mimeType": "image/webp",
-      "size": 0,
-      "url": "/assets/current-template/china.webp",
-      "createdAt": "2026-09-17T07:00:00Z",
-      "description": {
-        "en": "AI-generated illustrative concept; not a photograph of actual premises or confirmed products.",
-        "zh": "AI 生成概念示意，非真实厂房或确认产品照片。"
-      },
-      "enabled": true
-    },
-    {
-      "id": "yuva-indonesia",
-      "name": "概念示意素材 indonesia",
-      "mimeType": "image/webp",
-      "size": 0,
-      "url": "/assets/current-template/indonesia.webp",
-      "createdAt": "2026-09-17T07:00:00Z",
-      "description": {
-        "en": "AI-generated illustrative concept; not a photograph of actual premises or confirmed products.",
-        "zh": "AI 生成概念示意，非真实厂房或确认产品照片。"
-      },
+      "id": "dawn-quality",
+      "name": "质检图片",
+      "mimeType": "image/jpeg",
+      "size": 325737,
+      "url": "/assets/current-template/quality.jpg",
+      "createdAt": "2026-09-24T05:00:00Z",
       "enabled": true
     }
   ],
   "productCategories": [
     {
-      "id": "lips",
-      "slug": "lips",
+      "id": "dawn-brushes",
+      "slug": "brushes",
       "name": {
-        "en": "Lips",
-        "zh": "唇妆"
+        "en": "Makeup Brushes",
+        "zh": "化妆刷"
       },
       "summary": {
-        "en": "Lipstick and gloss. Explore a signature shade, finish and packaging for your brand.",
-        "zh": "为品牌探索配方、色号、质地与包装。产品图为概念示意，最终规格以确认样为准。"
+        "en": "Brush shapes and finishes for your collection.",
+        "zh": "可围绕刷型与外观沟通您的系列需求。"
       },
       "applications": {
-        "en": [
-          "Private label collections",
-          "Custom shade development",
-          "Packaging exploration"
-        ],
-        "zh": [
-          "品牌彩妆系列",
-          "定制色号开发",
-          "包装方案探索"
-        ]
+        "en": [],
+        "zh": []
       },
-      "specs": [
-        "Formula by brief",
-        "Shade matching",
-        "Packaging by agreement"
-      ],
+      "specs": [],
       "themeFit": [
         "industrial"
       ],
-      "imageUrl": "/assets/current-template/lipstick.webp"
+      "imageUrl": "/assets/current-template/brushes.jpg",
+      "thumbnailUrl": "/assets/current-template/brushes.jpg",
+      "kind": "collection",
+      "status": "published",
+      "categorySlugs": [],
+      "productType": "",
+      "featuredOnHome": false,
+      "gallery": [],
+      "shades": []
     },
     {
-      "id": "eyes",
-      "slug": "eyes",
+      "id": "dawn-sponges-puffs",
+      "slug": "sponges-puffs",
       "name": {
-        "en": "Eyes",
-        "zh": "眼妆"
+        "en": "Sponges & Puffs",
+        "zh": "美妆蛋与粉扑"
       },
       "summary": {
-        "en": "Eyeshadow and mascara. Develop a palette of color, texture and expression.",
-        "zh": "为品牌探索配方、色号、质地与包装。产品图为概念示意，最终规格以确认样为准。"
+        "en": "Soft application tools for a considered routine.",
+        "zh": "柔软的上妆工具，适合系列搭配。"
       },
       "applications": {
-        "en": [
-          "Private label collections",
-          "Custom shade development",
-          "Packaging exploration"
-        ],
-        "zh": [
-          "品牌彩妆系列",
-          "定制色号开发",
-          "包装方案探索"
-        ]
+        "en": [],
+        "zh": []
       },
-      "specs": [
-        "Formula by brief",
-        "Shade matching",
-        "Packaging by agreement"
-      ],
+      "specs": [],
       "themeFit": [
         "industrial"
       ],
-      "imageUrl": "/assets/current-template/palette.webp"
+      "imageUrl": "/assets/current-template/sponges.jpg",
+      "thumbnailUrl": "/assets/current-template/sponges.jpg",
+      "kind": "collection",
+      "status": "published",
+      "categorySlugs": [],
+      "productType": "",
+      "featuredOnHome": false,
+      "gallery": [],
+      "shades": []
     },
     {
-      "id": "face",
-      "slug": "face",
+      "id": "dawn-lash-tools",
+      "slug": "lash-tools",
       "name": {
-        "en": "Face",
-        "zh": "底妆"
+        "en": "Lash Tools",
+        "zh": "睫毛工具"
       },
       "summary": {
-        "en": "Foundation, blush, concealer and setting powder. Build your complexion collection.",
-        "zh": "为品牌探索配方、色号、质地与包装。产品图为概念示意，最终规格以确认样为准。"
+        "en": "Curlers, tweezers and finishing tools.",
+        "zh": "睫毛夹、镊子及细节工具。"
       },
       "applications": {
-        "en": [
-          "Private label collections",
-          "Custom shade development",
-          "Packaging exploration"
-        ],
-        "zh": [
-          "品牌彩妆系列",
-          "定制色号开发",
-          "包装方案探索"
-        ]
+        "en": [],
+        "zh": []
       },
-      "specs": [
-        "Formula by brief",
-        "Shade matching",
-        "Packaging by agreement"
-      ],
+      "specs": [],
       "themeFit": [
         "industrial"
       ],
-      "imageUrl": "/assets/current-template/face.webp"
+      "imageUrl": "/assets/current-template/lash-tools.jpg",
+      "thumbnailUrl": "/assets/current-template/lash-tools.jpg",
+      "kind": "collection",
+      "status": "published",
+      "categorySlugs": [],
+      "productType": "",
+      "featuredOnHome": false,
+      "gallery": [],
+      "shades": []
+    },
+    {
+      "id": "dawn-gift-sets",
+      "slug": "gift-sets",
+      "name": {
+        "en": "Gift Sets",
+        "zh": "礼盒套装"
+      },
+      "summary": {
+        "en": "Coordinated tools and presentation ideas.",
+        "zh": "成套工具及礼盒搭配构想。"
+      },
+      "applications": {
+        "en": [],
+        "zh": []
+      },
+      "specs": [],
+      "themeFit": [
+        "industrial"
+      ],
+      "imageUrl": "/assets/current-template/gift-set.jpg",
+      "thumbnailUrl": "/assets/current-template/gift-set.jpg",
+      "kind": "collection",
+      "status": "published",
+      "categorySlugs": [],
+      "productType": "",
+      "featuredOnHome": false,
+      "gallery": [],
+      "shades": []
+    },
+    {
+      "id": "dawn-pastel-brush-set",
+      "slug": "pastel-brush-set",
+      "name": {
+        "en": "Pastel Makeup Brush Set",
+        "zh": "柔粉化妆刷套装"
+      },
+      "summary": {
+        "en": "A coordinated brush set with pastel handles and rose-gold details.",
+        "zh": "柔粉刷柄与玫瑰金细节的化妆刷套装。"
+      },
+      "applications": {
+        "en": [],
+        "zh": []
+      },
+      "specs": [],
+      "themeFit": [
+        "industrial"
+      ],
+      "imageUrl": "/assets/current-template/brushes.jpg",
+      "thumbnailUrl": "/assets/current-template/brushes.jpg",
+      "kind": "product",
+      "status": "published",
+      "categorySlugs": [
+        "brushes"
+      ],
+      "productType": "makeup-brush",
+      "featuredOnHome": true,
+      "gallery": [],
+      "shades": []
+    },
+    {
+      "id": "dawn-blending-sponge-set",
+      "slug": "blending-sponge-set",
+      "name": {
+        "en": "Blending Sponge & Puff Set",
+        "zh": "美妆蛋与粉扑套装"
+      },
+      "summary": {
+        "en": "Soft blending sponges and puffs in a coordinated palette.",
+        "zh": "柔软的美妆蛋与粉扑组合。"
+      },
+      "applications": {
+        "en": [],
+        "zh": []
+      },
+      "specs": [],
+      "themeFit": [
+        "industrial"
+      ],
+      "imageUrl": "/assets/current-template/sponges.jpg",
+      "thumbnailUrl": "/assets/current-template/sponges.jpg",
+      "kind": "product",
+      "status": "published",
+      "categorySlugs": [
+        "sponges-puffs"
+      ],
+      "productType": "sponge-puff",
+      "featuredOnHome": true,
+      "gallery": [],
+      "shades": []
+    },
+    {
+      "id": "dawn-rose-gold-lash-tools",
+      "slug": "rose-gold-lash-tools",
+      "name": {
+        "en": "Rose Gold Lash Tool Set",
+        "zh": "玫瑰金睫毛工具套装"
+      },
+      "summary": {
+        "en": "A rose-gold lash curler and precision tool pairing.",
+        "zh": "玫瑰金睫毛夹与精细工具组合。"
+      },
+      "applications": {
+        "en": [],
+        "zh": []
+      },
+      "specs": [],
+      "themeFit": [
+        "industrial"
+      ],
+      "imageUrl": "/assets/current-template/lash-tools.jpg",
+      "thumbnailUrl": "/assets/current-template/lash-tools.jpg",
+      "kind": "product",
+      "status": "published",
+      "categorySlugs": [
+        "lash-tools"
+      ],
+      "productType": "lash-tool",
+      "featuredOnHome": true,
+      "gallery": [],
+      "shades": []
+    },
+    {
+      "id": "dawn-signature-gift-set",
+      "slug": "signature-gift-set",
+      "name": {
+        "en": "Signature Beauty Tool Gift Set",
+        "zh": "美妆工具礼盒套装"
+      },
+      "summary": {
+        "en": "Beauty tools arranged as a signature gift collection.",
+        "zh": "以美妆工具搭配呈现的礼盒系列。"
+      },
+      "applications": {
+        "en": [],
+        "zh": []
+      },
+      "specs": [],
+      "themeFit": [
+        "industrial"
+      ],
+      "imageUrl": "/assets/current-template/gift-set.jpg",
+      "thumbnailUrl": "/assets/current-template/gift-set.jpg",
+      "kind": "product",
+      "status": "published",
+      "categorySlugs": [
+        "gift-sets"
+      ],
+      "productType": "gift-set",
+      "featuredOnHome": true,
+      "gallery": [],
+      "shades": []
     }
   ],
   "articles": [],
   "pages": [
     {
-      "id": "oem-odm",
+      "id": "dawn-page-oem-odm",
       "slug": "oem-odm",
       "title": {
-        "en": "From idea to iconic.",
-        "zh": "从灵感到品牌之作。"
+        "en": "Create your collection.",
+        "zh": "定制您的系列。"
       },
       "excerpt": {
-        "en": "Color cosmetics. Made together in China & Indonesia.",
-        "zh": "中国与印尼，共创彩妆。"
+        "en": "A starting point for beauty tool design and presentation.",
+        "zh": "从工具设计到外观呈现，开启定制沟通。"
       },
       "body": {
-        "en": "## 01 — Your brief\nTell us your product, target market, desired finish and launch plan.\n\n## 02 — Formula & shade\nDiscuss texture, color and formulation requirements.\n\n## 03 — Packaging\nAlign the format, decoration and brand presentation.\n\n## 04 — Sample & refine\nReview samples and agree specifications before production.\n\n## 05 — Manufacture\nConfirm order details, production location, checks and delivery arrangements.",
-        "zh": "## 01 — 需求沟通\n明确产品、目标市场、妆效与上市计划。\n\n## 02 — 配方与色号\n沟通质地、颜色及配方要求。\n\n## 03 — 包装设计\n确认包材形式、装饰与品牌呈现。\n\n## 04 — 打样确认\n批量生产前确认样品与规格。\n\n## 05 — 生产协同\n确认订单、生产地点、检查项目与交付安排。"
+        "en": "## Tell us what you are creating\nShare the tool types, desired look, target market and packaging brief. We can discuss the options and confirm technical details before any production commitment.\n\n## A clear project path\nConcept → sample brief → material and finish confirmation → production plan. Each stage depends on confirmed specifications.",
+        "zh": "## 告诉我们您的构想\n请分享工具类型、目标外观、市场与包装需求。具体选项和技术细节会在生产承诺前逐项确认。\n\n## 清晰的项目路径\n概念 → 样品需求 → 材质与外观确认 → 生产计划。各阶段以实际确认的规格为准。"
       },
       "status": "published",
-      "publishedAt": "2026-09-17T07:00:00Z"
+      "publishedAt": "2026-09-24T05:00:00Z"
     },
     {
-      "id": "about",
+      "id": "dawn-page-about",
       "slug": "about",
       "title": {
-        "en": "Beauty moves people.",
-        "zh": "色彩，让美发生。"
+        "en": "A partner for beauty ideas.",
+        "zh": "让美妆构想更清晰。"
       },
       "excerpt": {
-        "en": "Color cosmetics. Made together in China & Indonesia.",
-        "zh": "中国与印尼，共创彩妆。"
+        "en": "Beauty tools and thoughtful details for your next collection.",
+        "zh": "以美妆工具与细节构成您的下一套系列。"
       },
       "body": {
-        "en": "金华纤烁化妆品有限公司 is a cosmetics manufacturer based in Jinhua, China. Our manufacturing presence also includes Yuvacosmetics in Indonesia.\n\nWe focus on color cosmetics and conversations that turn a brand idea into a considered product brief.\n\n## People. Color. Possibilities.\nFrom lips and eyes to complexion, tell us what you want to create.",
-        "zh": "金华纤烁化妆品有限公司是一家位于中国金华的化妆品工厂，同时在印尼设有名为 Yuvacosmetics 的生产工厂。\n\n我们以彩妆为主，围绕品牌需求沟通产品、色号与包装。\n\n## 人、色彩与可能\n从唇妆、眼妆到底妆，欢迎与我们沟通您的产品构想。"
+        "en": "## Where beauty ideas begin\nExplore makeup brushes, sponges, lash tools and gift sets.\n\n## Work together\nTell us what your collection needs. Shape, feel, finish and presentation each deserve a clear brief.",
+        "zh": "## 美妆构想的起点\n探索化妆刷、美妆蛋、睫毛工具与礼盒系列。\n\n## 一起推进\n分享您的系列需求，从形状、手感、外观到包装，逐步形成清晰的方案。"
       },
       "status": "published",
-      "publishedAt": "2026-09-17T07:00:00Z"
+      "publishedAt": "2026-09-24T05:00:00Z"
     },
     {
-      "id": "factories",
+      "id": "dawn-page-factories",
       "slug": "factories",
       "title": {
-        "en": "Two places. One color vision.",
-        "zh": "两地制造，共创色彩。"
+        "en": "Inside the making.",
+        "zh": "走近制作流程。"
       },
       "excerpt": {
-        "en": "Color cosmetics. Made together in China & Indonesia.",
-        "zh": "中国与印尼，共创彩妆。"
+        "en": "Explore the steps behind a beauty tool collection.",
+        "zh": "了解美妆工具系列背后的制作环节。"
       },
       "body": {
-        "en": "## Jinhua, China\n金华纤烁化妆品有限公司 · Cosmetics manufacturing.\n\n## Indonesia\nYuvacosmetics · Cosmetics manufacturing.\n\nProduction allocation, factory documentation, audit arrangements and site-specific capabilities are confirmed for each project. Factory images shown are illustrative concepts, not photographs of our premises.",
-        "zh": "## 中国金华\n金华纤烁化妆品有限公司 · 化妆品生产。\n\n## 印度尼西亚\nYuvacosmetics · 化妆品生产。\n\n具体生产安排、工厂文件、验厂及各厂能力请按项目确认。工厂图片为概念示意，并非实际厂房照片。"
+        "en": "## From components to finished tools\nA beauty tool project brings together material selection, component preparation, assembly, finishing and inspection.\n\n## Plan with clarity\nThe process and quality requirements are established for each product brief and sample.",
+        "zh": "## 从部件到成品\n美妆工具项目涉及材质选择、部件准备、组装、外观处理与检验。\n\n## 清晰规划\n具体工序和品质要求，按产品需求及样品逐项确定。"
       },
       "status": "published",
-      "publishedAt": "2026-09-17T07:00:00Z"
+      "publishedAt": "2026-09-24T05:00:00Z"
     },
     {
-      "id": "research",
+      "id": "dawn-page-research",
       "slug": "research",
       "title": {
-        "en": "Where color comes to life.",
-        "zh": "让色彩，焕发生命力。"
+        "en": "Care in every detail.",
+        "zh": "关注每一处细节。"
       },
       "excerpt": {
-        "en": "Color cosmetics. Made together in China & Indonesia.",
-        "zh": "中国与印尼，共创彩妆。"
+        "en": "Explore material, sample and inspection questions for beauty tools.",
+        "zh": "了解美妆工具的材质、打样及检验问题。"
       },
       "body": {
-        "en": "## Shade\nBring a color reference and define your target finish.\n\n## Texture\nDiscuss feel, application and the desired makeup effect.\n\n## Quality planning\nAgree sample approval, stability, packaging compatibility and relevant market requirements for your project. Testing scope and supporting documentation are confirmed before order acceptance.",
-        "zh": "## 色号\n提供色彩参考，沟通目标妆效。\n\n## 质地\n讨论肤感、上妆方式与呈现效果。\n\n## 品质规划\n按项目确认样品审批、稳定性、包材相容性与目标市场要求。检测范围与文件需在接单前确认。"
+        "en": "## Material and feel\nBrush fibers, handle finish, ferrules, sponge texture and tool geometry shape the experience of each tool.\n\n## Quality by design\nAgree samples, acceptance criteria and relevant documentation before production.",
+        "zh": "## 材质与手感\n刷毛、刷柄表面、金属口管、美妆蛋质地与工具结构，共同决定使用体验。\n\n## 从设计考虑品质\n生产前明确样品、验收标准与所需文件。"
       },
       "status": "published",
-      "publishedAt": "2026-09-17T07:00:00Z"
+      "publishedAt": "2026-09-24T05:00:00Z"
     },
     {
-      "id": "privacy",
+      "id": "dawn-page-privacy",
       "slug": "privacy",
       "title": {
         "en": "Inquiry privacy",
         "zh": "询盘隐私"
       },
       "excerpt": {
-        "en": "Color cosmetics. Made together in China & Indonesia.",
-        "zh": "中国与印尼，共创彩妆。"
+        "en": "How inquiry information is used.",
+        "zh": "询盘信息的使用说明。"
       },
       "body": {
-        "en": "Information submitted through this website is used to assess and respond to your project inquiry. Please do not include sensitive personal information. Contact us through the inquiry form to request correction or deletion.",
-        "zh": "本网站提交的信息用于评估和回复项目询盘。请勿提交敏感个人信息。可通过询盘表单申请更正或删除资料。"
+        "en": "## Inquiry data\nThe form collects the information you choose to submit so the team can respond to your project request.",
+        "zh": "## 询盘信息\n表单收集您主动提交的信息，用于回复项目需求。"
       },
       "status": "published",
-      "publishedAt": "2026-09-17T07:00:00Z"
+      "publishedAt": "2026-09-24T05:00:00Z"
     }
   ],
   "siteSettings": {
-    "brand": "Yuvacosmetics",
+    "brand": "DawnOrigin",
     "activeTheme": "industrial",
-    "markets": [
-      "China",
-      "Indonesia"
-    ],
-    "aiDraftPolicy": "Review all claims and product specifications before publishing."
+    "markets": [],
+    "aiDraftPolicy": "Confirm all company facts, product specifications and manufacturing claims before publication."
   }
 }

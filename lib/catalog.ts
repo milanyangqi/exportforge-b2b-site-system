@@ -1,6 +1,9 @@
-import type {ProductCategory} from '@/types/site';
-export const catalogTypes: Record<string,{zh:string;en:string}> = {
- 'lip-liner':{zh:'唇线笔',en:'Lip liner'},'lip-tint':{zh:'唇釉',en:'Lip tint'},'lip-balm':{zh:'润色唇膏',en:'Lip balm'},'lip-gloss':{zh:'唇蜜',en:'Lip gloss'},'lip-mud':{zh:'唇泥',en:'Lip mud'},'lip-cheek':{zh:'唇颊两用',en:'Lip & cheek'},'lipstick':{zh:'口红',en:'Lipstick'},'lip-care':{zh:'唇部护理',en:'Lip care'},'lip-oil':{zh:'唇油',en:'Lip oil'},'lip-crayon':{zh:'唇彩笔',en:'Lip crayon'},'eyeliner':{zh:'眼线',en:'Eyeliner'},'eyeshadow-stick':{zh:'眼影棒',en:'Eyeshadow stick'},'eyeshadow':{zh:'眼影与眼影盘',en:'Eyeshadow & palettes'},'brow':{zh:'眉部彩妆',en:'Brows'},'mascara':{zh:'睫毛膏',en:'Mascara'},'eye-primer':{zh:'眼部打底',en:'Eye primer'},'blush':{zh:'腮红',en:'Blush'},'shimmer':{zh:'高光与闪片',en:'Shimmer & glitter'},'concealer':{zh:'遮瑕',en:'Concealer'},'setting-powder':{zh:'散粉',en:'Setting powder'},'foundation':{zh:'粉底',en:'Foundation'},'nail':{zh:'美甲（待确认）',en:'Nails (review)'}
+import type { ProductCategory } from '@/types/site';
+export const catalogTypes: Record<string, { zh: string; en: string }> = {
+  'makeup-brush': { zh: '化妆刷', en: 'Makeup brushes' },
+  'sponge-puff': { zh: '美妆蛋与粉扑', en: 'Sponges & puffs' },
+  'lash-tool': { zh: '睫毛工具', en: 'Lash tools' },
+  'gift-set': { zh: '礼盒套装', en: 'Gift sets' }
 };
-export function isPublishedProduct(p:ProductCategory){return p.status!=='draft' && p.status!=='trash';}
-export function isCollection(p:ProductCategory){return p.kind==='collection'||(!p.kind&&['lips','eyes','face'].includes(p.slug));}
+export function isPublishedProduct(product: ProductCategory) { return product.status !== 'draft' && product.status !== 'trash'; }
+export function isCollection(product: ProductCategory) { return product.kind === 'collection'; }

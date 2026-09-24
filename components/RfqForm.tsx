@@ -11,12 +11,12 @@ const labels = {
   email: { en: "Email", zh: "邮箱", ar: "البريد الإلكتروني" },
   whatsapp: { en: "WhatsApp / Phone", zh: "WhatsApp / 电话", ar: "واتساب / الهاتف" },
   destination: { en: "Country / Market", zh: "国家 / 市场", ar: "الدولة / السوق" },
-  workpieceMaterial: { en: "Desired finish", zh: "期望妆效", ar: "مادة الشغل" },
+  workpieceMaterial: { en: "Desired finish / material", zh: "期望材质或外观", ar: "مادة الشغل" },
   message: { en: "Message", zh: "需求说明", ar: "الرسالة" },
   submit: { en: "Submit RFQ", zh: "提交询盘", ar: "إرسال الطلب" },
   sending: { en: "Sending RFQ...", zh: "正在提交询盘...", ar: "جار إرسال الطلب..." },
   quantityPlaceholder: { en: "Enter quantity, e.g. 2,000 pcs / 20 boxes", zh: "请输入数量，例如 2,000 件 / 20 箱", ar: "أدخل الكمية، مثل 2,000 قطعة / 20 صندوق" },
-  success: { en: "RFQ submitted. Yuvacosmetics sales will review your project details and follow up shortly.", zh: "询盘已提交，Yuvacosmetics 销售团队会查看彩妆需求并尽快跟进。", ar: "تم إرسال الطلب. سيراجع فريق Yuvacosmetics التفاصيل ويتابع معك قريبًا." },
+  success: { en: "Inquiry received. Please retain your reference; the operator will follow up when contact details are verified.", zh: "询盘已提交。请保留记录，运营方核实联系方式后再跟进。", ar: "تم إرسال الطلب. سيراجع فريق DawnOrigin التفاصيل ويتابع معك قريبًا." },
   error: { en: "RFQ was not submitted. Please check required fields and try again.", zh: "询盘未提交成功，请检查必填信息后重试。", ar: "لم يتم إرسال الطلب. يرجى التحقق من الحقول المطلوبة والمحاولة مرة أخرى." }
 };
 
@@ -85,7 +85,7 @@ export function RfqForm({ locale, productName = "" }: { locale: LocaleCode; prod
       </label>
       <label>
         {text("productType", locale)}
-        <input name="productType" defaultValue={productName} required placeholder="Lipstick, eyeshadow, foundation..." />
+        <input name="productType" defaultValue={productName} required placeholder="Makeup brushes, sponges, lash tools..." />
       </label>
       <label>
         {text("quantity", locale)}
@@ -97,11 +97,11 @@ export function RfqForm({ locale, productName = "" }: { locale: LocaleCode; prod
       </label>
       <label>
         {text("workpieceMaterial", locale)}
-        <input name="workpieceMaterial" placeholder="Matte, satin, sheer..." />
+        <input name="workpieceMaterial" placeholder="Pastel handle, rose-gold finish..." />
       </label>
       <label className="wide">
         {text("message", locale)}
-        <textarea name="message" placeholder="Shade, texture, packaging, launch plan..." />
+        <textarea name="message" placeholder="Tool shape, material, finish, packaging..." />
       </label>
       {status === "success" ? (
         <p className="rfq-status success" role="status" aria-live="polite">{text("success", locale)}</p>

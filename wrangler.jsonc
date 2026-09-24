@@ -1,8 +1,8 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "yuvacosmetics-024",
+  "name": "dawnorigin-026",
   "main": ".open-next/worker.js",
-  "compatibility_date": "2026-05-23",
+  "compatibility_date": "2026-09-24",
   "compatibility_flags": [
     "nodejs_compat"
   ],
@@ -13,33 +13,18 @@
   "services": [
     {
       "binding": "WORKER_SELF_REFERENCE",
-      "service": "yuvacosmetics-024"
+      "service": "dawnorigin-026"
     }
   ],
   "kv_namespaces": [
     {
       "binding": "EXPORTFORGE_KV",
-      "id": "aff525e11b804b22a3342840e226c5b0"
+      "id": "42400bc7a9bb4c878c029d467c6e8f72"
     }
   ],
   "vars": {
-    "NEXT_PUBLIC_SITE_URL": "https://yuvacosmetics.com",
-    "INITIAL_ADMIN_EMAIL": "437991663@qq.com"
-  },
-  "routes": [
-    {
-      "pattern": "yuvacosmetics.com",
-      "custom_domain": true
-    },
-    {
-      "pattern": "www.yuvacosmetics.com",
-      "custom_domain": true
-    }
-  ],
-  "r2_buckets": [
-    {
-      "binding": "YUVA_MEDIA",
-      "bucket_name": "yuvacosmetics-024-media"
-    }
-  ]
+    "NEXT_PUBLIC_SITE_URL": "https://dawnorigin-026.437991663.workers.dev",
+    "NEXT_PUBLIC_SITE_INDEXABLE": "false",
+    "INITIAL_ADMIN_EMAIL": "admin@dawnorigin.com"
+  }
 }

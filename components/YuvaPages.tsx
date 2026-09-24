@@ -1,14 +1,30 @@
 /* eslint-disable @next/next/no-img-element */
-import {ProductCatalog,ProductGallery,ProductShades} from '@/components/ProductCatalog';
-import {catalogTypes,isPublishedProduct} from '@/lib/catalog';
-import { ArticleContent } from '@/components/ArticleContent';
-import { RfqForm } from '@/components/RfqForm';
-import { t } from '@/lib/i18n';
-import type { AdminState,LocaleCode,ProductCategory,SitePage } from '@/types/site';
-const A='/assets/current-template/';
-export function YuvaProducts({state,locale,initialCategory=''}:{state:AdminState;locale:LocaleCode;initialCategory?:string}){const zh=locale==='zh';const collection=state.products.find(p=>p.slug===initialCategory);return <main className="yuva-page"><div className="yuva-intro"><p className="yuva-eyebrow">{zh?'彩妆产品':'OUR COLOR COLLECTION'}</p><h1>{collection?t(collection.name,locale):(zh?'寻找您的下一抹色彩。':'Find your expression.')}</h1><p>{zh?'探索产品、包装和配色，与我们沟通您的需求。':'Explore products, packaging and color. Share your next collection with us.'}</p></div><ProductCatalog products={state.products.filter(isPublishedProduct).map(({gallery:_gallery,shades:_shades,...p})=>p)} locale={locale} initialCategory={initialCategory}/></main>}
-export function YuvaProduct({product:p,locale}:{product:ProductCategory;locale:LocaleCode}){const zh=locale==='zh';return <main className="yuva-page"><section className="yuva-real-detail"><ProductGallery product={p} locale={locale}/><div><p className="yuva-eyebrow">{catalogTypes[p.productType??'']?.[zh?'zh':'en']??(zh?'产品系列':'PRODUCT COLLECTION')}</p><h1>{t(p.name,locale)}</h1>{p.model?<p>{zh?'型号':'Model'}: {p.model}</p>:null}<p>{t(p.summary,locale)}</p><a className="yuva-button" href="#rfq">{zh?'询问产品与样品':'Enquire about this product'} ↗</a><p><small>{zh?'图片展示原包装，色号、配方和包材可供方案请询盘确认。':'Images show original packaging. Confirm available shades, formulas and packaging when enquiring.'}</small></p><a href={`/${locale}/products`}>{zh?'浏览全部产品':'Browse all products'} →</a></div></section><ProductShades product={p} locale={locale}/><YuvaContact locale={locale} embedded productName={`${t(p.name,locale)}${p.model?' / '+p.model:''} [${p.slug}]`}/></main>}
-export function YuvaContact({locale,embedded=false,productName=""}:{locale:LocaleCode;embedded?:boolean;productName?:string}){const zh=locale==='zh';const body=<section className="yuva-contact" id="rfq"><div><p className="yuva-eyebrow">{zh?'新灵感，新可能':'NEW IDEAS. NEW POSSIBILITIES.'}</p>{embedded?<h2>{zh?'开启您的\n美妆故事。':'Begin your\nbeauty story.'}</h2>:<h1>{zh?'开启您的\n美妆故事。':'Begin your\nbeauty story.'}</h1>}<p>{zh?'从唇妆、眼妆到底妆，与我们分享产品构想。':'From lips and eyes to complexion. Tell us what you imagine.'}</p><div><p><strong>金华市纤烁化妆品有限公司</strong><br/>{zh?'浙江省金华市兰溪市横溪镇兰浦西路49号':'No. 49 Lanpu West Road, Hengxi Town, Lanxi, Jinhua, Zhejiang, China'}</p><p><strong>YUCHUANG BIOTECHNOLOGY INDONESIA</strong><br/>Landmark Pluit Tower E7, 6th Floor, V22, Jalan Pluit Selatan Raya, Pluit, Penjaringan, North Jakarta, Indonesia</p><p><a href={`/${locale}/pages/about`}>{zh?'公司登记信息与完整地址':'Company details and full addresses'} →</a></p></div><a href={`/${locale}/pages/privacy`}>{zh?'提交前阅读询盘隐私说明':'Read our inquiry privacy notice'}</a></div><RfqForm locale={locale} productName={productName}/></section>;return embedded?body:<main className="yuva-page">{body}</main>}
-export function YuvaStory({page,locale}:{page:SitePage;locale:LocaleCode}){const title=t(page.title,locale);const body=<ArticleContent body={t(page.body,locale)}/>;if(page.slug==='oem-odm')return <main className="yuva-page"><section className="yuva-oem"><img src={A+'palette.webp'} alt="Illustrative eyeshadow palette"/><div><p className="yuva-eyebrow">OEM / ODM</p><h1>{title}</h1>{body}<a className="yuva-button" href={`/${locale}/contact`}>{locale==='zh'?'提交产品需求':'Share your brief'} ↗</a></div></section><section className="yuva-story-hero"><img src={A+'craft.webp'} alt="Illustrative cosmetics production concept" loading="lazy"/><h2>{locale==='zh'?'一起，成就彩妆。':'Beauty brands. Made together.'}</h2></section></main>;
-if(page.slug==='factories')return <main className="yuva-page"><section className="yuva-intro"><p className="yuva-eyebrow">CHINA & INDONESIA</p><h1>{title}</h1></section>{[['china','Jinhua, China','金华市纤烁化妆品有限公司'],['indonesia','Jakarta, Indonesia','YUCHUANG BIOTECHNOLOGY INDONESIA']].map(([img,title,company])=><section className="yuva-location yuva-factory-panorama" id={img} key={img}><img src={A+img+'.webp'} alt={title+' factory concept illustration'}/><div><h3>{title}</h3><p>{company}</p></div></section>)}<section className="yuva-story-copy">{body}</section></main>;
-return <main className="yuva-page">{page.slug==='privacy'?<div className="yuva-intro"><h1>{title}</h1></div>:<section className="yuva-story-hero"><img src={A+(page.slug==='research'?'pigment':'craft')+'.webp'} alt="Illustrative cosmetics concept"/><h1>{title}</h1></section>}<section className="yuva-story-copy">{body}</section></main>}
+import { ProductCatalog, ProductGallery } from "@/components/ProductCatalog";
+import { ArticleContent } from "@/components/ArticleContent";
+import { RfqForm } from "@/components/RfqForm";
+import { t } from "@/lib/i18n";
+import type { AdminState, LocaleCode, ProductCategory, SitePage } from "@/types/site";
+const asset = "/assets/current-template/";
+
+export function YuvaProducts({ state, locale, initialCategory = "" }: { state: AdminState; locale: LocaleCode; initialCategory?: string }) {
+  const zh = locale === "zh";
+  const collection = state.products.find((item) => item.slug === initialCategory);
+  return <main className="dawn-page"><section className="dawn-page-intro"><p className="dawn-kicker">{zh ? "美妆工具" : "OUR COLLECTION"}</p><h1>{collection ? t(collection.name, locale) : zh ? "探索美妆工具。" : "Explore beauty tools."}</h1><p>{zh ? "从刷具到礼盒，为您的品牌寻找合适的产品方向。" : "From brushes to gift sets, find the direction for your collection."}</p></section><ProductCatalog products={state.products} locale={locale} initialCategory={initialCategory}/></main>;
+}
+
+export function YuvaProduct({ product, locale }: { product: ProductCategory; locale: LocaleCode }) {
+  const zh = locale === "zh";
+  return <main className="dawn-page"><section className="dawn-product-detail"><ProductGallery product={product} locale={locale}/><div className="dawn-detail-copy"><p className="dawn-kicker">{zh ? "产品系列" : "PRODUCT COLLECTION"}</p><h1>{t(product.name, locale)}</h1><p>{t(product.summary, locale)}</p><div className="dawn-detail-note"><strong>{zh ? "可讨论的方向" : "Discuss your brief"}</strong><span>{zh ? "刷型或工具形状 · 材质与外观 · 包装方式" : "Tool shape · Materials & finish · Packaging"}</span></div><a className="dawn-button" href="#rfq">{zh ? "询问此产品" : "Enquire about this tool"} ↗</a><small>{zh ? "具体规格与可供款式请通过询盘确认。" : "Confirm specifications and available options with your inquiry."}</small></div></section><YuvaContact locale={locale} embedded productName={t(product.name, locale)} /></main>;
+}
+
+export function YuvaContact({ locale, embedded = false, productName = "" }: { locale: LocaleCode; embedded?: boolean; productName?: string }) {
+  const zh = locale === "zh";
+  const body = <section className="dawn-contact" id="rfq"><div><p className="dawn-kicker">{zh ? "联系询盘" : "LET’S CREATE WHAT’S NEXT"}</p>{embedded ? <h2>{zh ? "说说您的计划。" : "Tell us your vision."}</h2> : <h1>{zh ? "说说您的计划。" : "Tell us your vision."}</h1>}<p>{zh ? "分享产品方向、目标市场、预计数量与定制需求。" : "Share your product direction, market, estimated quantity and customization needs."}</p><a href={`/${locale}/pages/privacy`}>{zh ? "阅读询盘隐私说明" : "Read inquiry privacy"} ↗</a></div><RfqForm locale={locale} productName={productName}/></section>;
+  return embedded ? body : <main className="dawn-page">{body}</main>;
+}
+
+export function YuvaStory({ page, locale }: { page: SitePage; locale: LocaleCode }) {
+  const zh = locale === "zh";
+  const image = page.slug === "oem-odm" ? "gift-set.jpg" : page.slug === "factories" ? "factory.jpg" : page.slug === "research" ? "quality.jpg" : "brushes.jpg";
+  return <main className="dawn-page"><section className="dawn-story-hero"><div><p className="dawn-kicker">{page.slug === "oem-odm" ? "OEM / ODM" : "DAWNORIGIN"}</p><h1>{t(page.title, locale)}</h1><p>{t(page.excerpt, locale)}</p>{page.slug === "oem-odm" ? <a className="dawn-button" href={`/${locale}/contact`}>{zh ? "提交需求" : "Share your brief"} ↗</a> : null}</div>{page.slug !== "privacy" ? <img src={asset+image} alt={zh ? "美妆工具图片" : "Beauty tools"} /> : null}</section><section className="dawn-story-body"><ArticleContent body={t(page.body, locale)} /></section>{page.slug !== "privacy" ? <YuvaContact locale={locale} embedded /> : null}</main>;
+}

@@ -1,29 +1,7 @@
 import currentTemplateContent from "@/data/current-template-content.json";
 import type { Article, ContactChannel, LocaleCode, ProductCategory, SiteNavigationItem, UploadedFile } from "@/types/site";
 
-export const defaultEnabledLocales: LocaleCode[] = [
-  "en",
-  "zh",
-  "th",
-  "vi",
-  "id",
-  "ms",
-  "fil",
-  "my",
-  "km",
-  "lo",
-  "ar",
-  "es",
-  "fr",
-  "de",
-  "it",
-  "pt",
-  "hi",
-  "ru",
-  "ja",
-  "ko",
-  "ur"
-];
+export const defaultEnabledLocales: LocaleCode[] = ["en", "zh"];
 
 export const defaultNavigation = currentTemplateContent.defaultNavigation as SiteNavigationItem[];
 
