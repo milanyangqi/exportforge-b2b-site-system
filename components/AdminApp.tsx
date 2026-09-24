@@ -5772,14 +5772,14 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
               })}
               {renderVisualTextTarget({
                 editorKey: "text-rfqTitle",
-                value: visualText("rfqTitle", "把刀具清单发给 CuriousMake"),
+                value: visualText("rfqTitle", "发送图纸，获取定制报价"),
                 element: "h3",
                 multiline: true,
                 onCommit: (value) => updateTemplateTextBlock("rfqTitle", locale, value)
               })}
               {renderVisualTextTarget({
                 editorKey: "text-rfqBody",
-                value: visualText("rfqBody", "规格、数量、涂层、包装和交期信息会在前台询盘表单中收集。"),
+                value: visualText("rfqBody", "图纸、数量、材料、表面要求和目的地信息会在前台询盘表单中收集。"),
                 element: "p",
                 multiline: true,
                 onCommit: (value) => updateTemplateTextBlock("rfqBody", locale, value)

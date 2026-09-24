@@ -273,30 +273,30 @@ const defaultLayoutSignatures: Partial<Record<SystemPageLayoutKey, string[]>> = 
 
 const legacyDefaultLayoutText: Partial<Record<SystemPageLayoutKey, string[]>> = {
   "products-index": [
-    "CuriousMake products",
+    "KeyproTools products",
     "Carbide end mills, drill bits, and OEM tooling for metalworking buyers.",
     "Browse the main tooling families"
   ],
   "product-detail": [
     "Send diameter, quantity, coating, material, packaging, and destination.",
-    "CuriousMake will match geometry",
-    "CuriousMake will review the category details"
+    "KeyproTools will match geometry",
+    "KeyproTools will review the category details"
   ],
   "articles-index": [
     "Technical library",
     "Buying guides and application notes for end mills",
-    "Read CuriousMake buying guides"
+    "Read KeyproTools buying guides"
   ],
   "article-detail": [
     "Turn this tooling note into a clear RFQ.",
     "Share diameter, coating, workpiece material"
   ],
   "files-index": [
-    "CuriousMake product images and tooling resources",
+    "KeyproTools product images and tooling resources",
     "End mill, drill bit, coating, packaging"
   ],
   contact: [
-    "Send your end mill, drill bit, or OEM tooling request to CuriousMake.",
+    "Send your end mill, drill bit, or OEM tooling request to KeyproTools.",
     "Share drawings, size lists, coating requirements"
   ]
 };
