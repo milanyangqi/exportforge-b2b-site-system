@@ -205,16 +205,6 @@ export function createDefaultAdminState(): AdminState {
         aiCredits: 100000,
         articleImportEnabled: true,
         jobTitle: "Owner"
-      },
-      {
-        id: "u-sales",
-        name: "Sales Manager",
-        email: "sales@example.com",
-        role: "sales",
-        active: true,
-        aiCredits: 20000,
-        articleImportEnabled: false,
-        jobTitle: "Sales"
       }
     ],
     rolePermissions: defaultRolePermissions,
