@@ -273,6 +273,7 @@ export function createDefaultAdminState(): AdminState {
     leads: [],
     contactChannels,
     uploadedFiles,
+    storageQuotaBytes: null,
     activeTheme: "industrial",
     enabledLocales: defaultEnabledLocales,
     navigation: defaultNavigation,
@@ -854,6 +855,7 @@ function normalizeAdminState(parsed: AdminState): AdminState {
       ...file,
       url: normalizeCurrentTemplateAssetUrl(file.url)
     })),
+    storageQuotaBytes: typeof parsed.storageQuotaBytes === "number" && Number.isSafeInteger(parsed.storageQuotaBytes) && parsed.storageQuotaBytes > 0 ? parsed.storageQuotaBytes : null,
     users: normalizeAdminUsers(parsed.users),
     rolePermissions: normalizeRolePermissions(parsed.rolePermissions),
     activeTheme: parsed.activeTheme ?? "industrial",

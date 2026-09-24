@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getAdminSessionEmail } from "@/lib/server/auth";
 import { preserveUserPasswordHashes, readAdminState, sanitizeAdminState, writeAdminState } from "@/lib/server/admin-store";
+import { withMediaWriteLock } from "@/lib/server/storage-quota";
 import type { AdminState, RoleKey } from "@/types/site";
 
 const frontendManagerRoles = new Set<RoleKey>(["super-admin", "admin"]);
@@ -39,6 +40,7 @@ export async function PUT(request: Request) {
   }
 
   const state = (await request.json()) as AdminState;
+  return withMediaWriteLock(async () => {
   const existingState = await readAdminState();
   const currentUser = existingState.users.find((user) => user.email.toLowerCase() === sessionEmail.toLowerCase());
   const frontendSettingsChanged =
@@ -56,6 +58,11 @@ export async function PUT(request: Request) {
     return NextResponse.json({ error: "只有最高管理员可以设置 AI 积分。" }, { status: 403 });
   }
 
-  const nextState = preserveUserPasswordHashes(state, existingState);
+  const nextState = preserveUserPasswordHashes({
+    ...state,
+    storageQuotaBytes: existingState.storageQuotaBytes ?? null,
+    uploadedFiles: existingState.uploadedFiles
+  }, existingState);
   return NextResponse.json(sanitizeAdminState(await writeAdminState(nextState)));
+  });
 }

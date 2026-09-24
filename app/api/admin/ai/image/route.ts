@@ -1,7 +1,8 @@
 import { Buffer } from "node:buffer";
 import { NextResponse } from "next/server";
 import { getAdminSessionEmail } from "@/lib/server/auth";
-import { buildStoredFileUrl, readAdminState, sanitizeAdminState, writeAdminState, writeStoredFile } from "@/lib/server/admin-store";
+import { buildStoredFileUrl, deleteStoredFile, readAdminState, sanitizeAdminState, writeAdminState, writeStoredFile } from "@/lib/server/admin-store";
+import { StorageQuotaExceededError, withMediaWriteLock, withStorageMutationReservation } from "@/lib/server/storage-quota";
 import type { AiSettings, AdminState, UploadedFile } from "@/types/site";
 
 type ImagePayload = {
@@ -198,15 +199,6 @@ export async function POST(request: Request) {
     const createdAt = new Date().toISOString();
     const name = `${slugify(payload.title ?? "ai-article-image")}.png`;
 
-    await writeStoredFile({
-      id,
-      name,
-      mimeType: generated.mimeType,
-      size: generated.bytes.byteLength,
-      base64: generated.bytes.toString("base64"),
-      createdAt
-    });
-
     const uploadedFile: UploadedFile = {
       id,
       name,
@@ -221,19 +213,32 @@ export async function POST(request: Request) {
       },
       enabled: true
     };
-    const chargedState = chargeImageCredits({
-      ...state,
-      uploadedFiles: [uploadedFile, ...state.uploadedFiles]
-    }, sessionEmail, estimateImageTokens(payload));
-    const savedState = await writeAdminState(chargedState);
-
-    return NextResponse.json({
-      file: uploadedFile,
-      state: sanitizeAdminState(savedState),
-      message: "文章配图已生成并保存到媒体库。"
+    return await withMediaWriteLock(async () => {
+      const latestState = await readAdminState();
+      const nextState = chargeImageCredits({
+        ...latestState,
+        uploadedFiles: [uploadedFile, ...latestState.uploadedFiles]
+      }, sessionEmail, estimateImageTokens(payload));
+      return withStorageMutationReservation(latestState, nextState, async () => {
+        try {
+          await writeStoredFile({
+            id, name, mimeType: generated.mimeType, size: generated.bytes.byteLength,
+            base64: generated.bytes.toString("base64"), createdAt
+          });
+          const savedState = await writeAdminState(nextState);
+          return NextResponse.json({
+            file: uploadedFile,
+            state: sanitizeAdminState(savedState),
+            message: "文章配图已生成并保存到媒体库。"
+          });
+        } catch (error) {
+          await deleteStoredFile(id);
+          throw error;
+        }
+      });
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : "图片生成失败";
-    return NextResponse.json({ error: message }, { status: message.includes("API Key") || message.includes("Base URL") ? 400 : 502 });
+    return NextResponse.json({ error: message }, { status: error instanceof StorageQuotaExceededError ? 413 : message.includes("API Key") || message.includes("Base URL") ? 400 : 502 });
   }
 }

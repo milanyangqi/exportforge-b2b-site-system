@@ -1,10 +1,11 @@
 import { NextResponse } from "next/server";
 import { getAdminSessionEmail } from "@/lib/server/auth";
-import { preserveUserPasswordHashes, readAdminState, readStoredFile, sanitizeAdminState, sanitizeSiteSettingsSecrets, writeAdminState, writeStoredFile } from "@/lib/server/admin-store";
+import { deleteStoredFile, preserveUserPasswordHashes, readAdminState, readStoredFile, sanitizeAdminState, sanitizeSiteSettingsSecrets, writeAdminState, writeStoredFile } from "@/lib/server/admin-store";
+import { calculateStorageUsage, setGlobalStorageQuota, StorageQuotaExceededError, withMediaWriteLock, withStorageMutationReservation } from "@/lib/server/storage-quota";
 import type { AdminState, RoleKey } from "@/types/site";
 import type { StoredUploadFile } from "@/lib/server/admin-store";
 
-type BackupSectionKey = keyof Pick<AdminState, "products" | "pages" | "articles" | "leads" | "contactChannels" | "uploadedFiles" | "users" | "rolePermissions" | "navigation" | "siteSettings" | "templateSettings" | "pageLayouts" | "aiSettings" | "aiCreditSettings" | "aiUsageRecords" | "activeTheme" | "enabledLocales">;
+type BackupSectionKey = keyof Pick<AdminState, "products" | "pages" | "articles" | "leads" | "contactChannels" | "uploadedFiles" | "storageQuotaBytes" | "users" | "rolePermissions" | "navigation" | "siteSettings" | "templateSettings" | "pageLayouts" | "aiSettings" | "aiCreditSettings" | "aiUsageRecords" | "activeTheme" | "enabledLocales">;
 
 type BackupPayload = {
   format: "exportforge-site-backup";
@@ -30,6 +31,7 @@ const sectionKeys = new Set<BackupSectionKey>([
   "leads",
   "contactChannels",
   "uploadedFiles",
+  "storageQuotaBytes",
   "users",
   "rolePermissions",
   "navigation",
@@ -42,7 +44,7 @@ const sectionKeys = new Set<BackupSectionKey>([
   "activeTheme",
   "enabledLocales"
 ]);
-const superAdminOnlySections = new Set<BackupSectionKey>(["users", "rolePermissions", "aiSettings", "aiCreditSettings", "aiUsageRecords"]);
+const superAdminOnlySections = new Set<BackupSectionKey>(["users", "rolePermissions", "aiSettings", "aiCreditSettings", "aiUsageRecords", "storageQuotaBytes"]);
 
 function parseSections(sections?: string[]) {
   return (sections ?? []).filter((section): section is BackupSectionKey => sectionKeys.has(section as BackupSectionKey));
@@ -97,31 +99,70 @@ async function exportBackup(sections: BackupSectionKey[], includeFiles: boolean)
 }
 
 async function importBackup(sections: BackupSectionKey[], includeFiles: boolean, backup: BackupPayload) {
-  const existingState = await readAdminState();
-  const nextState: AdminState = { ...existingState };
+  return withMediaWriteLock(async () => {
+    const existingState = await readAdminState();
+    const nextState: AdminState = { ...existingState };
 
-  for (const section of sections) {
-    if (backup.state[section] === undefined) continue;
-    nextState[section] = backup.state[section] as never;
-  }
-
-  const stateWithSecrets = preserveUserPasswordHashes(nextState, existingState);
-  let importedFileCount = 0;
-
-  if (includeFiles && sections.includes("uploadedFiles") && Array.isArray(backup.files)) {
-    for (const file of backup.files) {
-      if (!file?.id || !file.base64) continue;
-      await writeStoredFile(file);
-      importedFileCount += 1;
+    for (const section of sections) {
+      if (backup.state[section] === undefined) continue;
+      nextState[section] = backup.state[section] as never;
     }
-  }
 
-  const savedState = await writeAdminState(stateWithSecrets);
-  return {
-    state: sanitizeAdminState(savedState),
-    importedSections: sections.filter((section) => backup.state[section] !== undefined),
-    importedFileCount
-  };
+    if (sections.includes("storageQuotaBytes") && backup.state.storageQuotaBytes !== undefined) {
+      const quota = backup.state.storageQuotaBytes;
+      if (quota !== null && (typeof quota !== "number" || !Number.isSafeInteger(quota) || quota <= 0)) {
+        throw new Error("备份中的存储额度无效。");
+      }
+    }
+
+    const stateWithSecrets = preserveUserPasswordHashes(nextState, existingState);
+    const files = includeFiles && sections.includes("uploadedFiles") && Array.isArray(backup.files) ? backup.files : [];
+    const importedFiles = new Map(files.map((file) => [file.id, file]));
+    if (sections.includes("uploadedFiles")) {
+      for (const record of stateWithSecrets.uploadedFiles) {
+        if (!record.storageKey && !record.url.startsWith("/api/files/")) continue;
+        const key = record.storageKey || record.id;
+        const stored = importedFiles.get(key) ?? await readStoredFile(key);
+        if (!stored || stored.size !== record.size) {
+          throw new Error("备份中的媒体记录缺少对应文件，导入已取消。");
+        }
+      }
+    }
+    for (const file of files) {
+      const record = stateWithSecrets.uploadedFiles.find((item) => item.storageKey === file.id);
+      if (!record || !file.base64 || file.size !== record.size || record.size !== Buffer.byteLength(file.base64, "base64")) {
+        throw new Error("备份中的媒体文件与媒体记录不一致，导入已取消。");
+      }
+    }
+    const priorFiles = new Map<string, StoredUploadFile | null>();
+    const reservationState = { ...stateWithSecrets, storageQuotaBytes: existingState.storageQuotaBytes };
+    return withStorageMutationReservation(existingState, reservationState, async () => {
+      let stateWritten = false;
+      try {
+        for (const file of files) {
+          priorFiles.set(file.id, await readStoredFile(file.id));
+          await writeStoredFile(file);
+        }
+        const savedState = await writeAdminState(stateWithSecrets);
+        stateWritten = true;
+        if (sections.includes("storageQuotaBytes")) {
+          await setGlobalStorageQuota(savedState.storageQuotaBytes ?? null, calculateStorageUsage(existingState).mediaBytes);
+        }
+        return {
+          state: sanitizeAdminState(savedState),
+          importedSections: sections.filter((section) => backup.state[section] !== undefined),
+          importedFileCount: files.length
+        };
+      } catch (error) {
+        if (stateWritten) await writeAdminState(existingState);
+        for (const [id, prior] of priorFiles) {
+          if (prior) await writeStoredFile(prior);
+          else await deleteStoredFile(id);
+        }
+        throw error;
+      }
+    });
+  });
 }
 
 export async function POST(request: Request) {
@@ -153,7 +194,12 @@ export async function POST(request: Request) {
     if (!isBackupPayload(body.backup)) {
       return NextResponse.json({ error: "备份文件格式不正确。" }, { status: 400 });
     }
-    return NextResponse.json(await importBackup(sections, Boolean(body.includeFiles), body.backup));
+    try {
+      return NextResponse.json(await importBackup(sections, Boolean(body.includeFiles), body.backup));
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "备份导入失败。";
+      return NextResponse.json({ error: message }, { status: error instanceof StorageQuotaExceededError ? 413 : 400 });
+    }
   }
 
   return NextResponse.json({ error: "Unsupported backup action." }, { status: 400 });

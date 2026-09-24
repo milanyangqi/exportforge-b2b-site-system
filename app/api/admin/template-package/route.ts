@@ -69,6 +69,9 @@ export async function POST(request: Request) {
 
     for (const file of templatePackage.uploadedFiles ?? []) {
       if (!file?.id || knownFileIds.has(file.id)) continue;
+      // Template packages carry references, not file bytes. A new stored-media
+      // reference would otherwise appear in the library without a stored file.
+      if (file.storageKey || file.url?.startsWith("/api/files/")) continue;
       mergedFiles.push(file);
       knownFileIds.add(file.id);
     }

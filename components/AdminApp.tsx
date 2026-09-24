@@ -59,6 +59,7 @@ import {
 import { locales } from "@/config/locales";
 import { themes } from "@/config/themes";
 import { AdminMarkdownEditor, type AdminMarkdownEditorHandle } from "@/components/AdminMarkdownEditor";
+import type { StorageUsage } from "@/lib/server/storage-quota";
 import type { AdminRolePermissions, AdminState, AdminUser, Article, ContactChannel, ContactChannelType, HomeSectionKey, LeadStatus, LocaleCode, ProductCategory, RoleKey, SiteHeroSlide, SiteNavigationItem, SitePage, SiteTemplateCustomBlock, SiteTemplateCustomBlockType, SiteTemplateImageItem, SiteTemplateImageLayout, SiteTemplateSettings, ThemeKey, Translation, UploadedFile, WorldClockCity } from "@/types/site";
 
 type Tab = "overview" | "products" | "pages" | "articles" | "files" | "leads" | "mail" | "contacts" | "navigation" | "users" | "collect" | "templates" | "settings" | "languages" | "themes" | "account" | "ai";
@@ -82,7 +83,7 @@ type ProductInlineEditState = {
   productId: string;
   value: string;
 };
-type BackupSectionKey = keyof Pick<AdminState, "products" | "pages" | "articles" | "leads" | "contactChannels" | "uploadedFiles" | "users" | "rolePermissions" | "navigation" | "siteSettings" | "templateSettings" | "pageLayouts" | "aiSettings" | "aiCreditSettings" | "aiUsageRecords" | "activeTheme" | "enabledLocales">;
+type BackupSectionKey = keyof Pick<AdminState, "products" | "pages" | "articles" | "leads" | "contactChannels" | "uploadedFiles" | "storageQuotaBytes" | "users" | "rolePermissions" | "navigation" | "siteSettings" | "templateSettings" | "pageLayouts" | "aiSettings" | "aiCreditSettings" | "aiUsageRecords" | "activeTheme" | "enabledLocales">;
 type TemplateEditorMode = "form" | "visual";
 type VideoDialogTarget = "article" | "page";
 type MailActionResponse = {
@@ -703,6 +704,7 @@ const backupSectionOptions: { key: BackupSectionKey; label: string; description:
   { key: "leads", label: "询盘", description: "客户询盘、状态和分配记录。" },
   { key: "contactChannels", label: "社媒及联系", description: "联系方式、浮窗渠道、二维码 URL。" },
   { key: "uploadedFiles", label: "媒体记录", description: "媒体库列表、文件名、URL 和说明。" },
+  { key: "storageQuotaBytes", label: "存储额度", description: "全站共享存储空间上限。" },
   { key: "navigation", label: "导航栏", description: "前台菜单、子菜单、启用和排序。" },
   { key: "siteSettings", label: "常规设置", description: "站点标题、URL、语言、固定链接和隐私设置。" },
   { key: "templateSettings", label: "首页模板设置", description: "首屏、轮播、模块显示和首页数量。" },
@@ -715,7 +717,7 @@ const backupSectionOptions: { key: BackupSectionKey; label: string; description:
   { key: "aiCreditSettings", label: "AI 积分设置", description: "积分扣减和价格规则。" },
   { key: "aiUsageRecords", label: "AI 消耗记录", description: "用户 AI 调用和积分消耗明细。" }
 ];
-const sensitiveBackupSections = new Set<BackupSectionKey>(["users", "rolePermissions", "aiSettings", "aiCreditSettings", "aiUsageRecords"]);
+const sensitiveBackupSections = new Set<BackupSectionKey>(["users", "rolePermissions", "aiSettings", "aiCreditSettings", "aiUsageRecords", "storageQuotaBytes"]);
 const defaultBackupSections: BackupSectionKey[] = [
   "products",
   "pages",
@@ -1302,6 +1304,70 @@ function formatFileSize(size: number) {
   return `${(size / 1024 / 1024).toFixed(1)} MB`;
 }
 
+function StorageUsagePanel({ usage, canEdit, onSaved }: { usage: StorageUsage | null; canEdit: boolean; onSaved: (state: AdminState, usage: StorageUsage) => void }) {
+  const [limitMode, setLimitMode] = useState<"unlimited" | "limited">("unlimited");
+  const [limitMb, setLimitMb] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [message, setMessage] = useState("");
+
+  useEffect(() => {
+    setLimitMode(usage?.quotaBytes === null || usage?.quotaBytes === undefined ? "unlimited" : "limited");
+    setLimitMb(usage?.quotaBytes ? String(Math.round(usage.quotaBytes / 1024 / 1024)) : "");
+  }, [usage?.quotaBytes]);
+
+  async function saveLimit() {
+    const mb = Number(limitMb);
+    if (limitMode === "limited" && (!Number.isSafeInteger(mb) || mb <= 0 || !Number.isSafeInteger(mb * 1024 * 1024))) {
+      setMessage("请输入大于 0 的整数 MB。即使当前用量已超额，也可以先保存较低额度。");
+      return;
+    }
+    setSaving(true);
+    setMessage("");
+    try {
+      const response = await fetch("/api/admin/storage", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ quotaBytes: limitMode === "unlimited" ? null : mb * 1024 * 1024 })
+      });
+      const payload = await response.json() as { state?: AdminState; usage?: StorageUsage; error?: string };
+      if (!response.ok || !payload.state || !payload.usage) throw new Error(payload.error || "保存存储额度失败。");
+      onSaved(payload.state, payload.usage);
+      setMessage("存储额度已保存。");
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "保存存储额度失败。");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <section className="storage-usage-panel" aria-label="全站存储空间">
+      <div className="storage-usage-head"><h2>全站存储空间</h2><span>所有后台账号共享同一额度</span></div>
+      {usage ? <>
+        <div className="storage-usage-values">
+          <div><span>已使用</span><strong>{formatFileSize(usage.usedBytes)}</strong><small>{usage.usedBytes.toLocaleString()} 字节</small></div>
+          <div><span>站点数据</span><strong>{formatFileSize(usage.siteDataBytes)}</strong><small>文章、产品、页面、设置、询盘等</small></div>
+          <div><span>媒体文件</span><strong>{formatFileSize(usage.mediaBytes)}</strong><small>上传文件与 AI 图片</small></div>
+          <div><span>额度 / 剩余</span><strong>{usage.quotaBytes === null ? "不限额" : formatFileSize(usage.quotaBytes)}</strong><small>{usage.remainingBytes === null ? "可继续使用" : `剩余 ${formatFileSize(usage.remainingBytes)}`}</small></div>
+        </div>
+        {usage.quotaBytes !== null ? <div className="storage-usage-track" role="progressbar" aria-label="空间使用比例" aria-valuenow={Math.min(100, usage.percentUsed ?? 0)} aria-valuemin={0} aria-valuemax={100}><span style={{ width: `${Math.min(100, usage.percentUsed ?? 0)}%` }} /></div> : null}
+        {usage.exceeded ? <p className="storage-usage-warning">已超出设置额度。文章、设置和询盘仍可保存；新增媒体将被拦截。</p> : null}
+        <small className="storage-usage-note">按站点数据的 UTF-8 字节数和已上传媒体的原始文件字节数统计；站点代码自带的静态素材不计入媒体用量。</small>
+      </> : <span>正在读取空间使用情况…</span>}
+      {canEdit ? <div className="storage-quota-editor">
+        <label>空间上限
+          <select value={limitMode} onChange={(event) => setLimitMode(event.target.value as "unlimited" | "limited") }>
+            <option value="unlimited">不限额</option><option value="limited">指定额度</option>
+          </select>
+        </label>
+        {limitMode === "limited" ? <label>额度（MB）<input type="number" min="1" step="1" value={limitMb} onChange={(event) => setLimitMb(event.target.value)} /></label> : null}
+        <button type="button" disabled={saving} onClick={() => void saveLimit()}>{saving ? "保存中…" : "保存额度"}</button>
+        {message ? <span role="status">{message}</span> : null}
+      </div> : null}
+    </section>
+  );
+}
+
 function getMediaType(file: UploadedFile): MediaTypeFilter {
   const mimeType = file.mimeType.toLowerCase();
   const name = file.name.toLowerCase();
@@ -1548,6 +1614,7 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
   const [expandedUserPermissionsId, setExpandedUserPermissionsId] = useState<string | null>(null);
   const [resetUserPasswords, setResetUserPasswords] = useState<Record<string, string>>({});
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [storageUsage, setStorageUsage] = useState<StorageUsage | null>(null);
   const [accountPassword, setAccountPassword] = useState({ current: "", next: "", confirm: "" });
   const [frontendSettingsDirty, setFrontendSettingsDirty] = useState(false);
   const [newHeroSlideUrl, setNewHeroSlideUrl] = useState("");
@@ -1666,6 +1733,16 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
       })
       .catch(() => setStatus("后台会话失效，请重新登录"));
   }, [email]);
+
+  useEffect(() => {
+    if (!state?.updatedAt) return;
+    let cancelled = false;
+    fetch("/api/admin/storage")
+      .then((response) => response.ok ? response.json() as Promise<StorageUsage> : Promise.reject(new Error("空间统计读取失败")))
+      .then((usage) => { if (!cancelled) setStorageUsage(usage); })
+      .catch(() => { if (!cancelled) setStorageUsage(null); });
+    return () => { cancelled = true; };
+  }, [state?.updatedAt, state?.uploadedFiles.length]);
 
   useEffect(() => {
     if (activeThemeKey) applyThemeToDocument(activeThemeKey);
@@ -7143,6 +7220,7 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
 
           {tab === "files" ? (
             <>
+              <StorageUsagePanel usage={storageUsage} canEdit={canResetUserPasswords} onSaved={(savedState, usage) => { setState(savedState); setStorageUsage(usage); }} />
               <section className="file-upload-panel media-upload-panel">
                 <div>
                   <strong>站点媒体与资料库</strong>
@@ -7187,7 +7265,7 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
                     </div>
                     <div className="file-card-actions">
                       <a href={file.url} download={file.name}>下载</a>
-                      <button type="button" onClick={() => removeUploadedFile(file.id)}>删除</button>
+                      {file.storageKey ? <button type="button" onClick={() => removeUploadedFile(file.id)}>删除</button> : <small>站点内置素材</small>}
                     </div>
                   </article>
                 ))}
@@ -8517,6 +8595,7 @@ export function AdminApp({ email, initialTab, locale }: { email: string; initial
           {tab === "account" ? (
             <>
               <h1>账号设置</h1>
+              <StorageUsagePanel usage={storageUsage} canEdit={canResetUserPasswords} onSaved={(savedState, usage) => { setState(savedState); setStorageUsage(usage); }} />
               <div className="account-settings-grid">
                 <section className="account-profile-card">
                   <div className="account-avatar-large">

@@ -1,7 +1,7 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "exportforge-b2b-site-system",
-  "main": ".open-next/worker.js",
+  "main": "custom-worker.ts",
   "compatibility_date": "2026-05-23",
   "compatibility_flags": ["nodejs_compat"],
   "assets": {
@@ -19,6 +19,14 @@
       "binding": "EXPORTFORGE_KV",
       "id": "dec332f8417141759ed4c6ffc1838bc3"
     }
+  ],
+  "durable_objects": {
+    "bindings": [
+      { "name": "STORAGE_QUOTA_COORDINATOR", "class_name": "StorageQuotaCoordinator" }
+    ]
+  },
+  "migrations": [
+    { "tag": "storage-quota-v1", "new_sqlite_classes": ["StorageQuotaCoordinator"] }
   ],
   "vars": {
     "NEXT_PUBLIC_SITE_URL": "https://exportforge-b2b-site-system.workers.dev",

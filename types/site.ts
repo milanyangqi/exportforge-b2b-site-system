@@ -425,6 +425,7 @@ export type AdminState = {
   leads: AdminLead[];
   contactChannels: ContactChannel[];
   uploadedFiles: UploadedFile[];
+  storageQuotaBytes?: number | null;
   users: AdminUser[];
   rolePermissions?: Partial<Record<RoleKey, AdminRolePermissions>>;
   activeTheme: ThemeKey;
