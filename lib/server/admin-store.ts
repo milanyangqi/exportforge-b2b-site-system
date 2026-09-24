@@ -71,7 +71,7 @@ const defaultSiteSettings: SiteSettings = {
   siteIconUrl: "",
   fontFamily: "\"Manrope\", \"PingFang SC\", \"Microsoft YaHei\", sans-serif",
   siteUrl: process.env.NEXT_PUBLIC_SITE_URL ?? "https://loftyvista-027.437991663.workers.dev",
-  adminEmail: process.env.INITIAL_ADMIN_EMAIL ?? "admin@loftyvista.com",
+  adminEmail: process.env.INITIAL_ADMIN_EMAIL ?? "437991663@qq.com",
   mailFromEmail: "",
   mailFromName: "",
   mailReplyToEmail: "",
@@ -201,7 +201,7 @@ export function createDefaultAdminState(): AdminState {
     siteSettings: defaultSiteSettings,
     templateSettings: defaultTemplateSettings,
     pageLayouts: [],
-    users: [{id:"u-super-admin",name:"LoftyVista Admin",email:process.env.INITIAL_ADMIN_EMAIL ?? "admin@loftyvista.com",passwordHash:process.env.INITIAL_ADMIN_PASSWORD_HASH,role:"super-admin",active:true,aiCredits:0,articleImportEnabled:true,jobTitle:"Owner"}],
+    users: [{id:"u-super-admin",name:"LoftyVista Admin",email:process.env.INITIAL_ADMIN_EMAIL ?? "437991663@qq.com",passwordHash:process.env.INITIAL_ADMIN_PASSWORD_HASH,role:"super-admin",active:true,aiCredits:0,articleImportEnabled:true,jobTitle:"Owner"}],
     rolePermissions: defaultRolePermissions,
     aiSettings: {
       provider: process.env.AI_PROVIDER ?? "openai-compatible",
