@@ -12,6 +12,7 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
+  if (id.startsWith("rfq-")) return new Response("File not found", { status: 404 });
   const file = await readStoredFile(id);
 
   if (!file) {

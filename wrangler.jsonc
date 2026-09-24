@@ -1,9 +1,11 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "exportforge-b2b-site-system",
+  "name": "curiousmake-030",
   "main": ".open-next/worker.js",
   "compatibility_date": "2026-05-23",
-  "compatibility_flags": ["nodejs_compat"],
+  "compatibility_flags": [
+    "nodejs_compat"
+  ],
   "assets": {
     "directory": ".open-next/assets",
     "binding": "ASSETS"
@@ -11,17 +13,17 @@
   "services": [
     {
       "binding": "WORKER_SELF_REFERENCE",
-      "service": "exportforge-b2b-site-system"
+      "service": "curiousmake-030"
     }
   ],
   "kv_namespaces": [
     {
       "binding": "EXPORTFORGE_KV",
-      "id": "dec332f8417141759ed4c6ffc1838bc3"
+      "id": "86f57fa72e7e4e518fdcbb7281fae90b"
     }
   ],
   "vars": {
-    "NEXT_PUBLIC_SITE_URL": "https://exportforge-b2b-site-system.workers.dev",
-    "INITIAL_ADMIN_EMAIL": "admin@example.com"
+    "NEXT_PUBLIC_SITE_URL": "https://curiousmake-030.437991663.workers.dev",
+    "INITIAL_ADMIN_EMAIL": "437991663@qq.com"
   }
 }

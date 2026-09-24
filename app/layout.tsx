@@ -5,8 +5,8 @@ import "@/styles/public-site.css";
 import "@/styles/active-template.css";
 
 export const metadata: Metadata = {
-  title: "KeyproTools | Carbide End Mills, Drill Bits, and OEM Cutting Tools",
-  description: "KeyproTools supplies carbide end mills, drill bits, coatings, OEM laser marking, private-label packaging, and export-ready cutting tool programs.",
+  title: "CuriousMake | Custom 3D Printing from Your CAD File",
+  description: "CuriousMake receives custom 3D printing inquiries from overseas buyers. Send your CAD drawing and requirements for review.",
   robots: {
     index: process.env.NEXT_PUBLIC_SITE_INDEXABLE === "true",
     follow: process.env.NEXT_PUBLIC_SITE_INDEXABLE === "true"

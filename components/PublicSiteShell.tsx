@@ -117,6 +117,13 @@ function BrandLink({
   );
 }
 
+function MobileLinks({ locale, navigation, ctaHref }: { locale: LocaleCode; navigation: NavigationNode[]; ctaHref: string }) {
+  return <nav className="cm-mobile-nav" aria-label={locale === "zh" ? "移动端导航" : "Mobile navigation"}>
+    {navigation.map((item) => <Link key={item.id} href={resolvePublicHref(item.href, locale)}>{t(item.label, locale)}</Link>)}
+    <Link href={ctaHref}>{locale === "zh" ? "获取报价" : "Request a Quote"}</Link>
+  </nav>;
+}
+
 export function PublicHeaderShell({
   brandName,
   ctaHref = "#rfq",
@@ -140,6 +147,7 @@ export function PublicHeaderShell({
     : undefined;
 
   return (
+    <>
     <header className="site-header">
       <BrandLink
         brandName={brandName}
@@ -160,6 +168,8 @@ export function PublicHeaderShell({
         </a>
       </div>
     </header>
+    <MobileLinks locale={locale} navigation={navigationTree} ctaHref={ctaHref} />
+    </>
   );
 }
 
@@ -205,6 +215,7 @@ export function HomeNavigationShell({
           </a>
         </div>
       </div>
+      <MobileLinks locale={locale} navigation={navigationTree} ctaHref="#rfq" />
     </section>
   );
 }
@@ -233,11 +244,11 @@ export function PublicFooterShell({
   const handleLinkClick: LinkClickHandler | undefined = preventNavigation
     ? (event) => event.preventDefault()
     : undefined;
-  const footerTagline = tagline ? t(tagline, locale) : "Carbide end mills, drill bits, OEM tooling, and export-ready packing for global buyers.";
+  const footerTagline = tagline ? t(tagline, locale) : "Custom 3D printing inquiries for overseas buyers.";
   const footerCopyright = (copyright ? t(copyright, locale) : "Copyright © {year} {brand}. All rights reserved.")
     .replaceAll("{year}", String(new Date().getFullYear()))
     .replaceAll("{brand}", brandName);
-  const footerCredit = credit ? t(credit, locale) : "Built for precision tooling and B2B export orders.";
+  const footerCredit = credit ? t(credit, locale) : "From drawing to discussion.";
 
   return (
     <footer className="site-footer">

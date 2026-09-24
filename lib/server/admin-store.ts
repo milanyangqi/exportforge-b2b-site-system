@@ -27,7 +27,7 @@ type CloudflareContext = {
 
 const stateKey = "admin-state";
 const uploadKeyPrefix = "upload:";
-const currentTemplateContentVersion = "current-template-keyprotools-v1";
+const currentTemplateContentVersion = "current-template-curiousmake-rfq-11-v1";
 const adminTabKeys = new Set(["overview", "products", "pages", "articles", "files", "leads", "mail", "contacts", "navigation", "users", "collect", "templates", "settings", "languages", "themes", "ai"]);
 const settingsSectionKeys = new Set(["general", "writing", "reading", "seo", "media", "permalinks", "privacy", "ai", "translation", "backup"]);
 const defaultRolePermissions: Record<RoleKey, AdminRolePermissions> = {
@@ -61,37 +61,21 @@ const legacyTemplateAssetPath = "/assets/tools/";
 const currentTemplateAssetPath = "/assets/current-template/";
 const homeTemplateKeys = new Set<HomeTemplateKey>(["industrial-showcase", "catalog-focus", "rfq-focus"]);
 const homeSectionKeys: HomeSectionKey[] = ["navigation", "hero", "products", "factory", "markets", "articles", "rfq"];
-const defaultHeroSlides: SiteHeroSlide[] = [
-  {
-    id: "hero-tooling-range",
-    imageUrl: "/assets/current-template/hero-tooling-range.jpg",
-    alt: { en: "Carbide end mills and drill bits hero poster", zh: "硬质合金铣刀与钻头首页海报" },
-    enabled: true,
-    order: 10
-  },
-  {
-    id: "hero-cnc-factory",
-    imageUrl: "/assets/current-template/hero-cnc-factory.jpg",
-    alt: { en: "CNC factory tooling production hero poster", zh: "CNC 工厂刀具生产首页海报" },
-    enabled: true,
-    order: 20
-  },
-  {
-    id: "hero-export-packing",
-    imageUrl: "/assets/current-template/hero-export-packing.jpg",
-    alt: { en: "Export packing and OEM tooling hero poster", zh: "出口包装与 OEM 刀具首页海报" },
-    enabled: true,
-    order: 30
-  }
-];
+const defaultHeroSlides: SiteHeroSlide[] = [{
+  id: "curiousmake-hero",
+  imageUrl: "/assets/current-template/hero.webp",
+  alt: { en: "Illustrative custom 3D printed bracket", zh: "定制 3D 打印支架示意图" },
+  enabled: true,
+  order: 10
+}];
 
 const defaultSiteSettings: SiteSettings = {
   title: siteSettings.brand,
-  tagline: "Carbide end mills, drill bits, OEM tooling, and export-ready packing.",
+  tagline: "Custom 3D printing inquiries based on your drawing and requirements.",
   contentVersion: currentTemplateContentVersion,
   siteIconUrl: "",
   fontFamily: "\"Manrope\", \"PingFang SC\", \"Microsoft YaHei\", sans-serif",
-  siteUrl: process.env.NEXT_PUBLIC_SITE_URL ?? "https://exportforge-b2b-site-system.437991663.workers.dev",
+  siteUrl: process.env.NEXT_PUBLIC_SITE_URL ?? "https://curiousmake-030.437991663.workers.dev",
   adminEmail: process.env.INITIAL_ADMIN_EMAIL ?? "admin@example.com",
   mailFromEmail: "",
   mailFromName: "",
@@ -116,7 +100,7 @@ const defaultSiteSettings: SiteSettings = {
   mailApiBaseUrl: "https://api.resend.com/emails",
   mailApiKey: "",
   mailApiKeyConfigured: false,
-  mailReplyTemplate: "Hello {name},\n\nThank you for your RFQ about {productType}. We have received your inquiry and will follow up with tooling details, quotation, and lead time soon.\n\nBest regards,\n{siteTitle}",
+  mailReplyTemplate: "Hello {name},\n\nThank you for your custom 3D printing inquiry about {productType}. We will review the details you supplied and contact you about next steps.\n\nBest regards,\n{siteTitle}",
   allowRegistration: false,
   defaultUserRole: "viewer",
   siteLanguage: "zh",
@@ -140,57 +124,14 @@ const defaultSiteSettings: SiteSettings = {
   fileUrlBase: "files",
   privacyPageUrl: "/privacy",
   cookieNoticeEnabled: false,
-  privacySummary: "We use submitted RFQ details only for tooling quotation, sales follow-up, and service improvement."
+  privacySummary: "We use submitted RFQ details and drawings to review your request and contact you about a quotation."
 };
 
 const defaultTemplateTextBlocks: Record<string, Translation> = {
-  productsEyebrow: { en: "Product catalog", zh: "PRODUCT CATALOG" },
-  productsTitle: { en: "End mills, drill bits, and OEM tooling built for repeat purchasing.", zh: "硬质合金刀具目录" },
-  productsBody: {
-    en: "Browse core categories for CNC shops, hardware distributors, maintenance suppliers, and private-label tool programs.",
-    zh: "覆盖经销商备货、工厂加工与定制刀具需求。"
-  },
-  factoryEyebrow: { en: "Factory capability", zh: "工厂能力" },
-  factoryTitle: { en: "Geometry, coating, inspection, and packing are aligned before every export order.", zh: "从几何、涂层到包装的供应能力" },
-  factoryCard1Title: { en: "Tool geometry", zh: "OEM 图纸定制" },
-  factoryCard1Body: { en: "Square, ball nose, corner radius, long-neck, micro, step, and coolant-through options.", zh: "适合经销商长期备货、样品确认与批量订单。" },
-  factoryCard2Title: { en: "Coating choice", zh: "涂层与刃口处理" },
-  factoryCard2Body: { en: "AlTiN, TiSiN, DLC, bright finish, and buyer-specific series positioning.", zh: "适合经销商长期备货、样品确认与批量订单。" },
-  factoryCard3Title: { en: "Export packing", zh: "私标包装交付" },
-  factoryCard3Body: { en: "Plastic tubes, foam trays, barcode labels, carton marks, and distributor-ready assortments.", zh: "适合经销商长期备货、样品确认与批量订单。" },
-  marketsEyebrow: { en: "Global supply", zh: "出口市场" },
-  marketsTitle: { en: "Buyer-ready communication for distributors across major tooling markets.", zh: "多语言市场与 RFQ 清单" },
-  marketsBody: {
-    en: "KeyproTools supports multilingual product pages, quick RFQ details, and export documentation for buyers comparing end mills, drill bits, and OEM assortments.",
-    zh: "支持多语言产品页、快速 RFQ 信息和出口文件，适合铣刀、钻头与 OEM 组合采购。"
-  },
-  marketsChecklistTitle: { en: "RFQ checklist", zh: "RFQ 清单" },
-  marketsChecklist1: { en: "Tool type, diameter, flute length, overall length, and shank.", zh: "刀具类型、直径、刃长、总长和柄径。" },
-  marketsChecklist2: { en: "Workpiece material, hardness, coating, and cutting condition.", zh: "工件材料、硬度、涂层和切削条件。" },
-  marketsChecklist3: { en: "Quantity, packaging, laser marking, destination, and delivery target.", zh: "数量、包装、激光打标、目的地和交付目标。" },
-  marketsNote: { en: siteSettings.aiDraftPolicy, zh: siteSettings.aiDraftPolicy },
-  articlesEyebrow: { en: "Technical articles", zh: "技术文章" },
-  articlesTitle: { en: "Selection guides for buyers comparing tool geometry, coating, and packaging.", zh: "技术文章" },
-  rfqEyebrow: { en: "Request a quote", zh: "询盘表单" },
-  rfqTitle: { en: "Share your tool list and export requirements.", zh: "把刀具清单发给 KeyproTools" },
-  rfqBody: {
-    en: "Send product type, size range, quantity, coating, destination, and packing needs. The sales team will turn it into a clear quotation.",
-    zh: "规格、数量、涂层、包装和交期信息会在前台询盘表单中收集。"
-  },
-  rfqGuidanceTitle: { en: "For a faster reply, include:", zh: "为了更快回复，请包含：" },
-  rfqGuidance1: { en: "Tool diameter, flute length, shank size, and tolerance.", zh: "刀具直径、刃长、柄径和公差。" },
-  rfqGuidance2: { en: "Workpiece material, coating preference, and application details.", zh: "工件材料、涂层偏好和应用细节。" },
-  rfqGuidance3: { en: "Packaging, private label, target quantity, and delivery market.", zh: "包装、私标、目标数量和交付市场。" },
-  rfqNote: {
-    en: "KeyproTools usually reviews RFQ details by product family so the quotation can match stock, OEM marking, and export packing requirements.",
-    zh: "KeyproTools 会按产品系列审核 RFQ 信息，让报价匹配库存、OEM 打标和出口包装要求。"
-  },
-  heroMetric1Value: { en: "0.2-25mm", zh: "6 条产品线" },
-  heroMetric1Label: { en: "End mill diameter range", zh: "产品目录" },
-  heroMetric2Value: { en: "HSS / M35 / Carbide", zh: "OEM 定制" },
-  heroMetric2Label: { en: "Drill bit supply", zh: "图纸与私标" },
-  heroMetric3Value: { en: "OEM", zh: "出口包装" },
-  heroMetric3Label: { en: "Laser marking and packing", zh: "经销商备货" }
+  productsTitle: { en: "Illustrative custom part forms", zh: "定制零件结构示意" },
+  productsBody: { en: "Send your drawing for a feasibility review and quotation.", zh: "提交图纸以评估可制造性并获取报价。" },
+  rfqTitle: { en: "Tell us what you need to make.", zh: "告诉我们您要加工什么。" },
+  rfqBody: { en: "Upload a CAD file and share quantity, material, finish and delivery requirements.", zh: "上传 CAD 文件并说明数量、材料、表面及交付要求。" }
 };
 
 function normalizeCurrentTemplateAssetUrl(value?: string) {
@@ -206,31 +147,31 @@ function normalizeCurrentTemplateAssetTranslation(value?: Partial<Translation>) 
 
 const defaultTemplateSettings: SiteTemplateSettings = {
   homeTemplate: "industrial-showcase",
-  heroKicker: { en: "CNC cutting tools for global buyers", zh: "面向全球买家的 CNC 刀具供应" },
-  heroTitle: { en: "Carbide end mills and drill bits ready for distributor programs.", zh: "面向经销商长期备货的硬质合金铣刀与钻头。" },
+  heroKicker: { en: "Custom 3D printing for global buyers", zh: "面向海外客户的定制 3D 打印" },
+  heroTitle: { en: "Your CAD file. A real part. A clearer path forward.", zh: "从图纸出发，定制您需要的零件。" },
   heroBody: {
-    en: "KeyproTools supplies end mills, drill bits, custom tooling, coating options, private-label packing, and export-ready QC support for hardware and machining buyers.",
-    zh: "KeyproTools 提供铣刀、钻头、定制刀具、涂层方案、私标包装和出口质检支持，服务五金工具与机加工采购商。"
+    en: "Send your 3D model and requirements to discuss a custom part. We review geometry, material preference, quantity and delivery needs before quoting.",
+    zh: "提交 3D 模型与需求，沟通零件结构、材料偏好、数量和交付要求后再报价。"
   },
-  primaryCtaLabel: { en: "Request Quote", zh: "获取报价" },
-  secondaryCtaLabel: { en: "Products", zh: "产品目录" },
-  heroCarouselEnabled: true,
+  primaryCtaLabel: { en: "Upload CAD & Request a Quote", zh: "上传图纸获取报价" },
+  secondaryCtaLabel: { en: "Part Gallery", zh: "零件图库" },
+  heroCarouselEnabled: false,
   heroCarouselAutoplay: true,
   heroCarouselIntervalSeconds: 7,
   heroSlides: defaultHeroSlides,
   showHeroVisual: true,
-  showHeroMetrics: true,
+  showHeroMetrics: false,
   footerTagline: {
-    en: "Carbide end mills, drill bits, OEM tooling, and export-ready packing for global buyers.",
-    zh: "硬质合金铣刀、钻头、OEM 刀具和面向全球买家的出口包装。"
+    en: "Custom 3D printing inquiries for overseas buyers.",
+    zh: "面向海外客户的定制 3D 打印询价。"
   },
   footerCopyright: {
     en: "Copyright © {year} {brand}. All rights reserved.",
     zh: "Copyright © {year} {brand}. All rights reserved."
   },
   footerCredit: {
-    en: "Built for precision tooling and B2B export orders.",
-    zh: "为精密刀具和 B2B 出口订单打造。"
+    en: "From drawing to discussion.",
+    zh: "从图纸到沟通。"
   },
   homeProductCount: 6,
   homeArticleCount: 6,
@@ -316,9 +257,9 @@ export function createDefaultAdminState(): AdminState {
       voiceBaseUrl: process.env.AI_VOICE_BASE_URL ?? "https://api.openai.com/v1",
       voiceApiKey: process.env.AI_VOICE_API_KEY ?? "",
       defaultLocale: "en",
-      brandVoice: "Clear, technical, buyer-focused cutting tool copy for KeyproTools.",
-      targetMarkets: ["Europe", "North America", "Southeast Asia", "MENA"],
-      requiredKeywords: ["carbide end mills", "drill bits", "OEM tooling", "quality inspection"],
+      brandVoice: "Clear, evidence-based copy for custom 3D printing inquiries. Do not invent capabilities.",
+      targetMarkets: [],
+      requiredKeywords: ["custom 3D printing", "CAD file", "request a quote"],
       blockedWords: [],
       enabled: Boolean(process.env.AI_API_KEY)
     },
@@ -653,22 +594,22 @@ function mergeContactChannels(existingChannels = contactChannels) {
 function normalizeActiveTemplateContactChannels(existingChannels = contactChannels) {
   return mergeContactChannels(existingChannels).map((channel) => {
     if (channel.id === "email" && (channel.value === "sales@example.com" || channel.href === "mailto:sales@example.com")) {
-      return { ...channel, value: "sales@keyprotools.com", href: "mailto:sales@keyprotools.com" };
+      return { ...channel, value: "sales@curiousmake.com", href: "mailto:sales@curiousmake.com" };
     }
 
     if (channel.id === "wechat" && channel.value === "ExportFactory") {
-      return { ...channel, value: "KeyproTools" };
+      return { ...channel, value: "CuriousMake" };
     }
 
     if (channel.value === "ExportForge") {
-      return { ...channel, value: "KeyproTools", href: channel.href.replace(/exportforge/gi, "keyprotools") };
+      return { ...channel, value: "CuriousMake", href: channel.href.replace(/exportforge/gi, "curiousmake") };
     }
 
     if (channel.value.toLowerCase().includes("exportforge") || channel.href.toLowerCase().includes("exportforge")) {
       return {
         ...channel,
-        value: channel.value.replace(/exportforge/gi, "keyprotools"),
-        href: channel.href.replace(/exportforge/gi, "keyprotools")
+        value: channel.value.replace(/exportforge/gi, "curiousmake"),
+        href: channel.href.replace(/exportforge/gi, "curiousmake")
       };
     }
 

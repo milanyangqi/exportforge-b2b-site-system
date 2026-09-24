@@ -1962,7 +1962,7 @@
   color: #fff;
   background:
     linear-gradient(135deg, rgba(4, 18, 27, 0.92), rgba(11, 95, 125, 0.86)),
-    url("/assets/current-template/hero-tooling-range.jpg") center / cover;
+    url("/assets/current-template/hero.webp") center / cover;
   box-shadow: 0 24px 64px rgba(9, 36, 54, 0.18);
 }
 

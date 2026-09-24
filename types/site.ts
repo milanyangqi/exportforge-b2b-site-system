@@ -178,6 +178,8 @@ export type LeadPayload = {
 };
 
 export type AdminLead = LeadPayload & {
+  attachmentId?: string;
+  attachmentName?: string;
   id: string;
   status: LeadStatus;
   createdAt: string;

@@ -1,292 +1,71 @@
-import { Fragment, type CSSProperties } from "react";
-import { IndustrialVisual } from "@/components/IndustrialVisual";
-import { HeroPosterCarousel } from "@/components/HeroPosterCarousel";
-import { ProductGrid } from "@/components/ProductGrid";
+/* eslint-disable @next/next/no-img-element */
 import { HomeNavigationShell } from "@/components/PublicSiteShell";
 import { RfqForm } from "@/components/RfqForm";
-import { locales } from "@/config/locales";
-import { themes } from "@/config/themes";
-import { siteSettings } from "@/data/site";
-import { t, ui } from "@/lib/i18n";
-import type { AdminState, HomeSectionKey, LocaleCode, SiteTemplateCustomBlock } from "@/types/site";
+import { t } from "@/lib/i18n";
+import type { AdminState, LocaleCode } from "@/types/site";
+
+const asset = "/assets/current-template/";
 
 export function ActiveTemplate({ locale, state }: { locale: LocaleCode; state: AdminState }) {
-  const activeTheme = themes[state.activeTheme] ?? themes.industrial;
-  const templateSettings = state.templateSettings;
-  const homeArticles = state.articles
-    .filter((article) => article.status === "published" && article.featuredOnHome)
-    .slice(0, templateSettings.homeArticleCount);
-  const homeProducts = state.products.slice(0, templateSettings.homeProductCount);
-  const visibleLocales = locales.filter((item) => state.enabledLocales.includes(item.code));
-  const templateText = (key: string, fallback: string) => {
-    const value = templateSettings.textBlocks[key];
-    return value ? t(value, locale) : fallback;
-  };
-  const getCustomBlockImages = (block: SiteTemplateCustomBlock) => {
-    const images = (block.imageItems ?? [])
-      .filter((item) => item.enabled && item.url.trim())
-      .sort((a, b) => a.order - b.order);
-
-    if (images.length > 0) return images;
-    return block.mediaUrl ? [{
-      id: `${block.id}-fallback-image`,
-      url: block.mediaUrl,
-      alt: block.title,
-      caption: { en: "", zh: "" },
-      enabled: true,
-      order: 10
-    }] : [];
-  };
-  const renderCustomBlockImages = (block: SiteTemplateCustomBlock, title: string) => {
-    const layout = block.imageLayout ?? "single";
-    const images = layout === "single" ? getCustomBlockImages(block).slice(0, 1) : getCustomBlockImages(block);
-    if (images.length === 0) return null;
-
-    return (
-      <div
-        className={`custom-template-image-set layout-${layout}${block.imageCarouselAutoplay ?? true ? " autoplay" : ""}`}
-        style={{ "--custom-carousel-duration": `${Math.max(3, Math.min(15, block.imageCarouselIntervalSeconds ?? 5))}s` } as CSSProperties}
-      >
-        {images.map((item) => (
-          <figure className="custom-template-media" key={item.id}>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={item.url} alt={item.alt ? t(item.alt, locale) : title} loading="lazy" />
-            {item.caption && t(item.caption, locale) ? <figcaption>{t(item.caption, locale)}</figcaption> : null}
-          </figure>
-        ))}
-        {layout === "carousel" && images.length > 1 ? (
-          <div className="custom-template-carousel-dots" aria-hidden="true">
-            {images.map((item, index) => <span className={index === 0 ? "active" : ""} key={item.id} />)}
-          </div>
-        ) : null}
-      </div>
-    );
-  };
-  const renderCustomBlockVideo = (mediaUrl: string, title: string) => {
-    if (!mediaUrl) return null;
-    const isDirectVideo = /\.(mp4|webm|ogg)(\?.*)?$/i.test(mediaUrl);
-
-    return (
-      <figure className="custom-template-media video">
-        {isDirectVideo ? (
-          <video src={mediaUrl} controls preload="metadata" />
-        ) : (
-          <iframe src={mediaUrl} title={title} allow="autoplay; fullscreen; picture-in-picture" allowFullScreen />
-        )}
-      </figure>
-    );
-  };
-  const coreHomeSections = [
-    {
-      key: "navigation" as HomeSectionKey,
-      order: templateSettings.sectionOrder.navigation,
-      node: (
-        <HomeNavigationShell
-          brandName={state.siteSettings.title || "Export site"}
-          ctaLabel={t(templateSettings.primaryCtaLabel, locale) || t(ui.quote, locale)}
-          enabledLocales={state.enabledLocales}
-          locale={locale}
-          navigation={state.navigation}
-        />
-      )
-    },
-    {
-      key: "hero" as HomeSectionKey,
-      order: templateSettings.sectionOrder.hero,
-      node: (
-        <section className={`hero-section home-template-${templateSettings.homeTemplate}${templateSettings.showHeroVisual ? "" : " hero-no-visual"}`}>
-          {templateSettings.heroCarouselEnabled ? (
-            <HeroPosterCarousel
-              enabled={templateSettings.heroCarouselAutoplay}
-              intervalSeconds={templateSettings.heroCarouselIntervalSeconds}
-              slides={templateSettings.heroSlides}
-            />
-          ) : null}
-          <div className="hero-poster-overlay" aria-hidden="true" />
-          <div className="hero-inner">
-            <div className="hero-copy">
-              <span className="eyebrow">{t(templateSettings.heroKicker, locale) || t(ui.heroKicker, locale)}</span>
-              <h1>{t(templateSettings.heroTitle, locale) || t(ui.heroTitle, locale)}</h1>
-              <p>{t(templateSettings.heroBody, locale) || t(ui.heroBody, locale)}</p>
-              <div className="hero-actions">
-                <a className="button primary" href="#rfq">{t(templateSettings.primaryCtaLabel, locale) || t(ui.quote, locale)}</a>
-                <a className="button secondary" href={`/${locale}/products`}>{t(templateSettings.secondaryCtaLabel, locale) || t(ui.navProducts, locale)}</a>
-              </div>
-              {templateSettings.showHeroMetrics ? (
-                <div className="metrics">
-                  <div><strong>{templateText("heroMetric1Value", "24h")}</strong><span>{templateText("heroMetric1Label", "RFQ response workflow")}</span></div>
-                  <div><strong>{templateText("heroMetric2Value", "OEM")}</strong><span>{templateText("heroMetric2Label", "Custom supply support")}</span></div>
-                  <div><strong>{templateText("heroMetric3Value", "OEM")}</strong><span>{templateText("heroMetric3Label", "Laser marking and packing")}</span></div>
-                </div>
-              ) : null}
-            </div>
-            {templateSettings.showHeroVisual ? <IndustrialVisual /> : null}
-          </div>
-        </section>
-      )
-    },
-    {
-      key: "products" as HomeSectionKey,
-      order: templateSettings.sectionOrder.products,
-      node: (
-        <section className="section">
-          <div className="section-head">
-            <span className="eyebrow">{templateText("productsEyebrow", "Cutting tool catalog")}</span>
-            <h2>{templateText("productsTitle", "Product categories built for repeat purchasing.")}</h2>
-            <p>{templateText("productsBody", "Browse current categories, compare application fit, and send RFQ details.")}</p>
-          </div>
-          <ProductGrid flat locale={locale} products={homeProducts} />
-        </section>
-      )
-    },
-    {
-      key: "factory" as HomeSectionKey,
-      order: templateSettings.sectionOrder.factory,
-      node: (
-        <section className="section dark-band">
-          <div className="section-head">
-            <span className="eyebrow">{templateText("factoryEyebrow", "Factory support")}</span>
-            <h2>{templateText("factoryTitle", "Geometry, coating, inspection, and packing are aligned before every export order.")}</h2>
-          </div>
-          <div className="theme-grid">
-            {[
-              [templateText("factoryCard1Title", "Tool geometry"), templateText("factoryCard1Body", "Square, ball nose, corner radius, long-neck, micro, step, and coolant-through options.")],
-              [templateText("factoryCard2Title", "Coating choice"), templateText("factoryCard2Body", "AlTiN, TiSiN, DLC, bright finish, and buyer-specific series positioning.")],
-              [templateText("factoryCard3Title", "Export packing"), templateText("factoryCard3Body", "Plastic tubes, foam trays, barcode labels, carton marks, and distributor-ready assortments.")]
-            ].map(([title, body], index) => (
-              <article key={title} className={index === 0 ? "theme-card active" : "theme-card"}>
-                <span style={{ background: index === 0 ? activeTheme.colors.accent : activeTheme.colors.primary }} />
-                <h3>{title}</h3>
-                <p>{body}</p>
-              </article>
-            ))}
-          </div>
-        </section>
-      )
-    },
-    {
-      key: "markets" as HomeSectionKey,
-      order: templateSettings.sectionOrder.markets,
-      node: (
-        <section className="section split">
-          <div>
-            <span className="eyebrow">{templateText("marketsEyebrow", "Export markets")}</span>
-            <h2>{templateText("marketsTitle", "Buyer-ready communication for global markets.")}</h2>
-            <p>
-              {templateText("marketsBody", "Support multilingual product pages, quick RFQ details, and export documentation for buyers comparing supplier options.")}
-            </p>
-            <div className="language-strip">
-              {visibleLocales.map((item) => (
-                <span key={item.code}>{item.nativeName}</span>
-              ))}
-            </div>
-          </div>
-          <div className="workflow-panel">
-            <h3>{templateText("marketsChecklistTitle", "RFQ checklist")}</h3>
-            <ol>
-              <li>{templateText("marketsChecklist1", "Tool type, diameter, flute length, overall length, and shank.")}</li>
-              <li>{templateText("marketsChecklist2", "Workpiece material, hardness, coating, and cutting condition.")}</li>
-              <li>{templateText("marketsChecklist3", "Quantity, packaging, laser marking, destination, and delivery target.")}</li>
-            </ol>
-            <p>{templateText("marketsNote", siteSettings.aiDraftPolicy)}</p>
-          </div>
-        </section>
-      )
-    },
-    {
-      key: "articles" as HomeSectionKey,
-      order: templateSettings.sectionOrder.articles,
-      node: (
-        <section className="section">
-          <div className="section-head">
-            <span className="eyebrow">{templateText("articlesEyebrow", "Technical articles")}</span>
-            <h2>{templateText("articlesTitle", "Selection guides for buyers comparing tool geometry, coating, and packaging.")}</h2>
-          </div>
-          <div className="article-grid">
-            {homeArticles.map((article) => (
-              <a key={article.slug} className="article-card" href={`/${locale}/articles/${article.slug}`}>
-                {article.coverImageUrl ? (
-                  <span className="article-card-media">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={article.coverImageUrl} alt={t(article.title, locale)} loading="lazy" />
-                  </span>
-                ) : null}
-                <span>{article.category}</span>
-                <h3>{t(article.title, locale)}</h3>
-                <p>{t(article.excerpt, locale)}</p>
-              </a>
-            ))}
-            {homeArticles.length === 0 ? <p>暂无已发布并同步首页的文章。</p> : null}
-          </div>
-        </section>
-      )
-    },
-    {
-      key: "rfq" as HomeSectionKey,
-      order: templateSettings.sectionOrder.rfq,
-      node: (
-        <section className="section rfq-section" id="rfq">
-          <div className="rfq-copy">
-            <span className="eyebrow">{templateText("rfqEyebrow", "Request a quote")}</span>
-            <h2>{templateText("rfqTitle", "Share your tool list and export requirements.")}</h2>
-            <p>{templateText("rfqBody", "Send product type, size range, quantity, coating, destination, and packing needs. The sales team will turn it into a clear quotation.")}</p>
-            <div className="rfq-guidance">
-              <strong>{templateText("rfqGuidanceTitle", "For a faster reply, include:")}</strong>
-              <ul>
-                <li>{templateText("rfqGuidance1", "Tool diameter, flute length, shank size, and tolerance.")}</li>
-                <li>{templateText("rfqGuidance2", "Workpiece material, coating preference, and application details.")}</li>
-                <li>{templateText("rfqGuidance3", "Packaging, private label, target quantity, and delivery market.")}</li>
-              </ul>
-            </div>
-            <p className="rfq-response-note">{templateText("rfqNote", "RFQ details are reviewed by product family so the quotation can match stock, customization, and export packing requirements.")}</p>
-          </div>
-          <RfqForm locale={locale} />
-        </section>
-      )
-    }
+  const zh = locale === "zh";
+  const copy = (en: string, cn: string) => zh ? cn : en;
+  const quoteHref = `/${locale}/contact#rfq`;
+  const guide = [
+    { number: "01", title: copy("Send your drawing", "发送图纸"), body: copy("Share a CAD file or describe the part you need.", "上传 CAD 文件，或描述您需要的零件。") },
+    { number: "02", title: copy("Specify requirements", "说明要求"), body: copy("Include quantity, material preference, finish and destination.", "填写数量、材料偏好、表面要求和目的地。") },
+    { number: "03", title: copy("Review together", "共同确认"), body: copy("We review the request and discuss feasible options before quoting.", "我们先审核需求，再沟通可行方案与报价。") }
   ];
-  const customHomeSections = templateSettings.customBlocks
-    .filter((block) => block.enabled)
-    .map((block) => {
-      const eyebrow = (block.eyebrow ? t(block.eyebrow, locale) : "") || (block.type === "video" ? "Video" : block.type === "image" ? "Image" : block.type === "cta" ? "Action" : "Custom section");
-      const title = t(block.title, locale);
-      const body = t(block.body, locale);
-      const buttonLabel = (block.buttonLabel ? t(block.buttonLabel, locale) : "") || title;
-      const media = block.type === "image"
-        ? renderCustomBlockImages(block, title)
-        : block.type === "video" ? renderCustomBlockVideo(block.mediaUrl ?? "", title) : null;
-      const isExternalLink = Boolean(block.openInNewTab);
-
-      return {
-        key: block.id,
-        order: block.order,
-        node: (
-          <section className={`section custom-template-section custom-template-${block.type} theme-${block.theme ?? (block.type === "cta" ? "dark" : "light")} align-${block.align ?? "left"} layout-${block.layout ?? (block.type === "image" || block.type === "video" ? "media-left" : "stacked")} spacing-${block.spacing ?? "normal"}`}>
-            <div className="custom-template-inner">
-              {block.type !== "text" && block.type !== "cta" && block.layout !== "media-right" ? media : null}
-              <div className="custom-template-copy">
-                {eyebrow ? <span className="eyebrow">{eyebrow}</span> : null}
-                <h2>{title}</h2>
-                {body ? <p>{body}</p> : null}
-                {block.type === "cta" ? (
-                  <a className="button primary" href={block.linkUrl || "#rfq"} target={isExternalLink ? "_blank" : undefined} rel={isExternalLink ? "noopener noreferrer" : undefined}>
-                    {buttonLabel}
-                  </a>
-                ) : null}
-              </div>
-              {block.type !== "text" && block.type !== "cta" && block.layout === "media-right" ? media : null}
-            </div>
-          </section>
-        )
-      };
-    });
-  const homeSections = [...coreHomeSections, ...customHomeSections].sort((a, b) => a.order - b.order);
+  const cards = [
+    { label: copy("Processes", "工艺介绍"), title: copy("Choose a route that fits the part.", "选择适合零件的加工路径。"), image: "process.webp", href: `/${locale}/services/processes` },
+    { label: copy("Materials", "材料选择"), title: copy("Discuss function, finish and fit.", "从用途、外观与配合要求出发。"), image: "materials.webp", href: `/${locale}/services/materials` },
+    { label: copy("Part Gallery", "零件图库"), title: copy("Explore forms before sending CAD.", "先看结构，再提交图纸。"), image: "parts.webp", href: `/${locale}/services/gallery` }
+  ];
 
   return (
-    <main>
-      {homeSections.map((section) => "key" in section && section.key in templateSettings.visibleSections
-        ? templateSettings.visibleSections[section.key as HomeSectionKey] ? <Fragment key={section.key}>{section.node}</Fragment> : null
-        : <Fragment key={section.key}>{section.node}</Fragment>)}
+    <main className="cm-site">
+      <HomeNavigationShell
+        brandName={state.siteSettings.title}
+        ctaLabel={t(state.templateSettings.primaryCtaLabel, locale)}
+        enabledLocales={state.enabledLocales}
+        locale={locale}
+        navigation={state.navigation}
+      />
+      <section className="cm-hero">
+        <div className="cm-hero-copy">
+          <p className="cm-kicker">{t(state.templateSettings.heroKicker, locale)}</p>
+          <h1>{t(state.templateSettings.heroTitle, locale)}</h1>
+          <p className="cm-lead">{t(state.templateSettings.heroBody, locale)}</p>
+          <div className="cm-actions">
+            <a className="cm-button primary" href="#rfq">{t(state.templateSettings.primaryCtaLabel, locale)}</a>
+            <a className="cm-button outline" href={`/${locale}/services/gallery`}>{copy("Explore sample parts", "查看零件示意")}</a>
+          </div>
+          <p className="cm-hero-note">{copy("Your drawing stays private within the quotation workflow.", "图纸仅用于本次询价流程。")}</p>
+        </div>
+        <figure className="cm-hero-art"><img src={`${asset}hero.webp`} alt={copy("Illustrative 3D printed metal bracket", "3D 打印金属支架示意图")} /><figcaption>{copy("Concept imagery; confirm actual process and material when requesting a quote.", "图片为概念示意；实际工艺与材料以询价确认为准。")}</figcaption></figure>
+      </section>
+      <div className="cm-proof-strip">
+        <span>{copy("CAD-based requests", "来图加工")}</span><span>{copy("Material discussion", "材料沟通")}</span><span>{copy("Custom parts", "定制零件")}</span><span>{copy("Export inquiries", "海外询盘")}</span>
+      </div>
+      <section className="cm-section cm-path" id="process">
+        <div className="cm-heading"><p className="cm-kicker">{copy("How it works", "合作流程")}</p><h2>{copy("From your CAD file to a clear quotation.", "从图纸到清晰报价。")}</h2><p>{copy("A simple path for engineers and purchasing teams ordering custom 3D printed parts.", "为海外工程师与采购团队准备的定制零件询价路径。")}</p></div>
+        <div className="cm-steps">{guide.map((step) => <article key={step.number}><span>{step.number}</span><h3>{step.title}</h3><p>{step.body}</p></article>)}</div>
+      </section>
+      <section className="cm-section cm-capabilities">
+        <div className="cm-heading"><p className="cm-kicker">{copy("Explore", "了解服务")}</p><h2>{copy("The details behind a better part.", "从需求细节理解零件。")}</h2></div>
+        <div className="cm-card-grid">{cards.map((card) => <a className="cm-image-card" href={card.href} key={card.label}><img src={`${asset}${card.image}`} alt="" loading="lazy" /><div><span>{card.label}</span><h3>{card.title}</h3><b aria-hidden="true">↗</b></div></a>)}</div>
+      </section>
+      <section className="cm-quality-band">
+        <img src={`${asset}process.webp`} alt="" loading="lazy" />
+        <div><p className="cm-kicker">{copy("Quality approach", "质量流程")}</p><h2>{copy("Requirements first. Review at every step.", "先明确要求，再逐步核对。")}</h2><p>{copy("Share critical dimensions, fit, finish and inspection needs with your drawing so they can be addressed during review.", "提交图纸时说明关键尺寸、装配、公差、表面与检验要求，便于评估。")}</p><a className="cm-text-link" href={`/${locale}/services/quality`}>{copy("See our review approach", "查看需求审核流程")} →</a></div>
+      </section>
+      <section className="cm-section cm-gallery">
+        <div className="cm-heading"><p className="cm-kicker">{copy("Sample forms", "结构示意")}</p><h2>{copy("Different geometries. One place to start.", "不同结构，从这里开始。")}</h2><p>{copy("These are concept visuals. Actual capability and material selection are confirmed against your drawing.", "以下为概念示意；实际工艺和材料以图纸评估为准。")}</p></div>
+        <div className="cm-sample-grid">{state.products.slice(0, 3).map((part) => <a href={`/${locale}/products/${part.slug}`} key={part.slug}><img src={part.imageUrl} alt={t(part.name, locale)} loading="lazy" /><span>{t(part.name, locale)} ↗</span></a>)}</div>
+      </section>
+      <section className="cm-section cm-quote" id="rfq">
+        <div className="cm-quote-copy"><p className="cm-kicker">{copy("Custom quote", "定制询价")}</p><h2>{copy("Upload your CAD. Tell us what matters.", "上传图纸，说明关键要求。")}</h2><p>{copy("Add your drawing, target quantity, preferred material, destination and timing. We will review the details you provide before responding.", "请提供图纸、目标数量、材料偏好、目的地与交期要求，我们将据此审核需求。")}</p><ul><li>{copy("CAD drawing or clear requirements", "CAD 图纸或明确的零件需求")}</li><li>{copy("Quantity and material preference", "数量及材料偏好")}</li><li>{copy("Finish, tolerance and destination", "表面、公差和交付目的地")}</li></ul><a className="cm-text-link" href={quoteHref}>{copy("Open full quote page", "打开完整询价页")} →</a></div>
+        <div className="cm-form-panel"><RfqForm locale={locale} /></div>
+      </section>
     </main>
   );
 }
