@@ -2,6 +2,7 @@
 import { notFound } from "next/navigation";
 import { PuckPageRenderer } from "@/components/PuckPageRenderer";
 import { RfqForm } from "@/components/RfqForm";
+import { ProductCatalog } from "@/components/ProductCatalog";
 import { t } from "@/lib/i18n";
 import { readAdminState } from "@/lib/server/admin-store";
 import { buildBreadcrumbJsonLd, buildPageMetadata, buildProductJsonLd, compactDescription, jsonLd, localePath, productContentComplete } from "@/lib/seo";
@@ -96,6 +97,7 @@ export default async function ProductCategoryPage({
           </ul>
         </div>
       </section>
+      <ProductCatalog state={state} locale={locale} mode="category" category={product.slug} />
       <section className="section rfq-section" id="rfq">
         <div>
           <span className="eyebrow">Request category review</span>

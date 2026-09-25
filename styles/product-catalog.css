@@ -1,0 +1,30 @@
+.article-cover img,
+.article-inline-image img {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  height: auto;
+  max-height: none;
+  aspect-ratio: auto;
+  object-fit: contain;
+}
+.article-cover, .article-inline-image { max-width: 100%; height: auto; }
+.catalog-heading { display: flex; align-items: center; justify-content: space-between; gap: 24px; margin-bottom: 20px; }
+.catalog-heading h2 { margin: 8px 0 0; }
+.catalog-filters { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; }
+.catalog-filters button { font: inherit; border: 1px solid var(--line, #ddd); border-radius: 999px; padding: 10px 16px; background: #fff; color: #24312a; cursor: pointer; }
+.catalog-filters button[aria-pressed="true"] { background: var(--primary, #24312a); color: #fff; }
+.catalog-count { color: var(--muted); font-size: 14px; }
+.catalog-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 24px; }
+.catalog-card { display: flex; flex-direction: column; min-width: 0; overflow: hidden; border: 1px solid var(--line, #ddd); border-radius: var(--radius, 12px); background: #fff; color: inherit; text-decoration: none; }
+.catalog-card-image { display: grid; place-items: center; aspect-ratio: 1; width: 100%; background: #f8f8f6; padding: 12px; }
+.catalog-card-image img { display: block; width: 100%; height: 100%; min-height: 0; max-height: 100%; object-fit: contain; aspect-ratio: 1; }
+.catalog-card-copy { display: flex; flex: 1; flex-direction: column; padding: 20px; gap: 10px; }
+.catalog-card-copy h3, .catalog-card-copy p { margin: 0; }
+.catalog-card-copy h3 { font-size: 20px; line-height: 1.35; overflow-wrap: anywhere; }
+.catalog-card-copy p { color: var(--muted); line-height: 1.6; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+.catalog-category { color: var(--muted); font-size: 13px; }
+.catalog-details { margin-top: auto; padding-top: 10px; font-weight: 700; }
+.catalog-card:focus-visible, .catalog-filters button:focus-visible { outline: 3px solid var(--accent, #597965); outline-offset: 3px; }
+@media (max-width: 1023px) { .catalog-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 639px) { .catalog-grid { grid-template-columns: minmax(0, 1fr); } .catalog-heading { align-items: flex-start; flex-direction: column; } }

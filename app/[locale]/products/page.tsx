@@ -1,4 +1,5 @@
 import { ProductGrid } from "@/components/ProductGrid";
+import { ProductCatalog } from "@/components/ProductCatalog";
 import { PuckPageRenderer } from "@/components/PuckPageRenderer";
 import { readAdminState } from "@/lib/server/admin-store";
 import { buildBreadcrumbJsonLd, buildPageMetadata, jsonLd, localePath, productContentComplete } from "@/lib/seo";
@@ -63,6 +64,7 @@ export default async function ProductsPage({ params }: { params: Promise<{ local
         </div>
         <ProductGrid locale={locale} products={state.products} />
       </section>
+      <ProductCatalog state={state} locale={locale} />
     </main>
   );
 

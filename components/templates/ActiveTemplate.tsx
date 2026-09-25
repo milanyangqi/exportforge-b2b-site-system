@@ -2,6 +2,7 @@ import { Fragment, type CSSProperties } from "react";
 import { IndustrialVisual } from "@/components/IndustrialVisual";
 import { HeroPosterCarousel } from "@/components/HeroPosterCarousel";
 import { ProductGrid } from "@/components/ProductGrid";
+import { ProductCatalog } from "@/components/ProductCatalog";
 import { HomeNavigationShell } from "@/components/PublicSiteShell";
 import { RfqForm } from "@/components/RfqForm";
 import { locales } from "@/config/locales";
@@ -129,6 +130,7 @@ export function ActiveTemplate({ locale, state }: { locale: LocaleCode; state: A
       key: "products" as HomeSectionKey,
       order: templateSettings.sectionOrder.products,
       node: (
+        <>
         <section className="section">
           <div className="section-head">
             <span className="eyebrow">{templateText("productsEyebrow", "Tin packaging applications")}</span>
@@ -137,6 +139,8 @@ export function ActiveTemplate({ locale, state }: { locale: LocaleCode; state: A
           </div>
           <ProductGrid flat locale={locale} products={homeProducts} />
         </section>
+        <ProductCatalog state={state} locale={locale} mode="home" />
+        </>
       )
     },
     {

@@ -3,6 +3,7 @@ import "@/styles/globals.css";
 import "@/styles/puck-public.css";
 import "@/styles/public-site.css";
 import "@/styles/active-template.css";
+import "@/styles/product-catalog.css";
 
 export const metadata: Metadata = {
   title: "Xiyida Packaging | Custom Tin Box Packaging Manufacturer",
