@@ -29,6 +29,8 @@ export function publicText(value: string, locale: LocaleCode) {
 export function categoryLabel(value: string, products: ProductCategory[], locale: LocaleCode) {
   const product = products.find(item => item.slug === value || item.id === value);
   if (product) return t(product.name, locale);
+  const knowledge: Record<string, string> = { "RFQ Guide": "询盘指南", "Food Packaging": "食品包装", "Printing": "印刷工艺", "Beauty & Candle": "美妆与蜡烛包装", "Sampling": "打样流程", "Export Packing": "出口包装" };
+  if (locale === "zh" && knowledge[value]) return knowledge[value];
   return locale === "zh" && /^[a-z][a-z\s-]*$/i.test(value) ? "包装知识" : value;
 }
 
