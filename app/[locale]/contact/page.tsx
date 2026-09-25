@@ -1,3 +1,4 @@
+import { publicText, categoryLabel } from "@/lib/public-localization";
 import { RfqForm } from "@/components/RfqForm";
 import { PublicContactList } from "@/components/PublicContactList";
 import { PuckPageRenderer } from "@/components/PuckPageRenderer";
@@ -7,12 +8,12 @@ import type { LocaleCode } from "@/types/site";
 
 export const dynamic = "force-dynamic";
 
-function contactTitle(siteTitle: string) {
-  return `Contact ${siteTitle}`;
+function contactTitle(siteTitle: string, locale: LocaleCode) {
+  return locale === "zh" ? `联系我们 | ${siteTitle}` : `Contact ${siteTitle}`;
 }
 
-function contactDescription(siteTitle: string) {
-  return `Send your request to ${siteTitle} and the team will follow up with details.`;
+function contactDescription(siteTitle: string, locale: LocaleCode) {
+  return locale === "zh" ? `${siteTitle}：提交您的产品需求，我们的团队会与您联系。` : `Send your request to ${siteTitle} and the team will follow up with details.`;
 }
 
 export async function generateMetadata({ params }: { params: Promise<{ locale: LocaleCode }> }) {
@@ -26,8 +27,8 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: L
   return buildPageMetadata(state, {
     locale,
     path: localePath(locale, "/contact"),
-    title: contactTitle(state.siteSettings.title),
-    description: contactDescription(state.siteSettings.title),
+    title: contactTitle(state.siteSettings.title, locale),
+    description: contactDescription(state.siteSettings.title, locale),
     kind: "contact",
     contentComplete: locale === "en" || locale === "zh",
     alternates
@@ -37,8 +38,8 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: L
 export default async function ContactPage({ params }: { params: Promise<{ locale: LocaleCode }> }) {
   const { locale } = await params;
   const state = await readAdminState();
-  const pageTitle = contactTitle(state.siteSettings.title);
-  const pageDescription = contactDescription(state.siteSettings.title);
+  const pageTitle = contactTitle(state.siteSettings.title, locale);
+  const pageDescription = contactDescription(state.siteSettings.title, locale);
   const structuredData = (
     <>
       <script
@@ -58,7 +59,7 @@ export default async function ContactPage({ params }: { params: Promise<{ locale
         dangerouslySetInnerHTML={{
           __html: jsonLd(buildBreadcrumbJsonLd(state, [
             { name: state.siteSettings.title, path: localePath(locale) },
-            { name: "Contact", path: localePath(locale, "/contact") }
+            { name: publicText("Contact", locale), path: localePath(locale, "/contact") }
           ]))
         }}
       />
@@ -69,14 +70,14 @@ export default async function ContactPage({ params }: { params: Promise<{ locale
       {structuredData}
       <section className="section split contact-section">
         <div className="contact-copy">
-          <span className="eyebrow">Contact</span>
+          <span className="eyebrow">{publicText("Contact", locale)}</span>
           <h1>{pageTitle}</h1>
           <p>{pageDescription}</p>
           <PublicContactList channels={state.contactChannels} locale={locale} />
         </div>
         <div className="contact-rfq-panel" id="rfq">
-          <span className="eyebrow">RFQ details</span>
-          <h2>Tell us what to review.</h2>
+          <span className="eyebrow">{publicText("RFQ details", locale)}</span>
+          <h2>{publicText("Tell us what to review.", locale)}</h2>
           <RfqForm locale={locale} />
         </div>
       </section>

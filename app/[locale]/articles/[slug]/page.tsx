@@ -1,3 +1,4 @@
+import { publicText, categoryLabel } from "@/lib/public-localization";
 /* eslint-disable @next/next/no-img-element */
 import { notFound } from "next/navigation";
 import { ArticleContent } from "@/components/ArticleContent";
@@ -63,7 +64,7 @@ export default async function ArticleDetailPage({
         dangerouslySetInnerHTML={{
           __html: jsonLd(buildBreadcrumbJsonLd(state, [
             { name: state.siteSettings.title, path: localePath(locale) },
-            { name: "Articles", path: localePath(locale, "/articles") },
+            { name: publicText("Articles", locale), path: localePath(locale, "/articles") },
             { name: t(article.title, locale), path: localePath(locale, `/articles/${article.slug}`) }
           ]))
         }}
@@ -74,7 +75,7 @@ export default async function ArticleDetailPage({
     <main className="subpage">
       {structuredData}
       <article className="content-detail">
-        <span className="eyebrow">{article.category}</span>
+        <span className="eyebrow">{categoryLabel(article.category, state.products, locale)}</span>
         <h1>{t(article.title, locale)}</h1>
         <p className="detail-excerpt">{t(article.excerpt, locale)}</p>
         {article.coverImageUrl ? (
@@ -86,9 +87,9 @@ export default async function ArticleDetailPage({
       </article>
       <section className="section rfq-section" id="rfq">
         <div>
-          <span className="eyebrow">Need project support?</span>
-          <h2>Turn this article into a clear RFQ.</h2>
-          <p>Share product requirements, quantity, packaging, and destination so {state.siteSettings.title} can respond with practical project guidance.</p>
+          <span className="eyebrow">{publicText("Need project support?", locale)}</span>
+          <h2>{publicText("Turn this article into a clear RFQ.", locale)}</h2>
+          <p>{locale === "zh" ? `请提供产品需求、数量、包装方式和目的地，${state.siteSettings.title} 将为您提供项目建议。` : `Share product requirements, quantity, packaging, and destination so ${state.siteSettings.title} can respond with practical project guidance.`}</p>
         </div>
         <RfqForm locale={locale} />
       </section>

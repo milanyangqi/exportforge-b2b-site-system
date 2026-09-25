@@ -6,6 +6,7 @@ import Link from "next/link";
 import { ContactChannelIcon } from "@/components/ContactChannelIcon";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { t, ui } from "@/lib/i18n";
+import { isDownloadPage, publicText } from "@/lib/public-localization";
 import type { ContactChannel, ContactChannelType, LocaleCode, SiteNavigationItem, Translation } from "@/types/site";
 
 type NavigationNode = SiteNavigationItem & {
@@ -38,7 +39,7 @@ export function resolvePublicHref(href: string, locale: LocaleCode) {
 
 export function buildNavigationTree(navigation: SiteNavigationItem[]): NavigationNode[] {
   const visibleItems = [...navigation]
-    .filter((item) => item.enabled)
+    .filter((item) => item.enabled && !isDownloadPage(item.href))
     .sort((a, b) => a.order - b.order);
   const nodesById = new Map(visibleItems.map((item) => [item.id, { ...item, children: [] as NavigationNode[] }]));
   const roots: NavigationNode[] = [];
@@ -202,7 +203,7 @@ function BrandLink({
       </span>
       <span className="brand-text">
         <strong>{brandName}</strong>
-        <small>Wuhu Xiyida Packaging Co., Ltd.</small>
+        <small>{publicText("Wuhu Xiyida Packaging Co., Ltd.", locale)}</small>
       </span>
     </Link>
   );
@@ -335,7 +336,7 @@ export function PublicFooterShell({
   navigation: SiteNavigationItem[];
   preventNavigation?: boolean;
 }) {
-  const footerNavigation = [...navigation].filter((item) => item.enabled).sort((a, b) => a.order - b.order);
+  const footerNavigation = [...navigation].filter((item) => item.enabled && !isDownloadPage(item.href)).sort((a, b) => a.order - b.order);
   const socialChannels = channels.filter((channel) => channel.enabled && socialTypes.has(channel.type) && channel.href && !channel.href.startsWith("#"));
   const handleLinkClick: LinkClickHandler | undefined = preventNavigation
     ? (event) => event.preventDefault()

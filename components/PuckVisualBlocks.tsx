@@ -8,6 +8,7 @@ import { HomeNavigationShell } from "@/components/PublicSiteShell";
 import { PublicContactList } from "@/components/PublicContactList";
 import { RfqForm } from "@/components/RfqForm";
 import { locales } from "@/config/locales";
+import { categoryLabel, publicText } from "@/lib/public-localization";
 import { t } from "@/lib/i18n";
 import type { AdminState, Article, LocaleCode, ProductCategory, SitePage, VisualPageLayoutData } from "@/types/site";
 
@@ -422,7 +423,7 @@ function ArticleList({ props, state, locale }: { props: Record<string, unknown>;
                 <img src={article.coverImageUrl} alt={t(article.title, locale)} loading="lazy" />
               </span>
             ) : null}
-            <span>{article.category}</span>
+            <span>{categoryLabel(article.category, state.products, locale)}</span>
             <h3>{t(article.title, locale)}</h3>
             {propBoolean(props, "showExcerpt", true) ? <p>{t(article.excerpt, locale)}</p> : null}
           </a>
@@ -1061,11 +1062,11 @@ function ProductDetail({ currentProduct, locale }: { currentProduct?: ProductCat
   return (
     <section className="product-detail">
       <div>
-        <span className="eyebrow">Product category</span>
+        <span className="eyebrow">{publicText("Product category", locale)}</span>
         <h1>{t(currentProduct.name, locale)}</h1>
         <p>{t(currentProduct.summary, locale)}</p>
         <div className="chips">
-          {currentProduct.specs.map((spec) => <span key={spec}>{spec}</span>)}
+          {currentProduct.specs.map((spec) => <span key={spec}>{publicText(spec, locale)}</span>)}
         </div>
       </div>
       {currentProduct.imageUrl ? (
@@ -1074,7 +1075,7 @@ function ProductDetail({ currentProduct, locale }: { currentProduct?: ProductCat
         </figure>
       ) : null}
       <div className="workflow-panel">
-        <h3>Applications</h3>
+        <h3>{publicText("Applications", locale)}</h3>
         <ul className="detail-list">
           {t(currentProduct.applications, locale).map((item) => <li key={item}>{item}</li>)}
         </ul>
@@ -1083,12 +1084,12 @@ function ProductDetail({ currentProduct, locale }: { currentProduct?: ProductCat
   );
 }
 
-function ArticleDetail({ currentArticle, locale }: { currentArticle?: Article; locale: LocaleCode }) {
+function ArticleDetail({ currentArticle, locale, state }: { currentArticle?: Article; locale: LocaleCode; state: AdminState }) {
   if (!currentArticle) return null;
 
   return (
     <article className="content-detail">
-      <span className="eyebrow">{currentArticle.category}</span>
+      <span className="eyebrow">{categoryLabel(currentArticle.category, state.products, locale)}</span>
       <h1>{t(currentArticle.title, locale)}</h1>
       <p className="detail-excerpt">{t(currentArticle.excerpt, locale)}</p>
       {currentArticle.coverImageUrl ? (
@@ -1106,7 +1107,7 @@ function PageDetail({ currentPage, locale }: { currentPage?: SitePage; locale: L
 
   return (
     <article className="content-detail">
-      <span className="eyebrow">Page</span>
+      <span className="eyebrow">{publicText("Page", locale)}</span>
       <h1>{t(currentPage.title, locale)}</h1>
       <p className="detail-excerpt">{t(currentPage.excerpt, locale)}</p>
       <ArticleContent body={t(currentPage.body, locale)} />
@@ -1149,7 +1150,9 @@ function ContactChannels({ props, state, locale }: { props: Record<string, unkno
 }
 
 export function PuckVisualBlock({ item, state, locale, currentProduct, currentArticle, currentPage, editable }: PuckVisualBlockProps) {
-  const props = item.props as Record<string, unknown>;
+  const rawProps = item.props as Record<string, unknown>;
+  const translations = rawProps.localizedText as Partial<Record<LocaleCode, Record<string, string>>> | undefined;
+  const props = { ...rawProps, ...(translations?.[locale] ?? {}) };
 
   switch (item.type) {
     case "HomeNavigation":
@@ -1203,7 +1206,7 @@ export function PuckVisualBlock({ item, state, locale, currentProduct, currentAr
     case "ProductDetail":
       return <ProductDetail currentProduct={currentProduct} locale={locale} />;
     case "ArticleDetail":
-      return <ArticleDetail currentArticle={currentArticle} locale={locale} />;
+      return <ArticleDetail currentArticle={currentArticle} locale={locale} state={state} />;
     case "PageDetail":
       return <PageDetail currentPage={currentPage} locale={locale} />;
     case "FileList":

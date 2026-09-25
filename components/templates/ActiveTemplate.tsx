@@ -1,3 +1,4 @@
+import { publicText, categoryLabel } from "@/lib/public-localization";
 import { Fragment, type CSSProperties } from "react";
 import { IndustrialVisual } from "@/components/IndustrialVisual";
 import { HeroPosterCarousel } from "@/components/HeroPosterCarousel";
@@ -215,7 +216,7 @@ export function ActiveTemplate({ locale, state }: { locale: LocaleCode; state: A
                     <img src={article.coverImageUrl} alt={t(article.title, locale)} loading="lazy" />
                   </span>
                 ) : null}
-                <span>{article.category}</span>
+                <span>{categoryLabel(article.category, state.products, locale)}</span>
                 <h3>{t(article.title, locale)}</h3>
                 <p>{t(article.excerpt, locale)}</p>
               </a>

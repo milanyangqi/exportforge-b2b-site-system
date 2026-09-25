@@ -1,3 +1,4 @@
+import { publicText, categoryLabel } from "@/lib/public-localization";
 import { ProductGrid } from "@/components/ProductGrid";
 import { ProductCatalog } from "@/components/ProductCatalog";
 import { PuckPageRenderer } from "@/components/PuckPageRenderer";
@@ -7,12 +8,12 @@ import type { LocaleCode } from "@/types/site";
 
 export const dynamic = "force-dynamic";
 
-function productsTitle(siteTitle: string) {
-  return `${siteTitle} products`;
+function productsTitle(siteTitle: string, locale: LocaleCode) {
+  return locale === "zh" ? `产品目录 | ${siteTitle}` : `${siteTitle} products`;
 }
 
-function productsDescription(siteTitle: string) {
-  return `Browse current ${siteTitle} product categories, compare fit, and send RFQ details.`;
+function productsDescription(siteTitle: string, locale: LocaleCode) {
+  return locale === "zh" ? `${siteTitle}：浏览产品分类，比较适用方案，提交数量、包装及目的地等询盘需求。` : `Browse current ${siteTitle} product categories, compare fit, and send RFQ details.`;
 }
 
 export async function generateMetadata({ params }: { params: Promise<{ locale: LocaleCode }> }) {
@@ -28,8 +29,8 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: L
   return buildPageMetadata(state, {
     locale,
     path: localePath(locale, "/products"),
-    title: productsTitle(state.siteSettings.title),
-    description: productsDescription(state.siteSettings.title),
+    title: productsTitle(state.siteSettings.title, locale),
+    description: productsDescription(state.siteSettings.title, locale),
     kind: "products",
     image: state.products.find((product) => product.imageUrl)?.imageUrl,
     contentComplete: state.products.some((product) => productContentComplete(product, locale)),
@@ -40,15 +41,15 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: L
 export default async function ProductsPage({ params }: { params: Promise<{ locale: LocaleCode }> }) {
   const { locale } = await params;
   const state = await readAdminState();
-  const pageTitle = productsTitle(state.siteSettings.title);
-  const pageDescription = productsDescription(state.siteSettings.title);
+  const pageTitle = productsTitle(state.siteSettings.title, locale);
+  const pageDescription = productsDescription(state.siteSettings.title, locale);
   const structuredData = (
     <script
       type="application/ld+json"
       dangerouslySetInnerHTML={{
         __html: jsonLd(buildBreadcrumbJsonLd(state, [
           { name: state.siteSettings.title, path: localePath(locale) },
-          { name: "Products", path: localePath(locale, "/products") }
+          { name: publicText("Products", locale), path: localePath(locale, "/products") }
         ]))
       }}
     />
@@ -58,7 +59,7 @@ export default async function ProductsPage({ params }: { params: Promise<{ local
       {structuredData}
       <section className="section">
         <div className="section-head">
-          <span className="eyebrow">{state.siteSettings.title} products</span>
+          <span className="eyebrow">{state.siteSettings.title} {publicText("Products", locale)}</span>
           <h1>{pageTitle}</h1>
           <p>{pageDescription}</p>
         </div>

@@ -1,3 +1,4 @@
+import { publicText, categoryLabel } from "@/lib/public-localization";
 /* eslint-disable @next/next/no-img-element */
 import { notFound } from "next/navigation";
 import { PuckPageRenderer } from "@/components/PuckPageRenderer";
@@ -62,7 +63,7 @@ export default async function ProductCategoryPage({
         dangerouslySetInnerHTML={{
           __html: jsonLd(buildBreadcrumbJsonLd(state, [
             { name: state.siteSettings.title, path: localePath(locale) },
-            { name: "Products", path: localePath(locale, "/products") },
+            { name: publicText("Products", locale), path: localePath(locale, "/products") },
             { name: t(product.name, locale), path: localePath(locale, `/products/${product.slug}`) }
           ]))
         }}
@@ -74,12 +75,12 @@ export default async function ProductCategoryPage({
       {structuredData}
       <section className="product-detail">
         <div>
-          <span className="eyebrow">Product category</span>
+          <span className="eyebrow">{publicText("Product category", locale)}</span>
           <h1>{t(product.name, locale)}</h1>
           <p>{t(product.summary, locale)}</p>
           <div className="chips">
             {product.specs.map((spec) => (
-              <span key={spec}>{spec}</span>
+              <span key={spec}>{publicText(spec, locale)}</span>
             ))}
           </div>
         </div>
@@ -89,7 +90,7 @@ export default async function ProductCategoryPage({
           </figure>
         ) : null}
         <div className="workflow-panel">
-          <h3>Applications</h3>
+          <h3>{publicText("Applications", locale)}</h3>
           <ul className="detail-list">
             {t(product.applications, locale).map((item) => (
               <li key={item}>{item}</li>
@@ -100,9 +101,9 @@ export default async function ProductCategoryPage({
       <ProductCatalog state={state} locale={locale} mode="category" category={product.slug} />
       <section className="section rfq-section" id="rfq">
         <div>
-          <span className="eyebrow">Request category review</span>
-          <h2>Send quantity, requirements, packaging, and destination.</h2>
-          <p>{state.siteSettings.title} will review product details, customization, inspection, and export packing for your buying program.</p>
+          <span className="eyebrow">{publicText("Request category review", locale)}</span>
+          <h2>{publicText("Send quantity, requirements, packaging, and destination.", locale)}</h2>
+          <p>{locale === "zh" ? `${state.siteSettings.title} 将根据您的采购计划评审产品详情、定制要求、检验及出口包装。` : `${state.siteSettings.title} will review product details, customization, inspection, and export packing for your buying program.`}</p>
         </div>
         <RfqForm locale={locale} />
       </section>

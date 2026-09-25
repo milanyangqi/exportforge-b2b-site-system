@@ -1,6 +1,7 @@
 /* eslint-disable @next/next/no-img-element */
 import { ArrowUpRight, CheckCircle2 } from "lucide-react";
 import { t } from "@/lib/i18n";
+import { publicText } from "@/lib/public-localization";
 import type { LocaleCode, ProductCategory } from "@/types/site";
 
 type ProductTreeNode = ProductCategory & {
@@ -51,7 +52,7 @@ function ProductCard({ locale, product, compact = false }: { locale: LocaleCode;
       <p>{t(product.summary, locale)}</p>
       <div className="chips">
         {product.specs.map((spec) => (
-          <span key={spec}>{spec}</span>
+          <span key={spec}>{publicText(spec, locale)}</span>
         ))}
       </div>
     </article>

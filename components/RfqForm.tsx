@@ -69,11 +69,11 @@ export function RfqForm({ locale }: { locale: LocaleCode }) {
     <form className="rfq-form" onSubmit={submit}>
       <label>
         {text("fullName", locale)}
-        <input name="fullName" required placeholder="Jane Smith" />
+        <input name="fullName" required placeholder={locale === "zh" ? "您的姓名" : "Jane Smith"} />
       </label>
       <label>
         {text("company", locale)}
-        <input name="company" placeholder="Company name" />
+        <input name="company" placeholder={locale === "zh" ? "公司名称" : "Company name"} />
       </label>
       <label>
         {text("email", locale)}
@@ -85,7 +85,7 @@ export function RfqForm({ locale }: { locale: LocaleCode }) {
       </label>
       <label>
         {text("productType", locale)}
-        <input name="productType" required placeholder="Food tin, gift tin, cosmetic tin, custom tin box" />
+        <input name="productType" required placeholder={locale === "zh" ? "食品铁盒、礼品铁盒、化妆品铁罐、定制铁盒" : "Food tin, gift tin, cosmetic tin, custom tin box"} />
       </label>
       <label>
         {text("quantity", locale)}
@@ -93,15 +93,15 @@ export function RfqForm({ locale }: { locale: LocaleCode }) {
       </label>
       <label>
         {text("destination", locale)}
-        <input name="destination" placeholder="Vietnam, UAE, Germany..." />
+        <input name="destination" placeholder={locale === "zh" ? "中国、越南、阿联酋、德国等" : "Vietnam, UAE, Germany..."} />
       </label>
       <label>
         {text("workpieceMaterial", locale)}
-        <input name="workpieceMaterial" placeholder="Tinplate, matte finish, embossing, insert..." />
+        <input name="workpieceMaterial" placeholder={locale === "zh" ? "马口铁、哑光、压凸、内托等" : "Tinplate, matte finish, embossing, insert..."} />
       </label>
       <label className="wide">
         {text("message", locale)}
-        <textarea name="message" placeholder="Shape, size, lid style, artwork status, finish, packing, delivery timeline..." />
+        <textarea name="message" placeholder={locale === "zh" ? "形状、尺寸、盖型、设计稿状态、表面处理、包装及交期等" : "Shape, size, lid style, artwork status, finish, packing, delivery timeline..."} />
       </label>
       {status === "success" ? (
         <p className="rfq-status success" role="status" aria-live="polite">{text("success", locale)}</p>

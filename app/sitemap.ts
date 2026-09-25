@@ -86,12 +86,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     addLocalizedRoutes(pathsByLocale, 0.72, "monthly", article.publishedAt ?? state.updatedAt);
   });
 
-  const filesPaths = state.enabledLocales.reduce<Partial<Record<LocaleCode, string>>>((paths, locale) => {
-    if (locale === "en" || locale === "zh") paths[locale] = localePath(locale, "/files");
-    return paths;
-  }, {});
-  addLocalizedRoutes(filesPaths, 0.45, "monthly", state.updatedAt);
-
   const contactPaths = state.enabledLocales.reduce<Partial<Record<LocaleCode, string>>>((paths, locale) => {
     if (locale === "en" || locale === "zh") paths[locale] = localePath(locale, "/contact");
     return paths;
