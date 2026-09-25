@@ -20,6 +20,10 @@
     {
       "pattern": "xiyidapackaging.com",
       "custom_domain": true
+    },
+    {
+      "pattern": "www.xiyidapackaging.com",
+      "custom_domain": true
     }
   ],
   "kv_namespaces": [
