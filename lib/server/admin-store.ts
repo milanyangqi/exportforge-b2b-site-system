@@ -1,3 +1,5 @@
+import { cache } from "react";
+
 import { articles, contactChannels, defaultEnabledLocales, defaultNavigation, productCategories, siteSettings, uploadedFiles } from "@/data/site";
 import { isLocale } from "@/config/locales";
 import { encryptMailSecret } from "@/lib/server/mail-secrets";
@@ -878,7 +880,7 @@ function normalizeAdminState(parsed: AdminState): AdminState {
   };
 }
 
-export async function readAdminState(): Promise<AdminState> {
+async function readAdminStateUncached(): Promise<AdminState> {
   try {
     const kv = await getCloudflareKv();
     const raw = kv ? await kv.get(stateKey) : await readLocalStateFile();
@@ -887,10 +889,11 @@ export async function readAdminState(): Promise<AdminState> {
     return normalizeAdminState(parsed);
   } catch {
     const fallback = createDefaultAdminState();
-    await writeAdminState(fallback);
     return fallback;
   }
 }
+
+export const readAdminState = cache(readAdminStateUncached);
 
 export function sanitizeAdminState(state: AdminState): AdminState {
   return {
