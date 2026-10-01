@@ -5,7 +5,7 @@ import { useState } from "react";
 import type { CatalogCard } from "@/lib/product-catalog";
 import type { LocaleCode } from "@/types/site";
 
-export function ProductCatalogGrid({ cards, locale, filterable = false }: { cards: CatalogCard[]; locale: LocaleCode; filterable?: boolean }) {
+export function ProductCatalogGrid({ cards, locale, filterable = false, totalCount }: { cards: CatalogCard[]; locale: LocaleCode; filterable?: boolean; totalCount?: number }) {
   const [category, setCategory] = useState("");
   const categories = Array.from(new Map(cards.map(card => [card.category, card.categoryLabel])));
   const visible = category ? cards.filter(card => card.category === category) : cards;
@@ -16,7 +16,7 @@ export function ProductCatalogGrid({ cards, locale, filterable = false }: { card
         <button type="button" aria-pressed={!category} onClick={() => setCategory("")}>{zh ? "全部产品" : "All products"} ({cards.length})</button>
         {categories.map(([slug, label]) => <button type="button" key={slug} aria-pressed={category === slug} onClick={() => setCategory(slug)}>{label}</button>)}
       </div> : null}
-      <p className="catalog-count" aria-live="polite">{visible.length} {zh ? "款产品" : "products"}</p>
+      <p className="catalog-count" aria-live="polite">{totalCount && totalCount > visible.length ? (zh ? `显示 ${visible.length} / ${totalCount} 款产品` : `Showing ${visible.length} of ${totalCount} products`) : `${visible.length} ${zh ? "款产品" : "products"}`}</p>
       <div className="catalog-grid">
         {visible.map(card => <a className="catalog-card" href={`/${locale}/articles/${card.slug}`} key={card.id}>
           <div className="catalog-card-image">

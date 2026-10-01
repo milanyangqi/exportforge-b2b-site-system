@@ -14,6 +14,8 @@ type PuckPageRendererProps = {
   currentArticle?: Article;
   currentPage?: SitePage;
   className?: string;
+  catalogPage?: number;
+  catalogCategory?: string;
 };
 
 export function PuckPageRenderer({
@@ -25,7 +27,9 @@ export function PuckPageRenderer({
   currentProduct,
   currentArticle,
   currentPage,
-  className
+  className,
+  catalogPage,
+  catalogCategory
 }: PuckPageRendererProps) {
   const layout = findPageLayout(state, layoutKey);
 
@@ -35,7 +39,7 @@ export function PuckPageRenderer({
   const anchorType = layoutKey === "product-detail" ? "ProductDetail" : "ProductList";
   const anchorIndex = layout.data.content.findIndex(item => item.type === anchorType);
   const catalogMode = layoutKey === "home" ? "home" : layoutKey === "products-index" ? "all" : layoutKey === "product-detail" ? "category" : null;
-  const catalog = catalogMode ? <ProductCatalog state={state} locale={locale} mode={catalogMode} category={currentProduct?.slug} /> : null;
+  const catalog = catalogMode ? <ProductCatalog state={state} locale={locale} mode={catalogMode} category={currentProduct?.slug} page={catalogPage} selectedCategory={catalogCategory} /> : null;
 
   return (
     <>
@@ -43,7 +47,7 @@ export function PuckPageRenderer({
       <main className={className ?? (layoutKey === "home" ? "puck-public-page" : "subpage puck-public-page")}>
         {layout.data.content.map((item, index) => (
           <Fragment key={String(item.props.id ?? `${item.type}-${index}`)}>
-          <PuckVisualBlock
+          {!(layoutKey === "products-index" && item.type === "ProductList" && ((catalogPage ?? 1) > 1 || catalogCategory)) ? <PuckVisualBlock
             currentArticle={currentArticle}
             currentPage={currentPage}
             currentProduct={currentProduct}
@@ -51,7 +55,7 @@ export function PuckPageRenderer({
             key={String(item.props.id ?? `${item.type}-${index}`)}
             locale={locale}
             state={state}
-          />
+          /> : null}
           {index === anchorIndex ? catalog : null}
           </Fragment>
         ))}

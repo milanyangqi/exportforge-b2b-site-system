@@ -400,3 +400,102 @@
     padding-inline: 0;
   }
 }
+
+/* Keep the image-led homepage and catalog introductions close to their cards. */
+.puck-public-page > .puck-public-hero.height-compact {
+  min-height: min(650px, 78vh);
+}
+
+.puck-public-page > .puck-public-hero.height-compact .puck-public-hero-inner {
+  padding-block: clamp(76px, 10vw, 116px);
+}
+
+.puck-public-page > .puck-public-hero.height-compact h1 {
+  font-size: clamp(42px, 5.6vw, 72px);
+}
+
+.products-subpage.puck-public-page > .puck-public-page-hero:first-child,
+.articles-subpage.puck-public-page > .puck-public-page-hero:first-child {
+  padding-top: 42px;
+  padding-bottom: 12px;
+}
+
+.products-subpage .puck-public-product-list {
+  padding-top: 18px;
+  padding-bottom: 18px;
+}
+
+.product-article-detail {
+  width: min(100% - 48px, 1180px);
+  padding: clamp(20px, 3vw, 38px);
+}
+
+.product-article-breadcrumb {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.product-article-breadcrumb a {
+  color: inherit;
+}
+
+.product-article-intro {
+  display: grid;
+  gap: clamp(26px, 4vw, 56px);
+  align-items: center;
+}
+
+.product-article-intro.has-image {
+  grid-template-columns: minmax(0, 1.05fr) minmax(0, .95fr);
+}
+
+.product-article-cover {
+  display: grid;
+  overflow: hidden;
+  aspect-ratio: 1;
+  margin: 0;
+  border-radius: 16px;
+  background: #f3f5f2;
+}
+
+.product-article-cover img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.product-article-copy h1 {
+  margin: 18px 0 22px;
+  font-size: clamp(36px, 4vw, 58px);
+  line-height: 1.1;
+}
+
+.product-article-copy .detail-excerpt {
+  line-height: 1.7;
+}
+
+.product-article-copy .button {
+  margin-top: 20px;
+}
+
+.product-article-body {
+  width: min(100%, 860px);
+  margin: 22px auto 0;
+}
+
+@media (max-width: 760px) {
+  .product-article-detail {
+    width: min(100% - 24px, 1180px);
+  }
+
+  .product-article-intro.has-image {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .product-article-cover {
+    aspect-ratio: 4 / 3;
+  }
+}

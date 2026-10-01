@@ -1,7 +1,6 @@
-import { publicText, categoryLabel } from "@/lib/public-localization";
-/* eslint-disable @next/next/no-img-element */
+import { publicText } from "@/lib/public-localization";
 import { notFound } from "next/navigation";
-import { ArticleContent } from "@/components/ArticleContent";
+import { ArticleDetailContent } from "@/components/ArticleDetailContent";
 import { PuckPageRenderer } from "@/components/PuckPageRenderer";
 import { RfqForm } from "@/components/RfqForm";
 import { t } from "@/lib/i18n";
@@ -74,17 +73,7 @@ export default async function ArticleDetailPage({
   const fallback = (
     <main className="subpage">
       {structuredData}
-      <article className="content-detail">
-        <span className="eyebrow">{categoryLabel(article.category, state.products, locale)}</span>
-        <h1>{t(article.title, locale)}</h1>
-        <p className="detail-excerpt">{t(article.excerpt, locale)}</p>
-        {article.coverImageUrl ? (
-          <figure className="article-cover">
-            <img src={article.coverImageUrl} alt={t(article.title, locale)} />
-          </figure>
-        ) : null}
-        <ArticleContent body={article.body ? t(article.body, locale) : t(article.excerpt, locale)} />
-      </article>
+      <ArticleDetailContent article={article} locale={locale} products={state.products} />
       <section className="section rfq-section" id="rfq">
         <div>
           <span className="eyebrow">{publicText("Need project support?", locale)}</span>

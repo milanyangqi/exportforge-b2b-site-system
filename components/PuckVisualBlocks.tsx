@@ -1,6 +1,7 @@
 /* eslint-disable @next/next/no-img-element */
 import type { CSSProperties, ReactNode } from "react";
 import { ArticleContent } from "@/components/ArticleContent";
+import { ArticleDetailContent } from "@/components/ArticleDetailContent";
 import { HeroPosterCarousel } from "@/components/HeroPosterCarousel";
 import { LoopingImagesOrbit } from "@/components/LoopingImagesOrbit";
 import { ProductGrid } from "@/components/ProductGrid";
@@ -1086,20 +1087,7 @@ function ProductDetail({ currentProduct, locale }: { currentProduct?: ProductCat
 
 function ArticleDetail({ currentArticle, locale, state }: { currentArticle?: Article; locale: LocaleCode; state: AdminState }) {
   if (!currentArticle) return null;
-
-  return (
-    <article className="content-detail">
-      <span className="eyebrow">{categoryLabel(currentArticle.category, state.products, locale)}</span>
-      <h1>{t(currentArticle.title, locale)}</h1>
-      <p className="detail-excerpt">{t(currentArticle.excerpt, locale)}</p>
-      {currentArticle.coverImageUrl ? (
-        <figure className="article-cover">
-          <img src={currentArticle.coverImageUrl} alt={t(currentArticle.title, locale)} />
-        </figure>
-      ) : null}
-      <ArticleContent body={currentArticle.body ? t(currentArticle.body, locale) : t(currentArticle.excerpt, locale)} />
-    </article>
-  );
+  return <ArticleDetailContent article={currentArticle} locale={locale} products={state.products} />;
 }
 
 function PageDetail({ currentPage, locale }: { currentPage?: SitePage; locale: LocaleCode }) {
