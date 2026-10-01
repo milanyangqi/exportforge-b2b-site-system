@@ -167,3 +167,25 @@ Verification:
 
 Cloudflare:
 - Version ID: `1367d4f8-3ae2-4887-92ce-e40a1259c594`
+
+## 2026-10-01 Xiyida Catalog And Article Layout
+
+Status: deployed
+
+Changes:
+- Adapted the SquishyToyWorks catalog pagination pattern to Xiyida: 24 items per page, bilingual page links, and page-specific metadata.
+- Product category filters now use shareable URLs and remain selected across pages; subsequent pages focus on product cards instead of repeating the category overview.
+- Article detail uses a responsive image-and-copy introduction with a direct RFQ link while retaining the complete article body.
+- Tightened the homepage hero and listing-page spacing in the active Xiyida template.
+- Replaced the zero-byte wedding candy tins cover and removed seven zero-byte gallery references from that article's live CMS content. The replacement image is stored in R2 at `category-images/wedding-candy-tins-small-medium.jpg`.
+
+Target: https://www.xiyidapackaging.com/
+
+GitHub: `milanyangqi/exportforge-b2b-site-system`, branch `xiyida`, code commit `e663252`.
+
+Verification:
+- `npm run build`, `npm run typecheck`, `npm run cf:build`, and 6 catalog tests passed.
+- `.open-next/` contains no `.codegraph` files.
+- Live English article pages show 24 and 14 cards; product pages show 24 and 8 cards. Category filtering and Chinese pagination work, and article detail images and RFQ links load.
+
+Cloudflare Worker version: `dfa3e322-2293-4d5c-8224-dc434a34e76b`.
