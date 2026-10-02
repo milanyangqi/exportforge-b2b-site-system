@@ -156,7 +156,7 @@ function MobileNavigationMenu({
       <button
         className="mobile-nav-toggle"
         type="button"
-        aria-label={isOpen ? "关闭导航菜单" : "打开导航菜单"}
+        aria-label={locale === "zh" ? (isOpen ? "关闭导航菜单" : "打开导航菜单") : (isOpen ? "Close navigation menu" : "Open navigation menu")}
         aria-expanded={isOpen}
         onClick={() => setIsOpen((current) => !current)}
       >
@@ -171,6 +171,7 @@ function MobileNavigationMenu({
             {ctaLabel ?? t(ui.quote, locale)}
           </a>
         </div>
+        <Link className="mobile-nav-link" href={`/${locale}`} onClick={handleLinkClick}>{locale === "zh" ? "首页" : "Home"}</Link>
         {navigationTree.map((item) => (
           <MobileNavigationTreeLink locale={locale} node={item} onLinkClick={handleLinkClick} key={item.id} />
         ))}
@@ -241,6 +242,7 @@ export function PublicHeaderShell({
         onLinkClick={handleLinkClick}
       />
       <nav className="nav-links" aria-label="Primary navigation">
+        <Link href={`/${locale}`} onClick={handleLinkClick}>{locale === "zh" ? "首页" : "Home"}</Link>
         {navigationTree.map((item) => (
           <NavigationTreeLink locale={locale} node={item} onLinkClick={handleLinkClick} key={item.id} />
         ))}
@@ -294,6 +296,7 @@ export function HomeNavigationShell({
           onLinkClick={handleLinkClick}
         />
         <nav className="template-home-nav-links nav-links" aria-label="Primary navigation">
+          <Link href={`/${locale}`} onClick={handleLinkClick} aria-current="page">{locale === "zh" ? "首页" : "Home"}</Link>
           {navigationTree.map((item) => (
             <NavigationTreeLink locale={locale} node={item} onLinkClick={handleLinkClick} key={item.id} />
           ))}
@@ -336,7 +339,7 @@ export function PublicFooterShell({
   navigation: SiteNavigationItem[];
   preventNavigation?: boolean;
 }) {
-  const footerNavigation = [...navigation].filter((item) => item.enabled && !isDownloadPage(item.href)).sort((a, b) => a.order - b.order);
+  const footerNavigation = [...navigation].filter((item) => item.enabled && !item.parentId && !isDownloadPage(item.href)).sort((a, b) => a.order - b.order);
   const socialChannels = channels.filter((channel) => channel.enabled && socialTypes.has(channel.type) && channel.href && !channel.href.startsWith("#"));
   const handleLinkClick: LinkClickHandler | undefined = preventNavigation
     ? (event) => event.preventDefault()

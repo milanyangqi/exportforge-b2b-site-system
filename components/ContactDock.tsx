@@ -75,8 +75,8 @@ export function ContactDock({ locale, channels }: { locale: LocaleCode; channels
           <Image src={activeQrChannel.qrCodeUrl} alt={`${t(activeQrChannel.label, locale)} QR code`} width={200} height={200} unoptimized />
           <span>{activeQrChannel.value}</span>
           <div className="contact-qr-actions">
-            {canOpenActiveLink ? <a href={activeQrChannel.href}>打开链接</a> : null}
-            <button type="button" onClick={() => setActiveQrId(null)}>关闭</button>
+            {canOpenActiveLink ? <a href={activeQrChannel.href}>{locale === "zh" ? "打开链接" : "Open link"}</a> : null}
+            <button type="button" onClick={() => setActiveQrId(null)}>{locale === "zh" ? "关闭" : "Close"}</button>
           </div>
         </div>
       ) : null}

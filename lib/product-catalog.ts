@@ -10,8 +10,6 @@ export type CatalogCard = {
   imageUrl: string;
 };
 
-const homeCategoryOrder = ["food-tin-packaging", "gift-tin-packaging", "tea-coffee-tins", "custom-tin-box-manufacturing"];
-
 export function publishedProducts(articles: Article[], categories: ProductCategory[]) {
   const categoryKeys = new Map(categories.flatMap(category => [
     [category.slug, category.slug],
@@ -44,7 +42,8 @@ export function homeProducts(articles: Article[], categories: ProductCategory[])
       seen.add(key);
     }
   };
-  for (const category of homeCategoryOrder) products.filter(article => article.category === category).slice(0, 3).forEach(add);
+  const perCategory = Math.max(1, Math.floor(12 / Math.max(categories.length, 1)));
+  for (const category of categories) products.filter(article => article.category === category.slug).slice(0, perCategory).forEach(add);
   products.forEach(add);
   return selected;
 }

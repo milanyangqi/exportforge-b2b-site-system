@@ -23,8 +23,8 @@ export function Header({
   const [currentEnabledLocales, setCurrentEnabledLocales] = useState(enabledLocales);
   const isAdminPath = pathname?.startsWith(`/${locale}/admin`);
   const isLocaleHomePath = pathname === `/${locale}` || pathname === `/${locale}/`;
-  const ctaLabel = useMemo(() => isAdminPath ? "前台首页" : t(ui.quote, locale), [isAdminPath, locale]);
-  const ctaHref = isAdminPath ? `/${locale}` : "#rfq";
+  const ctaLabel = useMemo(() => isAdminPath ? (locale === "zh" ? "前台首页" : "Visit website") : (locale === "zh" ? t(ui.quote, locale) : "Request a quote"), [isAdminPath, locale]);
+  const ctaHref = isAdminPath ? `/${locale}` : `/${locale}/contact#rfq`;
 
   useEffect(() => {
     setCurrentBrandName(brandName);

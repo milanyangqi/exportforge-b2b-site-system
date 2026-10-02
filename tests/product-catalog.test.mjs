@@ -101,3 +101,11 @@ test("catalog selection is recalculated when an article is published or withdraw
   record.status = "trash";
   assert.equal(publishedProducts([record], categories).length, 0);
 });
+
+test('homepage gives all six packaging collections a place', () => {
+  const six = [...categories, ...['cosmetic-tin-packaging', 'candle-tins'].map(slug => ({ ...categories[0], id: slug, slug }))];
+  const records = six.flatMap(category => Array.from({ length: 4 }, (_, i) => article(`${category.slug}-${i}`, category.slug)));
+  const result = homeProducts(records, six);
+  assert.equal(result.length, 12);
+  for (const category of six) assert.equal(result.filter(item => item.category === category.slug).length, 2);
+});

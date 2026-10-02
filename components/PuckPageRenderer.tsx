@@ -44,14 +44,14 @@ export function PuckPageRenderer({
   return (
     <>
       {prefix}
-      <main className={className ?? (layoutKey === "home" ? "puck-public-page" : "subpage puck-public-page")}>
+      <main className={className ?? (layoutKey === "home" ? "puck-public-page xiyida-home" : "subpage puck-public-page")}>
         {layout.data.content.map((item, index) => (
           <Fragment key={String(item.props.id ?? `${item.type}-${index}`)}>
           {!(layoutKey === "products-index" && item.type === "ProductList" && ((catalogPage ?? 1) > 1 || catalogCategory)) ? <PuckVisualBlock
             currentArticle={currentArticle}
             currentPage={currentPage}
             currentProduct={currentProduct}
-            item={item}
+            item={layoutKey === "home" && ["HeroSection", "ProductList"].includes(item.type) ? { ...item, props: { ...item.props, presentation: "packaging" } } : item}
             key={String(item.props.id ?? `${item.type}-${index}`)}
             locale={locale}
             state={state}

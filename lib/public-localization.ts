@@ -23,7 +23,9 @@ const zh: Record<string, string> = {
 };
 
 export function publicText(value: string, locale: LocaleCode) {
-  return locale === "zh" ? zh[value] ?? value : value;
+  if (locale === "zh") return zh[value] ?? value;
+  const en: Record<string, string> = { "发送询盘": "Request a quote", "提交询盘": "Request a quote", "前台首页": "Visit website", "打开链接": "Open link", "关闭": "Close" };
+  return locale === "en" ? en[value] ?? value : value;
 }
 
 export function categoryLabel(value: string, products: ProductCategory[], locale: LocaleCode) {

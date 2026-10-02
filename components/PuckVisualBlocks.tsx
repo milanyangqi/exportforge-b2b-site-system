@@ -6,6 +6,8 @@ import { HeroPosterCarousel } from "@/components/HeroPosterCarousel";
 import { LoopingImagesOrbit } from "@/components/LoopingImagesOrbit";
 import { ProductGrid } from "@/components/ProductGrid";
 import { HomeNavigationShell } from "@/components/PublicSiteShell";
+import { PackagingHero } from "@/components/PackagingHero";
+import { PackagingCategories } from "@/components/PackagingCategories";
 import { PublicContactList } from "@/components/PublicContactList";
 import { RfqForm } from "@/components/RfqForm";
 import { locales } from "@/config/locales";
@@ -241,7 +243,7 @@ function SectionHead({ eyebrow, title, body }: { eyebrow?: string; title?: strin
 }
 
 function HomeNavigation({ props, state, locale }: { props: Record<string, unknown>; state: AdminState; locale: LocaleCode }) {
-  const ctaLabel = propString(props, "ctaLabel", t(state.templateSettings.primaryCtaLabel, locale) || "RFQ");
+  const ctaLabel = publicText(propString(props, "ctaLabel", t(state.templateSettings.primaryCtaLabel, locale) || "RFQ"), locale);
 
   return (
     <HomeNavigationShell
@@ -261,6 +263,11 @@ function HeroSection({ props, locale }: { props: Record<string, unknown>; locale
   const imageUrl = backgroundMode !== "none" ? images[0]?.url ?? "" : "";
   const primaryHref = localizeHref(propString(props, "primaryHref", "#rfq"), locale);
   const secondaryHref = localizeHref(propString(props, "secondaryHref", "/products"), locale);
+  if (propString(props, "presentation") === "packaging") return <PackagingHero
+    title={title} body={propString(props, "body")} eyebrow={propString(props, "eyebrow")} imageUrl={imageUrl}
+    primaryLabel={propString(props, "primaryLabel")} primaryHref={primaryHref}
+    secondaryLabel={propString(props, "secondaryLabel")} secondaryHref={secondaryHref} locale={locale}
+  />;
   const showMetrics = propBoolean(props, "showMetrics", true);
   const heroSlides = images.map((image, index) => ({
     id: `puck-hero-${index}`,
@@ -326,7 +333,7 @@ function ProductList({ props, state, locale }: { props: Record<string, unknown>;
   return (
     <section className={`section puck-public-product-list tone-${propString(props, "tone", "light")} columns-${columns}`}>
       <SectionHead eyebrow={propString(props, "eyebrow")} title={propString(props, "title")} body={propString(props, "body")} />
-      <ProductGrid flat={propBoolean(props, "flat", false)} locale={locale} products={products} />
+      {propString(props, "presentation") === "packaging" ? <PackagingCategories locale={locale} products={products} /> : <ProductGrid flat={propBoolean(props, "flat", false)} locale={locale} products={products} />}
     </section>
   );
 }

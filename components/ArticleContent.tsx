@@ -247,7 +247,7 @@ function isLikelyImageReference(name: string, url: string) {
   return /\.(apng|avif|gif|jpe?g|png|svg|webp)(\?.*)?$/i.test(name) || /\.(apng|avif|gif|jpe?g|png|svg|webp)(\?.*)?$/i.test(url);
 }
 
-function renderArticleBlock(block: ArticleBlock, index: number) {
+function renderArticleBlock(block: ArticleBlock, index: number, locale: string) {
   if (block.type === "code") {
     return (
       <pre className="article-code-block" key={`${index}-code`}>
@@ -286,7 +286,7 @@ function renderArticleBlock(block: ArticleBlock, index: number) {
         </div>
         <figcaption>
           <span>{videoTitle || videoEmbed.provider}</span>
-          <a href={videoEmbed.originalUrl} rel="noreferrer" target="_blank">打开原视频</a>
+          <a href={videoEmbed.originalUrl} rel="noreferrer" target="_blank">{locale === "zh" ? "打开原视频" : "Watch original video"}</a>
         </figcaption>
       </figure>
     );
@@ -314,7 +314,7 @@ function renderArticleBlock(block: ArticleBlock, index: number) {
     return (
       <p className="article-download-line" key={`${index}-${trimmed}`}>
         <a className="article-file-link" href={fileBlockMatch[2]} download>
-          下载文件：{fileBlockMatch[1]}
+          {locale === "zh" ? "下载文件：" : "Download file: "}{fileBlockMatch[1]}
         </a>
       </p>
     );
@@ -353,12 +353,12 @@ function renderArticleBlock(block: ArticleBlock, index: number) {
   return <p key={`${index}-${trimmed}`}>{renderParagraphLines(trimmed, index)}</p>;
 }
 
-export function ArticleContent({ body, className = "detail-body" }: { body: string; className?: string }) {
+export function ArticleContent({ body, className = "detail-body", locale = "en" }: { body: string; className?: string; locale?: string }) {
   const blocks = parseArticleBlocks(body);
 
   return (
     <div className={className}>
-      {blocks.length > 0 ? blocks.map(renderArticleBlock) : <p className="article-preview-empty">暂无正文内容。</p>}
+      {blocks.length > 0 ? blocks.map((block, index) => renderArticleBlock(block, index, locale)) : <p className="article-preview-empty">{locale === "zh" ? "暂无正文内容。" : "No article content yet."}</p>}
     </div>
   );
 }

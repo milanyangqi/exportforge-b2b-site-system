@@ -189,3 +189,22 @@ Verification:
 - Live English article pages show 24 and 14 cards; product pages show 24 and 8 cards. Category filtering and Chinese pagination work, and article detail images and RFQ links load.
 
 Cloudflare Worker version: `dfa3e322-2293-4d5c-8224-dc434a34e76b`.
+
+## 2026-10-02 Xiyida homepage, navigation and article galleries
+
+Status: validated for deployment
+
+Changes:
+- Referenced SquishyToyWorks `components/soft-joy/Interactive.tsx` and `Sections.tsx` to implement a main image with selectable thumbnails on article detail pages. Existing cover and Markdown/legacy upload images are deduplicated; body content is preserved. Added previous/next controls and a keyboard-accessible image dialog.
+- Redesigned the active packaging homepage with a split hero, compact image categories, a balanced selection across all six collections and a responsive four-column product catalog.
+- Reworked navigation with a Products category dropdown, mobile menu and working inquiry links. Corrected English navigation, menu, attachment and QR-dialog labels.
+- Added an idempotent CMS update helper to localize homepage buttons, organize existing category navigation and restore seven verified wedding-tin upload photos. All other CMS records and settings remain intact.
+
+Validation:
+- `npm run typecheck`
+- `npm run cf:build`
+- Nine gallery, pagination and catalog tests passed.
+- Public local preview: desktop/mobile have no horizontal overflow; thumbnail selection, dialog opening and Escape closing passed.
+- `.open-next` inspected for excluded `.codegraph` artifacts.
+
+Target: https://www.xiyidapackaging.com/
